@@ -1,0 +1,833 @@
+[
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "The function $f(x) = [x]\\cos\\left(\\frac{2x-1}{2}\\right)\\pi$, where $[x]$ denotes the greatest integer function, is discontinuous at",
+    "options": [
+      "1) all x",
+      "2) all integer points",
+      "3) no x",
+      "4) x which is not an integer"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "Let $f(x) = \\begin{cases} (1+ax)^{1/x} & , \\ x < 0 \\\\ 1+b & , \\ x = 0 \\\\ \\frac{(x+4)^{1/2} - 2}{(x+c)^{1/3} - 2} & , \\ x > 0 \\end{cases}$ be continuous at $x = 0$. Then, $e^{abc}$ is equal to",
+    "options": [
+      "1) 72",
+      "2) 36",
+      "3) 64",
+      "4) 48"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "If the function $f(x) = \\frac{\\sin 3x + \\alpha \\sin x - \\beta \\cos 3x}{x^3}$, $x \\in \\mathbb{R}$, is continuous at $x = 0$, then $f(0)$ is equal to",
+    "options": [
+      "1) 2",
+      "2) -2",
+      "3) 4",
+      "4) -4"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "If the function $f(x) = \\begin{cases} \\frac{72^x - 9^x - 8^x + 1}{\\sqrt{2} - \\sqrt{1+\\cos x}} & , \\ x \\neq 0 \\\\ a \\log_e 2 \\log_e 3 & , \\ x = 0 \\end{cases}$ is continuous at $x = 0$, then the value of $a^2$ is equal to",
+    "options": [
+      "1) 1152",
+      "2) 1250",
+      "3) 968",
+      "4) 746"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "Let $f(x) = \\begin{cases} \\frac{1-\\cos 2x}{x^2} & , \\ x < 0 \\\\ \\alpha & , \\ x = 0 \\\\ \\frac{\\beta \\sqrt{1-\\cos x}}{x} & , \\ x > 0 \\end{cases}$ where $\\alpha, \\beta \\in \\mathbb{R}$. If $f$ is continuous at $x=0$, then $\\alpha^2 + \\beta^2$ is equal to",
+    "options": [
+      "1) 3",
+      "2) 12",
+      "3) 48",
+      "4) 6"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "If the function $f(x) = \\begin{cases} (1+|\\cos x|)^{\\frac{\\lambda}{|\\cos x|}} & , \\ 0 < x < \\frac{\\pi}{2} \\\\ \\mu & , \\ x = \\frac{\\pi}{2} \\\\ e^{\\frac{\\cot 6x}{\\cot 4x}} & , \\ \\frac{\\pi}{2} < x < \\pi \\end{cases}$ is continuous at $x = \\frac{\\pi}{2}$, then $9\\lambda + 6\\log_e \\mu + \\mu^6 - e^{6\\lambda}$ is equal to",
+    "options": [
+      "1) 10",
+      "2) 2e^4 + 8",
+      "3) 8",
+      "4) 11"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "Let the function $f(x) = \\begin{cases} \\frac{\\log_e(1+5x) - \\log_e(1+\\alpha x)}{x} & , \\ x \\neq 0 \\\\ 10 & , \\ x = 0 \\end{cases}$ be continuous at $x = 0$. Then, $\\alpha$ is equal to",
+    "options": [
+      "1) 10",
+      "2) -10",
+      "3) 5",
+      "4) -5"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "Let $f(x) = ||x| - 1|$, then points where $f(x)$ is not differentiable is/are",
+    "options": [
+      "1) 0, \\pm 1",
+      "2) \\pm 1",
+      "3) 0",
+      "4) 1"
+    ],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "Which of the following functions is differentiable at $x = 0$?",
+    "options": [
+      "1) \\cos(|x|) + |x|",
+      "2) \\cos(|x|) - |x|",
+      "3) \\sin(|x|) + |x|",
+      "4) \\sin(|x|) - |x|"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "Let $[x]$ denote the greatest integer function and $f(x) = \\max\\{1+x+[x], 2+x, x+2[x]\\}, 0 \\leq x \\leq 2$. Let $m$ be the number of points in $[0,2]$ where $f$ is not continuous and $n$ be the number of points in $(0,2)$ where $f$ is not differentiable. Then $(m+n)^2 + 2$ is equal to",
+    "options": [
+      "1) 6",
+      "2) 3",
+      "3) 11",
+      "4) 2"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "The function $f(x) = |x^2 - 2x - 3| \\cdot e^{|9x^2 - 12x + 4|}$ is not differentiable at exactly",
+    "options": [
+      "1) four points",
+      "2) three points",
+      "3) two points",
+      "4) one point"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "Let $f$ and $g$ be real valued functions defined on the interval $(-1, 1)$ such that $g''(x)$ is continuous, $g(0) \\neq 0$, $g'(0) = 0$, $g''(0) \\neq 0$ and $f(x) = g(x) \\sin x$.\\nStatement I: $\\lim_{x \\to 0} [g(x) \\cot x - g(0) \\csc x] = f''(0)$\\nStatement II: $f'(0) = g(0)$.",
+    "options": [
+      "1) Statement I is true, Statement II is also true; Statement II is the correct explanation of Statement I.",
+      "2) Statement I is true, Statement II is also true; Statement II is not the correct explanation of Statement I.",
+      "3) Statement I is true; Statement II is false.",
+      "4) Statement I is false; Statement II is true."
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "If $y(x) = \\begin{vmatrix} \\sin x & \\cos x & \\sin x + \\cos x + 1 \\\\ 27 & 28 & 27 \\\\ 1 & 1 & 1 \\end{vmatrix}$, $x \\in \\mathbb{R}$, then $\\frac{d^2y}{dx^2} + y$ is equal to",
+    "options": [
+      "1) 1",
+      "2) -1",
+      "3) 28",
+      "4) 27"
+    ],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "For $x \\in \\left(0, \\frac{1}{4}\\right)$, if the derivative of $\\tan^{-1}\\left(\\frac{6x\\sqrt{x}}{1-9x^3}\\right)$ is $\\sqrt{x} \\cdot g(x)$, then $g(x)$ equals",
+    "options": [
+      "1) \\frac{9}{1+9x^3}",
+      "2) \\frac{3x\\sqrt{x}}{1-9x^3}",
+      "3) \\frac{3x}{1-9x^3}",
+      "4) \\frac{3}{1+9x^3}"
+    ],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "If $g$ is the inverse of a function $f$ and $f'(x) = \\frac{1}{1+x^5}$, then $g'(x)$ is equal to",
+    "options": [
+      "1) 1+x^5",
+      "2) 5x^4",
+      "3) \\frac{1}{1+\\{g(x)\\}^5}",
+      "4) 1+\\{g(x)\\}^5"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "If the range of the function $f(x) = \\frac{5-x}{x^2-3x+2}$, $x \\neq 1, 2$, is $(-\\infty, \\alpha] \\cup [\\beta, \\infty)$, then $\\alpha^2 + \\beta^2$ is equal to",
+    "options": [
+      "1) 188",
+      "2) 192",
+      "3) 190",
+      "4) 194"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "Let $f$ be a function such that $f(x) + 3f\\left(\\frac{24}{x}\\right) = 4x$, $x \\neq 0$. Then $f(3) + f(8)$ is equal to",
+    "options": [
+      "1) 13",
+      "2) 11",
+      "3) 10",
+      "4) 12"
+    ],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "Let $f(x) = \\frac{1}{7 - \\sin 5x}$ be a function defined on $\\mathbb{R}$. Then the range of the function $f(x)$ is equal to",
+    "options": [
+      "1) [\\frac{1}{8}, \\frac{1}{5}]",
+      "2) [\\frac{1}{7}, \\frac{1}{6}]",
+      "3) [\\frac{1}{7}, \\frac{1}{5}]",
+      "4) [\\frac{1}{8}, \\frac{1}{6}]"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "The function $f(x) = \\frac{x^2+2x-15}{x^2-4x+9}$, $x \\in \\mathbb{R}$ is",
+    "options": [
+      "1) both one-one and onto",
+      "2) onto but not one-one",
+      "3) neither one-one nor onto",
+      "4) one-one but not onto"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "MCQ",
+    "text": "Considering the principal values of inverse trigonometric functions, the value of the expression $\\tan\\left(2\\sin^{-1}\\left(\\frac{2}{\\sqrt{13}}\\right) - 2\\cos^{-1}\\left(\\frac{3}{\\sqrt{10}}\\right)\\right)$ is equal to",
+    "options": [
+      "1) \\frac{33}{56}",
+      "2) -\\frac{33}{56}",
+      "3) -\\frac{16}{63}",
+      "4) \\frac{16}{63}"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "NUMERICAL",
+    "text": "Let $m$ and $n$ be the number of points at which the function $f(x) = \\max\\{x, x^3, x^5, \\dots, x^{21}\\}$, $x \\in \\mathbb{R}$, is not differentiable and not continuous respectively. Then $m+n$ is equal to",
+    "options": [],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "NUMERICAL",
+    "text": "If the function $f(x) = \\begin{cases} \\frac{1}{|x|} & , \\ |x| \\geq 2 \\\\ ax^2 + b & , \\ |x| < 2 \\end{cases}$ is differentiable on $\\mathbb{R}$, then $48(a+b)$ is equal to",
+    "options": [],
+    "correct_answer": "18"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "NUMERICAL",
+    "text": "The number of solutions of $\\tan^{-1} 4x + \\tan^{-1} 6x = \\frac{\\pi}{6}$, where $-\\frac{1}{2\\sqrt{6}} < x < \\frac{1}{2\\sqrt{6}}$, is equal to",
+    "options": [],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "NUMERICAL",
+    "text": "$\\cos\\left(\\sin^{-1}\\frac{3}{5} + \\sin^{-1}\\frac{5}{13} + \\sin^{-1}\\frac{33}{65}\\right)$ is equal to",
+    "options": [],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Mathematics",
+    "type": "NUMERICAL",
+    "text": "The value of $\\left[\\cot\\left(\\sum_{n=1}^{50}\\tan^{-1}\\left(\\frac{1}{1+n+n^2}\\right)\\right)\\right] \\times 25$ is",
+    "options": [],
+    "correct_answer": "650"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "Two identical pendulums, A and B, are suspended from the same point. The bobs are given positive charges, with A having more charge than B. They diverge and reach equilibrium, with A and B making angles $\\theta_1$ and $\\theta_2$ with the vertical respectively.",
+    "options": [
+      "1) \\theta_1 > \\theta_2",
+      "2) \\theta_1 < \\theta_2",
+      "3) \\theta_1 = \\theta_2",
+      "4) The tension in A is greater than that in B."
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "Three charges $+Q$, $+Q$ and $-Q$ are placed at the corners of an equilateral triangle. The ratio of the force on a positive charge to the force on the negative charge will be equal to",
+    "options": [
+      "1) 1",
+      "2) 2",
+      "3) \\sqrt{3}",
+      "4) 1/\\sqrt{3}"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "If the earth's surface is treated as a conducting surface with some charge, what should be the order of magnitude of the charge per unit area, in $\\text{C/m}^2$, so that a proton remains suspended in space near the earth's surface?",
+    "options": [
+      "1) 10^{-18}",
+      "2) 10^{-12}",
+      "3) 10^{-6}",
+      "4) 1"
+    ],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "An electric dipole is placed at the origin O and is directed along the x-axis. At a point P, far away from the dipole, the electric field is parallel to the y-axis. OP makes an angle $\\theta$ with the x-axis.",
+    "options": [
+      "1) \\tan \\theta = \\sqrt{3}",
+      "2) \\tan \\theta = \\sqrt{2}",
+      "3) \\theta = 45^\\circ",
+      "4) \\tan \\theta = \\frac{1}{\\sqrt{2}}"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "A point charge Q is placed outside a hollow spherical conductor of radius R, at a distance $r$ ($r > R$) from its centre C. The field at C due to the induced charges on the conductor is",
+    "options": [
+      "1) zero",
+      "2) k\\frac{Q}{(r-R)^2}",
+      "3) k\\frac{Q}{r^2}, directed towards Q",
+      "4) k\\frac{Q}{r^2}, directed away from Q"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "In a region of space, the electric field is in the x-direction and proportional to x, i.e., $\\vec{E} = E_0 x \\hat{i}$. Consider an imaginary cubical volume of edge $a$, with its edges parallel to the axes of coordinates. The charge inside this volume is",
+    "options": [
+      "1) zero",
+      "2) \\varepsilon_0 E_0 a^3",
+      "3) \\frac{1}{\\varepsilon_0} E_0 a^3",
+      "4) \\frac{1}{6} \\varepsilon_0 E_0 a^2"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "A large solid sphere with uniformly distributed positive charge has a smooth narrow tunnel through its centre. A small particle with negative charge, initially at rest far from the sphere, approaches it along the line of the tunnel, reaches its surface with a speed $v$, and passes through the tunnel. Its speed at the centre of the sphere will be",
+    "options": [
+      "1) 0",
+      "2) v",
+      "3) \\sqrt{2}v",
+      "4) \\sqrt{1.5}v"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "In the circuit shown, find C if the effective capacitance of the whole circuit is to be $0.5 \\ \\mu\\text{F}$. All the values are in $\\mu\\text{F}$.",
+    "options": [
+      "1) \\frac{7}{10} \\mu\\text{F}",
+      "2) \\frac{7}{11} \\mu\\text{F}",
+      "3) \\frac{6}{5} \\mu\\text{F}",
+      "4) 4 \\mu\\text{F}"
+    ],
+    "correct_answer": "1",
+    "image_url": "https://wkcoiondpgbaiqukppfe.supabase.co/storage/v1/object/public/question-assets/questions/q33_diagram.png"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "When two uncharged metal balls of radius $0.09\\text{ mm}$ each collide, one electron is transferred between them. The potential difference between them would be",
+    "options": [
+      "1) 16 \\mu\\text{V}",
+      "2) 16 \\text{pV}",
+      "3) 32 \\mu\\text{V}",
+      "4) 32 \\text{pV}"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "Four capacitors are connected as shown in figure to a $30\\text{ V}$ battery. The potential difference between points $a$ and $b$ is $(V_a - V_b)$:",
+    "options": [
+      "1) 5 V",
+      "2) 9 V",
+      "3) 10 V",
+      "4) 13 V"
+    ],
+    "correct_answer": "2",
+    "image_url": "https://wkcoiondpgbaiqukppfe.supabase.co/storage/v1/object/public/question-assets/questions/q35_diagram.png"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "Three uncharged capacitors of capacitance $C_1$, $C_2$ and $C_3$ are connected to one another as shown in figure. The potential at O will be",
+    "options": [
+      "1) 3 V",
+      "2) \\frac{49}{11} V",
+      "3) 4 V",
+      "4) \\frac{3}{11} V"
+    ],
+    "correct_answer": "1",
+    "image_url": "https://wkcoiondpgbaiqukppfe.supabase.co/storage/v1/object/public/question-assets/questions/q36_diagram.png"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "Two identical dielectric slabs, A and B, are placed symmetrically between the plates X and Y of a charged parallel plate capacitor. The electric intensity has magnitudes $E_1$, $E_2$ and $E_3$ at the points 1, 2 and 3.",
+    "options": [
+      "1) E_1 > E_2 > E_3",
+      "2) E_1 = E_3 < E_2",
+      "3) E_1 = E_3 > E_2",
+      "4) E_1 = E_2 = E_3"
+    ],
+    "correct_answer": "2",
+    "image_url": "https://wkcoiondpgbaiqukppfe.supabase.co/storage/v1/object/public/question-assets/questions/q37_diagram.png"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "Two point dipoles $p\\hat{k}$ and $\\frac{p}{2}\\hat{k}$ are located at $(0,0,0)$ and $(1\\text{m}, 0, 2\\text{m})$ respectively. The resultant electric field due to the two dipoles at the point $(1\\text{m}, 0, 0)$ is",
+    "options": [
+      "1) \\frac{9p}{32\\pi \\epsilon_0}\\hat{k}",
+      "2) \\frac{-7p}{32\\pi \\epsilon_0}\\hat{k}",
+      "3) \\frac{7p}{32\\pi \\epsilon_0}\\hat{k}",
+      "4) None of these"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "A spherical conductor of radius $10\\text{ cm}$ has a charge of $3.2 \\times 10^{-7}\\text{ C}$ distributed uniformly. What is the magnitude of electric field at a point $15\\text{ cm}$ from the centre of the sphere?",
+    "options": [
+      "1) 1.28 \\times 10^5 \\text{ N/C}",
+      "2) 1.28 \\times 10^6 \\text{ N/C}",
+      "3) 1.28 \\times 10^7 \\text{ N/C}",
+      "4) 1.28 \\times 10^4 \\text{ N/C}"
+    ],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "Suppose the charge of a proton and an electron differ slightly. One of them is $-e$, the other is $(e + \\Delta e)$. If the net of electrostatic force and gravitational force between two hydrogen atoms placed at a distance $d$ (much greater than atomic size) apart is zero, then $\\Delta e$ is of the order of:",
+    "options": [
+      "1) 10^{-23} \\text{ C}",
+      "2) 10^{-37} \\text{ C}",
+      "3) 10^{-47} \\text{ C}",
+      "4) 10^{-20} \\text{ C}"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "An oil drop carrying a charge of 4 electrons has a mass of $3.2 \\times 10^{-17}\\text{ kg}$. It is falling freely in air with terminal speed. The electric field required to make the drop move upwards with the same speed is ($g = 10\\text{ ms}^{-2}$):",
+    "options": [
+      "1) 2 \\times 10^3 \\text{ Vm}^{-1}",
+      "2) 1 \\times 10^3 \\text{ Vm}^{-1}",
+      "3) 3 \\times 10^3 \\text{ Vm}^{-1}",
+      "4) 8 \\times 10^3 \\text{ Vm}^{-1}"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "A particle of mass $4\\text{ g}$ and charge $1\\ \\mu\\text{C}$ is held at rest on a smooth horizontal surface at a distance of $1\\text{ m}$ from a fixed charge of $1\\text{ mC}$. If the particle is released, what will be its speed when at a distance of $5\\text{ m}$ from the fixed charge?",
+    "options": [
+      "1) 50 \\text{ ms}^{-1}",
+      "2) 80 \\text{ ms}^{-1}",
+      "3) 60 \\text{ ms}^{-1}",
+      "4) 45 \\text{ ms}^{-1}"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "Charges $Q_1$ and $Q_2$ lie inside and outside respectively of a closed surface S. Let E be the field at any point on S and $\\phi$ be the flux of E over S.\\n(a) If $Q_1$ changes, both E and $\\phi$ will change.\\n(b) If $Q_2$ changes, E will change but $\\phi$ will not change.\\n(c) If $Q_1 = 0$ and $Q_2 \\neq 0$ then $E \\neq 0$ but $\\phi = 0$.\\n(d) If $Q_1 \\neq 0$ and $Q_2 = 0$ then $E = 0$ but $\\phi \\neq 0$.",
+    "options": [
+      "1) only a,b,d correct",
+      "2) only a,b,c are correct",
+      "3) only a,c are correct",
+      "4) All are correct"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "A thin half ring of radius $35\\text{ cm}$ is uniformly charged with a total charge of Q coulomb. If the magnitude of the electric field at centre of the half ring is $100\\text{ V/m}$, then the value of Q is:",
+    "options": [
+      "1) 2.14 nC",
+      "2) 2.44 nC",
+      "3) 3.25 nC",
+      "4) 0.7 nC"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Physics",
+    "type": "MCQ",
+    "text": "Two conducting, concentric, hollow spheres A and B have radii $a$ and $b$ respectively, with A inside B. Their common potential is V. A is now given some charge such that its potential becomes zero. The potential of B will now be",
+    "options": [
+      "1) 0",
+      "2) V(1 - a/b)",
+      "3) Va/b",
+      "4) V(b - a)/(b + a)"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Physics",
+    "type": "NUMERICAL",
+    "text": "Find the equivalent capacitance of the infinite ladder shown in figure between the points A & B. [in $\\mu\\text{F}$]",
+    "options": [],
+    "correct_answer": "2",
+    "image_url": "https://wkcoiondpgbaiqukppfe.supabase.co/storage/v1/object/public/question-assets/questions/q46_diagram.png"
+  },
+  {
+    "subject": "Physics",
+    "type": "NUMERICAL",
+    "text": "A charged particle of mass $m = 1\\text{ kg}$ and charge $q = 2\\ \\mu\\text{C}$ is thrown from a horizontal ground at an angle $\\theta = 45^\\circ$ with speed $20\\text{ m/s}$. In space a horizontal uniform electric field $E = 2 \\times 10^7\\text{ V/m}$ is existing as shown in figure. The range on horizontal ground of the projectile thrown is $y \\times 10^2\\text{ m}$. Find $y$.",
+    "options": [],
+    "correct_answer": "6",
+    "image_url": "https://wkcoiondpgbaiqukppfe.supabase.co/storage/v1/object/public/question-assets/questions/q47_diagram.png"
+  },
+  {
+    "subject": "Physics",
+    "type": "NUMERICAL",
+    "text": "A charge $q_0$ is distributed uniformly on a ring of radius R. A sphere of equal radius R is constructed with its centre on the circumference of the ring. The electric flux through the surface of the sphere is $q_0 / z \\varepsilon_0$. The value of $z$ is:",
+    "options": [],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Physics",
+    "type": "NUMERICAL",
+    "text": "Eight similar drops of mercury are maintained at $12\\text{ V}$ each. All these spherical drops combine into a single big drop. The electrostatic energy of the bigger drop will be $x \\cdot E$, where E is the electrostatic energy of a single smaller drop. Find $x$.",
+    "options": [],
+    "correct_answer": "32"
+  },
+  {
+    "subject": "Physics",
+    "type": "NUMERICAL",
+    "text": "A capacitor of capacitance $1\\ \\mu\\text{F}$ withstands the maximum voltage $6\\text{ kV}$ while a capacitor of $2\\ \\mu\\text{F}$ withstands the maximum voltage $4\\text{ kV}$. What maximum voltage (in kV) will the system of these two capacitors withstand if they are connected in series?",
+    "options": [],
+    "correct_answer": "6"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "A $0.1\\text{ molal}$ aqueous solution of a weak acid is $30\\%$ ionized. If $K_f$ for water is $1.86^\\circ\\text{C/m}$, the freezing point of the solution will be",
+    "options": [
+      "1) -0.18^\\circ\\text{C}",
+      "2) -0.54^\\circ\\text{C}",
+      "3) -0.36^\\circ\\text{C}",
+      "4) -0.24^\\circ\\text{C}"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "Of the following $0.1\\text{ m}$ aqueous solutions, which one will exhibit the largest freezing point depression?",
+    "options": [
+      "1) KCl",
+      "2) C6H12O6",
+      "3) Al2(SO4)3",
+      "4) K2SO4"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "The van't Hoff factor ($i$) for a dilute aqueous solution of the strong electrolyte barium hydroxide is",
+    "options": [
+      "1) 0",
+      "2) 1",
+      "3) 2",
+      "4) 3"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "At $300\\text{ K}$, the two solutions of glucose A & B with respective concentrations $0.01\\text{ M}$ & $0.001\\text{ M}$ are separated by semipermeable membrane. How much external pressure needs to be applied & on which solution so as to prevent osmosis?",
+    "options": [
+      "1) 0.2463 atm pressure is applied on solution B",
+      "2) 0.2217 atm pressure is applied on solution A",
+      "3) 0.0246 atm pressure is applied on solution B",
+      "4) 0.0217 atm pressure is applied on solution A"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "The Van't Hoff factor for $0.1\\text{ M Ba(NO3)2}$ solution is $2.74$. Then, the degree of dissociation is",
+    "options": [
+      "1) 91.3%",
+      "2) 87%",
+      "3) 100%",
+      "4) 74%"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "Two solutions of glucose have osmotic pressure $1.5\\text{ atm}$ & $2.5\\text{ atm}$ respectively. Now $1\\text{ litre}$ of first solution is mixed with $2\\text{ litres}$ of second solution, then the osmotic pressure of the resulting solution is (Assume temperature to be constant throughout)",
+    "options": [
+      "1) 1.62 atm",
+      "2) 6.12 atm",
+      "3) 1.26 atm",
+      "4) 2.16 atm"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "Assertion: $\\Lambda_m$ for weak electrolytes shows a sharp increase when the electrolytic solution is diluted.\\nReason: For weak electrolytes degree of dissociation increases with dilution of solution.",
+    "options": [
+      "1) Both assertion and reason are true and the reason is the correct explanation of assertion.",
+      "2) Both assertion and reason are true and the reason is not the correct explanation of assertion.",
+      "3) Assertion is true but the reason is false.",
+      "4) Both assertion and reason are false"
+    ],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "On the basis of the following $E^\\circ$ values, the strongest oxidizing agent is:\\n$[Fe(CN)_6]^{4-} \\rightarrow [Fe(CN)_6]^{3-} + e^-; E^\\circ = -0.35\\text{V}$\\n$Fe^{2+} \\rightarrow Fe^{3+} + e^-; E^\\circ = -0.77\\text{V}$",
+    "options": [
+      "1) Fe3+",
+      "2) [Fe(CN)6]^{3-}",
+      "3) [Fe(CN)6]^{4-}",
+      "4) Fe2+"
+    ],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "Given:\\ni) $Cu^{2+} + 2e^- \\rightarrow Cu, E^\\circ = 0.337\\text{V}$\\nii) $Cu^{2+} + e^- \\rightarrow Cu^+, E^\\circ = 0.153\\text{V}$\\nElectrode potential, $E^\\circ$ for the reaction, $Cu^+ + e^- \\rightarrow Cu$, will be",
+    "options": [
+      "1) 0.90 V",
+      "2) 0.30 V",
+      "3) 0.38 V",
+      "4) 0.52 V"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "Which of the following expressions correctly represents the equivalent conductance at infinite dilution of $Al_2(SO_4)_3$? Given that $\\Lambda^0_{Al^{3+}}$ and $\\Lambda^0_{SO_4^{2-}}$ are the equivalent conductances at infinite dilution of the respective ions.",
+    "options": [
+      "1) 2\\Lambda^0_{Al^{3+}} + 3\\Lambda^0_{SO_4^{2-}}",
+      "2) \\Lambda^0_{Al^{3+}} + \\Lambda^0_{SO_4^{2-}}",
+      "3) (\\Lambda^0_{Al^{3+}} + \\Lambda^0_{SO_4^{2-}}) * 6",
+      "4) 1/3 * \\Lambda^0_{Al^{3+}} + 1/2 * \\Lambda^0_{SO_4^{2-}}"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "During the electrolysis of molten sodium chloride, the time required to produce $0.10\\text{ mol}$ of chlorine gas using a current of 3 amperes is",
+    "options": [
+      "1) 55 minutes",
+      "2) 110 minutes",
+      "3) 220 minutes",
+      "4) 330 minutes"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "An electric charge of 5 Faradays is passed through three electrolytes $AgNO_3$, $CuSO_4$ and $FeCl_3$ solution. The grams of each metal liberated at cathode will be",
+    "options": [
+      "1) Ag = 10.8 g, Cu = 12.7 g, Fe = 1.11 g",
+      "2) Ag = 540 g, Cu = 367.5 g, Fe = 325 g",
+      "3) Ag = 108 g, Cu = 63.5 g, Fe = 56 g",
+      "4) Ag = 540 g, Cu = 158.8 g, Fe = 93.3 g"
+    ],
+    "correct_answer": "3"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "Observe the following reaction $A_{(g)} + 3B_{(g)} \\rightarrow 2C_{(g)}$. The rate of this reaction $-\\frac{d[A]}{dt}$ is $3 \\times 10^{-3}\\text{ mol L}^{-1}\\text{ min}^{-1}$. What is the value of $-\\frac{d[B]}{dt}$ in $\\text{mol L}^{-1}\\text{ min}^{-1}$?",
+    "options": [
+      "1) 1.5 \\times 10^{-3}",
+      "2) 9 \\times 10^{-3}",
+      "3) 10^{-3}",
+      "4) 3 \\times 10^{-3}$"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "The rate of a reaction is expressed in different ways as follows:\\n$+\\frac{1}{2}\\frac{d[C]}{dt} = +\\frac{1}{3}\\frac{d[D]}{dt} = -\\frac{1}{4}\\frac{d[A]}{dt} = -\\frac{d[B]}{dt}$.\\nThe reaction is",
+    "options": [
+      "1) 4A + B \\rightarrow 2C + 3D",
+      "2) B + 3D \\rightarrow 4A + 2C",
+      "3) A + B \\rightarrow C + D",
+      "4) B + D \\rightarrow A + C"
+    ],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "For the reaction : $H_{2(g)} + Br_{2(g)} \\rightarrow 2HBr_{(g)}$, the experimental data suggests Rate $= k[H_2][Br_2]^{1/2}$. The molecularity and order of the reaction is",
+    "options": [
+      "1) 2 and 2 respectively",
+      "2) 2 and 1.5 respectively",
+      "3) 1.5 and 1.5 respectively",
+      "4) 1 and 1.5 respectively"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "The time taken for the completion of $\\frac{3}{4}$ of a first order reaction is",
+    "options": [
+      "1) \\left(\\frac{2.303}{k}\\right)\\log \\frac{4}{3}",
+      "2) \\left(\\frac{2.303}{k}\\right)\\log \\frac{1}{4}",
+      "3) \\left(\\frac{2.303}{k}\\right)\\log 4",
+      "4) \\left(\\frac{2.303}{0.75}\\right)\\log k"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "For the reaction, $4KClO_3 \\rightarrow 3KClO_4 + KCl$; if $-\\frac{d[KClO_3]}{dt} = k_1[KClO_3]^4$, $\\frac{d[KClO_4]}{dt} = k_2[KClO_3]^4$, $\\frac{d[KCl]}{dt} = k_3[KClO_3]^4$, the correct relation between $k_1$, $k_2$ and $k_3$ is",
+    "options": [
+      "1) k_1 = k_2 = k_3",
+      "2) 4k_1 = 3k_2 = k_3",
+      "3) 3k_1 = 4k_2 = 12k_3",
+      "4) None of these"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "The following data pertains to reaction between A and B:\\nExp 1: $[A] = 1.0 \\times 10^{-2}$, $[B] = 2.0 \\times 10^{-2}$, Rate $= 2.0 \\times 10^{-4}$\\nExp 2: $[A] = 2.0 \\times 10^{-2}$, $[B] = 2.0 \\times 10^{-2}$, Rate $= 4.0 \\times 10^{-4}$\\nExp 3: $[A] = 2.0 \\times 10^{-2}$, $[B] = 4.0 \\times 10^{-2}$, Rate $= 8.0 \\times 10^{-4}$\\nWhich of the following inference(s) can be drawn from the above data?\\na) Rate constant of the reaction is $1.0 \\times 10^{-4}$.\\nb) Rate law of the reaction is, rate $= k[A][B]$.\\nc) Rate of reaction increases four times on doubling the concentration of both the reactants.",
+    "options": [
+      "1) a, b and c",
+      "2) a and b",
+      "3) b and c",
+      "4) c only"
+    ],
+    "correct_answer": "0"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "For a chemical reaction, $X \\rightarrow Y$, the rate of reaction increases by a factor of $1.837$ when the concentration of X is increased by $1.5$ times, the order of the reaction with respect to X is",
+    "options": [
+      "1) 1",
+      "2) 1.5",
+      "3) 2",
+      "4) 2.5"
+    ],
+    "correct_answer": "1"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "MCQ",
+    "text": "The half-life of a reaction is halved as the initial concentration of the reactant is doubled. The order of reaction is",
+    "options": [
+      "1) 0.5",
+      "2) 1",
+      "3) 2",
+      "4) 0"
+    ],
+    "correct_answer": "2"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "NUMERICAL",
+    "text": "For an elementary reaction, $2A + B \\rightarrow C + D$ the active mass of B is kept constant but that of A is tripled. The rate of reaction will increase $n$ times. Find $n$.",
+    "options": [],
+    "correct_answer": "9"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "NUMERICAL",
+    "text": "In a first order reaction, $20\\%$ reaction is completed in 24 minutes. The percentage of reactant remaining after 48 minutes is",
+    "options": [],
+    "correct_answer": "64"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "NUMERICAL",
+    "text": "A reaction $2A \\rightarrow 3B$ takes place according to first order kinetics. The time in which the concentration of reactant and product become equal is ($K = 4.6 \\times 10^{-2}\\text{ min}^{-1}$, $\\log 5 = 0.7$, $\\log 3 = 0.48$, $\\log 2 = 0.3$)",
+    "options": [],
+    "correct_answer": "20"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "NUMERICAL",
+    "text": "The charge used for the oxidation of one mole of $Mn_3O_4$ to $MnO_4^{2-}$ in alkaline medium is ____ in Faraday",
+    "options": [],
+    "correct_answer": "10"
+  },
+  {
+    "subject": "Chemistry",
+    "type": "NUMERICAL",
+    "text": "Osmotic pressure of urea solution at $10^\\circ\\text{C}$ is $500\\text{ mm}$. The solution is diluted to 4 times with temperature raised to $25^\\circ\\text{C}$, then its osmotic pressure in atm is",
+    "options": [],
+    "correct_answer": "0.17"
+  }
+]
