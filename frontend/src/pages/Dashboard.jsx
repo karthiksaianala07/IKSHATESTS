@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
-import { API_URL } from '../config/api';
+import API from '../config/api';
 import { CutoffGauge } from '../components/CutoffGauge';
 import { ReattemptModal } from '../components/ReattemptModal';
 import LatexRenderer from '../components/LatexRenderer';
@@ -187,7 +186,7 @@ export default function Dashboard() {
     setLoadingAdminTests(true);
     setAdminError(null);
     try {
-      const res = await axios.get(`${API_URL}/api/admin/tests`);
+      const res = await API.get('/api/admin/tests');
       setAdminTests(res.data || []);
     } catch (err) {
       console.error('Fetch tests error:', err);
@@ -363,7 +362,7 @@ export default function Dashboard() {
 
     setLoadingDetail(true);
     try {
-      const res = await axios.get(`${API_URL}/api/submissions/detail/${subId}`);
+      const res = await API.get(`/api/submissions/detail/${subId}`);
       if (res.data) {
         const parsed = processBackendSubmission(res.data);
         setSelectedSubDetail(parsed);
@@ -378,7 +377,7 @@ export default function Dashboard() {
 
   const fetchUserSubmissions = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/submissions/user/${user?.id || 'all'}`);
+      const res = await API.get(`/api/submissions/user/${user?.id || 'all'}`);
       if (res.data && res.data.length > 0) {
         const mapped = res.data.map((sub, idx) => ({
           id: sub.id || `sub-${idx}`,
@@ -413,7 +412,7 @@ export default function Dashboard() {
   const handleDeleteTest = async (testId, testTitle) => {
     if (!window.confirm(`Delete "${testTitle}"? This will un-link all questions.`)) return;
     try {
-      await axios.delete(`${API_URL}/api/admin/tests/${testId}`);
+      await API.delete(`/api/admin/tests/${testId}`);
       fetchAdminTests();
     } catch (err) {
       setAdminError(err.response?.data?.error || err.message || 'Failed to delete test');

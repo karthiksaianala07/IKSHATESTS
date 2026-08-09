@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { API_URL } from '../config/api';
+import API from '../config/api';
 import { supabase } from '../config/supabase';
 import { NCERT_CHAPTERS } from '../config/ncertChapters';
 import MathKeypad from '../components/MathKeypad';
@@ -50,7 +49,7 @@ export default function AdminPanel() {
   }, [activeTab]);
 
   const fetchStats = () => {
-    axios.get(`${API_URL}/api/admin/stats`)
+    API.get('/api/admin/stats')
       .then(res => {
         if (res.data && typeof res.data.activeStudents !== 'undefined') {
           setStats(res.data);
@@ -63,7 +62,7 @@ export default function AdminPanel() {
   };
 
   const fetchViolations = () => {
-    axios.get(`${API_URL}/api/admin/violations`)
+    API.get('/api/admin/violations')
       .then(res => {
         setViolations(res.data || []);
       })
@@ -73,7 +72,7 @@ export default function AdminPanel() {
   };
 
   const fetchQuestions = () => {
-    axios.get(`${API_URL}/api/admin/questions`)
+    API.get('/api/admin/questions')
       .then(res => {
         setQuestions(res.data || []);
       })
@@ -123,7 +122,7 @@ export default function AdminPanel() {
   const handleAddQuestion = (e) => {
     e.preventDefault();
     
-    axios.post(`${API_URL}/api/admin/questions`, newQuestion)
+    API.post('/api/admin/questions', newQuestion)
       .then(res => {
         setShowAddForm(false);
         setNewQuestion({ 
@@ -471,7 +470,7 @@ export default function AdminPanel() {
                 try {
                   const data = JSON.parse(e.target.value);
                   if (Array.isArray(data)) {
-                    axios.post(`${API_URL}/api/admin/questions`, data)
+                    API.post('/api/admin/questions', data)
                       .then(() => {
                         alert("Bulk upload success!");
                         fetchQuestions();
