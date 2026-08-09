@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Clock, ArrowLeft, AlertTriangle, ShieldAlert, Image as ImageIcon, Home as HomeIcon } from 'lucide-react';
 import { Button } from '../components/Button';
-import axios from 'axios';
-import { API_URL } from '../config/api';
+import API from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import LatexRenderer from '../components/LatexRenderer';
 
@@ -75,7 +74,7 @@ export default function TestConsole() {
 
   useEffect(() => {
     // Fetch test questions
-    axios.get(`${API_URL}/api/tests/${id}`)
+    API.get(`/api/tests/${id}`)
       .then(res => {
         setMockQuestions(res.data.questions);
         setDbTestId(res.data.testId);
@@ -345,7 +344,7 @@ export default function TestConsole() {
       }
     };
 
-    axios.post(`${API_URL}/api/submissions`, payload)
+    API.post('/api/submissions', payload)
       .then(res => {
         console.log("Submission successful:", res.data);
       })
