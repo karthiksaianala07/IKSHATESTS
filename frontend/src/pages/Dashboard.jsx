@@ -459,21 +459,46 @@ export default function Dashboard() {
       </div>
 
       {isAdmin ? (
-        /* ── Admin Test Registry ── */
-        <div className="bg-surface-container-lowest border border-outline-variant/20 p-6 md:p-8 rounded-2xl shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-black text-on-surface font-headline flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-3xl">assignment</span>
-              All Posted Tests
-            </h3>
-            <button
-              onClick={() => navigate('/admin/add-test')}
-              className="px-5 py-2.5 bg-primary hover:brightness-110 text-white rounded-lg text-sm font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-sm">add</span>
-              Add Test
-            </button>
+        /* ── Admin Analytics & Quick Access Banner ── */
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-orange-500/30 p-6 md:p-8 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <div className="flex items-center gap-2 text-orange-400 font-bold text-xs uppercase tracking-widest mb-1">
+                <span className="material-symbols-outlined text-sm">shield</span> Administrator Access
+              </div>
+              <h3 className="text-2xl md:text-3xl font-black text-white font-headline">
+                Admin Analytics & Faculty Control Panel
+              </h3>
+              <p className="text-sm text-slate-400 font-medium mt-1">
+                View student performance metrics, live proctoring security logs, and question bank repositories.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => navigate('/admin')}
+                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-extrabold rounded-xl text-sm shadow-lg shadow-orange-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">insights</span>
+                Open Admin Analytics
+              </button>
+              <button
+                onClick={() => navigate('/admin/add-test')}
+                className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-sm border border-slate-700 cursor-pointer transition-all active:scale-95 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                Add Test
+              </button>
+            </div>
           </div>
+
+          {/* ── Admin Test Registry ── */}
+          <div className="bg-surface-container-lowest border border-outline-variant/20 p-6 md:p-8 rounded-2xl shadow-sm">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-on-surface font-headline flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-3xl">assignment</span>
+                All Posted Tests
+              </h3>
+            </div>
 
           {adminError && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-bold mb-4">
@@ -522,6 +547,7 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+      </div>
       ) : (
         /* ── STUDENT ANALYTICS DASHBOARD ── */
         <div className="space-y-10">

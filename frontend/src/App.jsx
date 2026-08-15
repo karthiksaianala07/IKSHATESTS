@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown, Shield } from 'lucide-react';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import TestLibrary from './pages/TestLibrary';
@@ -233,6 +233,11 @@ function AppContent() {
             </div>
 
             <Link to="/dashboard" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900/30 transition-all">Dashboard</Link>
+            {user?.role === 'admin' && (
+              <Link to="/admin" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-orange-400 hover:text-orange-300 hover:bg-orange-950/30 border border-orange-500/30 transition-all flex items-center gap-1.5">
+                <Shield className="w-3 h-3" /> Admin Analytics
+              </Link>
+            )}
           </nav>
 
           <div className="w-[1px] h-6 bg-slate-800/80"></div>
