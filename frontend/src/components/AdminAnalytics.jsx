@@ -56,12 +56,12 @@ export default function AdminAnalytics() {
     { day: 'Sun', registrations: 38, submissions: 98, avgScore: 219, activeTime: 195 }
   ];
 
-  // Mock Subject breakdown data
+  // Brand Subject breakdown data with #882D2D, #E7CF29, #4EC6D7
   const subjectPerformance = [
-    { name: 'Physics', avgScore: 68, accuracy: 74, color: 'bg-primary', stroke: '#f97316' },
-    { name: 'Chemistry', avgScore: 78, accuracy: 82, color: 'bg-emerald-500', stroke: '#10b981' },
-    { name: 'Mathematics', avgScore: 54, accuracy: 64, color: 'bg-blue-500', stroke: '#3b82f6' },
-    { name: 'Biology', avgScore: 82, accuracy: 86, color: 'bg-purple-500', stroke: '#a855f7' }
+    { name: 'Physics', avgScore: 68, accuracy: 74, color: 'bg-[#4EC6D7]', stroke: '#4EC6D7' },
+    { name: 'Chemistry', avgScore: 78, accuracy: 82, color: 'bg-[#E7CF29]', stroke: '#E7CF29' },
+    { name: 'Mathematics', avgScore: 54, accuracy: 64, color: 'bg-[#882D2D]', stroke: '#882D2D' },
+    { name: 'Biology', avgScore: 82, accuracy: 86, color: 'bg-emerald-500', stroke: '#10b981' }
   ];
 
   // Mock Recent Student Submissions Table Data
@@ -308,9 +308,9 @@ export default function AdminAnalytics() {
         <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-slate-800 transition-all duration-300 flex flex-col justify-between">
           <div className="flex justify-between items-start z-10">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-primary" /> Active Students
+              <Users className="w-3.5 h-3.5 text-[#4EC6D7]" /> Active Students
             </span>
-            <span className="p-2 bg-primary/10 text-primary rounded-xl">
+            <span className="p-2 bg-[#4EC6D7]/10 text-[#4EC6D7] rounded-xl">
               <Users className="w-4 h-4" />
             </span>
           </div>
@@ -329,9 +329,9 @@ export default function AdminAnalytics() {
         <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-slate-800 transition-all duration-300 flex flex-col justify-between">
           <div className="flex justify-between items-start z-10">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5 text-emerald-500" /> Tests Conducted
+              <BookOpen className="w-3.5 h-3.5 text-[#E7CF29]" /> Tests Conducted
             </span>
-            <span className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
+            <span className="p-2 bg-[#E7CF29]/10 text-[#E7CF29] rounded-xl">
               <BookOpen className="w-4 h-4" />
             </span>
           </div>
@@ -375,9 +375,9 @@ export default function AdminAnalytics() {
         <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-slate-800 transition-all duration-300 flex flex-col justify-between">
           <div className="flex justify-between items-start z-10">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-1.5">
-              <CreditCard className="w-3.5 h-3.5 text-purple-500" /> Projected Revenue
+              <CreditCard className="w-3.5 h-3.5 text-[#882D2D]" /> Projected Revenue
             </span>
-            <span className="p-2 bg-purple-500/10 text-purple-500 rounded-xl">
+            <span className="p-2 bg-[#882D2D]/10 text-[#882D2D] rounded-xl">
               <CreditCard className="w-4 h-4" />
             </span>
           </div>
@@ -435,15 +435,15 @@ export default function AdminAnalytics() {
               onMouseLeave={() => setHoveredPoint(null)}
             >
               <defs>
-                {/* Registration Gradient */}
+                {/* Registration Gradient (#4EC6D7) */}
                 <linearGradient id="regGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00f2fe" stopOpacity={0.25}/>
-                  <stop offset="95%" stopColor="#00f2fe" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#4EC6D7" stopOpacity={0.35}/>
+                  <stop offset="95%" stopColor="#4EC6D7" stopOpacity={0}/>
                 </linearGradient>
-                {/* Submission Gradient */}
+                {/* Submission Gradient (#E7CF29) */}
                 <linearGradient id="subGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f97316" stopOpacity={0.25}/>
-                  <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#E7CF29" stopOpacity={0.35}/>
+                  <stop offset="95%" stopColor="#E7CF29" stopOpacity={0}/>
                 </linearGradient>
               </defs>
 

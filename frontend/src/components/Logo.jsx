@@ -9,15 +9,15 @@ export function Logo({ className = "h-10 w-auto", showText = true }) {
         <img 
           src={officialLogo} 
           alt="IKSHATESTS Pariksha Shikshak" 
-          className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(249,115,22,0.25)] group-hover:drop-shadow-[0_0_12px_rgba(249,115,22,0.5)] transition-all duration-300"
+          className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(231,207,41,0.3)] group-hover:drop-shadow-[0_0_12px_rgba(78,198,215,0.5)] transition-all duration-300"
         />
       </div>
 
       {/* Center-Aligned Brand Typography */}
       {showText && (
         <div className="flex flex-col justify-center items-center text-center leading-none">
-          <span className="text-lg font-black tracking-wider text-white font-headline group-hover:text-orange-400 transition-colors">
-            IKSHA<span className="text-orange-500">TESTS</span>
+          <span className="text-lg font-black tracking-wider text-white font-headline group-hover:text-[#4EC6D7] transition-colors">
+            IKSHA<span className="text-[#E7CF29]">TESTS</span>
           </span>
           <span className="text-[9px] font-bold tracking-[0.22em] text-slate-400 uppercase mt-0.5 group-hover:text-slate-300 transition-colors text-center w-full">
             Pariksha Shikshak

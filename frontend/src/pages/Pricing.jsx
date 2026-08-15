@@ -217,10 +217,10 @@ export default function Pricing() {
           
           if (isPro) {
             // Elevated active card
-            cardClasses += "bg-[#0b0f20]/95 border-2 border-primary shadow-[0_15px_40px_rgba(249,115,22,0.1)] scale-105 z-10 md:-translate-y-2 hover:scale-[1.07] hover:shadow-[0_20px_50px_rgba(249,115,22,0.18)]";
+            cardClasses += "bg-[#0b0f20]/95 border-2 border-[#E7CF29] shadow-[0_15px_40px_rgba(231,207,41,0.15)] scale-105 z-10 md:-translate-y-2 hover:scale-[1.07] hover:shadow-[0_20px_50px_rgba(231,207,41,0.25)]";
           } else if (isDark) {
             // Darker premium theme
-            cardClasses += "bg-[#05060b]/90 border border-slate-800 shadow-2xl hover:-translate-y-1.5 hover:border-slate-700 hover:shadow-cyan-950/10";
+            cardClasses += "bg-[#05060b]/90 border border-[#4EC6D7]/40 shadow-2xl hover:-translate-y-1.5 hover:border-[#4EC6D7] hover:shadow-[#4EC6D7]/10";
           } else {
             // Standard outline card
             cardClasses += "bg-[#070912]/80 border border-slate-900/60 shadow-lg hover:-translate-y-1.5 hover:border-slate-800/80";
@@ -234,14 +234,14 @@ export default function Pricing() {
             >
               {/* Popular Badge */}
               {isPro && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-primary text-slate-950 text-[10px] font-black uppercase tracking-widest px-4.5 py-1 rounded-full shadow-md">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#882D2D] text-white text-[10px] font-black uppercase tracking-widest px-4.5 py-1 rounded-full shadow-md">
                   Most Popular
                 </div>
               )}
 
               {/* Top Card Info */}
               <div>
-                <h3 className={`text-base font-bold font-headline uppercase tracking-wider mb-2 ${isPro ? 'text-primary' : 'text-slate-200'}`}>
+                <h3 className={`text-base font-bold font-headline uppercase tracking-wider mb-2 ${isPro ? 'text-[#E7CF29]' : 'text-slate-200'}`}>
                   {plan.name}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mb-6 min-h-[32px]">
@@ -261,13 +261,13 @@ export default function Pricing() {
                 </div>
 
                 {/* Divider */}
-                <div className={`h-[1px] w-full mb-8 ${isPro ? 'bg-primary/20' : 'bg-slate-900/60'}`}></div>
+                <div className={`h-[1px] w-full mb-8 ${isPro ? 'bg-[#E7CF29]/30' : 'bg-slate-900/60'}`}></div>
 
                 {/* Features List */}
                 <ul className="space-y-4 mb-8" aria-label={`Features list for ${plan.name} plan`}>
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3 text-xs text-slate-300 font-medium leading-relaxed">
-                      <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5 ${isPro ? 'bg-primary/10 text-primary' : 'bg-slate-900 text-slate-400'}`}>
+                      <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5 ${isPro ? 'bg-[#E7CF29]/15 text-[#E7CF29]' : 'bg-slate-900 text-[#4EC6D7]'}`}>
                         <Check className="w-3 h-3 stroke-[3]" />
                       </div>
                       <span>{feature}</span>
