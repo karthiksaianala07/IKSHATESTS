@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import API from '../config/api';
+import axios from 'axios';
+import { API_URL } from '../config/api';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import LatexRenderer from '../components/LatexRenderer';
@@ -80,8 +81,8 @@ export default function AddTestPage() {
   const fetchQuestions = async () => {
     setLoadingQuestions(true);
     try {
-      const res = await API.get(
-        `/api/admin/questions?paginate=true&page=${page}&limit=10&search=${questionSearch}&subject=${selectedSubjectFilter}&chapter=${selectedChapterFilter}`
+      const res = await axios.get(
+        `${API_URL}/api/admin/questions?paginate=true&page=${page}&limit=10&search=${questionSearch}&subject=${selectedSubjectFilter}&chapter=${selectedChapterFilter}`
       );
       if (res.data) {
         setAvailableQuestions(res.data.questions || []);
@@ -185,7 +186,7 @@ export default function AddTestPage() {
           images.push(cleanBase64);
         }
         
-        const res = await API.post('/api/admin/extract-pdf', { images }, {
+        const res = await axios.post(`${API_URL}/api/admin/extract-pdf`, { images }, {
           headers: { 'Content-Type': 'application/json' }
         });
         
@@ -274,7 +275,7 @@ export default function AddTestPage() {
           reader.readAsDataURL(pdfFile);
         });
         
-        const res = await API.post('/api/admin/extract-docx', { docx: base64 }, {
+        const res = await axios.post(`${API_URL}/api/admin/extract-docx`, { docx: base64 }, {
           headers: { 'Content-Type': 'application/json' }
         });
         
@@ -433,7 +434,7 @@ export default function AddTestPage() {
       const scheduledAtISO = newTest.scheduled_at
         ? new Date(newTest.scheduled_at).toISOString()
         : null;
-      await API.post('/api/admin/tests', {
+      await axios.post(`${API_URL}/api/admin/tests`, {
         ...newTest,
         scheduled_at: scheduledAtISO,
         created_by: user?.id,

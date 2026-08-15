@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import API from '../config/api';
+import axios from 'axios';
+import { API_URL } from '../config/api';
 import { supabase } from '../config/supabase';
 import { NCERT_CHAPTERS } from '../config/ncertChapters';
 import MathKeypad from '../components/MathKeypad';
+import AdminAnalytics from '../components/AdminAnalytics';
 
 export default function AdminPanel() {
-  const [activeTab, setActiveTab] = useState('monitoring');
+  const [activeTab, setActiveTab] = useState('analytics');
   const [stats, setStats] = useState({ activeStudents: 0, testsSubmitted: 0, avgScore: 0 });
   const [questions, setQuestions] = useState([]);
   const [violations, setViolations] = useState([]);
@@ -49,7 +51,7 @@ export default function AdminPanel() {
   }, [activeTab]);
 
   const fetchStats = () => {
-    API.get('/api/admin/stats')
+    axios.get(`${API_URL}/api/admin/stats`)
       .then(res => {
         if (res.data && typeof res.data.activeStudents !== 'undefined') {
           setStats(res.data);
@@ -62,7 +64,7 @@ export default function AdminPanel() {
   };
 
   const fetchViolations = () => {
-    API.get('/api/admin/violations')
+    axios.get(`${API_URL}/api/admin/violations`)
       .then(res => {
         setViolations(res.data || []);
       })
@@ -72,7 +74,7 @@ export default function AdminPanel() {
   };
 
   const fetchQuestions = () => {
-    API.get('/api/admin/questions')
+    axios.get(`${API_URL}/api/admin/questions`)
       .then(res => {
         setQuestions(res.data || []);
       })
@@ -122,7 +124,7 @@ export default function AdminPanel() {
   const handleAddQuestion = (e) => {
     e.preventDefault();
     
-    API.post('/api/admin/questions', newQuestion)
+    axios.post(`${API_URL}/api/admin/questions`, newQuestion)
       .then(res => {
         setShowAddForm(false);
         setNewQuestion({ 
@@ -158,7 +160,8 @@ export default function AdminPanel() {
           <p className="text-on-surface-variant text-lg max-w-2xl">Manage study materials, question repositories, and student analytics.</p>
         </div>
         <div className="flex bg-surface-container rounded-lg p-1 border border-outline-variant/20 w-full sm:w-auto overflow-x-auto shadow-inner">
-          <button onClick={() => setActiveTab('monitoring')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'monitoring' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Analytics</button>
+          <button onClick={() => setActiveTab('analytics')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'analytics' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Analytics Insights</button>
+          <button onClick={() => setActiveTab('monitoring')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'monitoring' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Security Feed</button>
           <button onClick={() => setActiveTab('question-bank')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'question-bank' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Question Bank</button>
         </div>
       </div>
@@ -166,6 +169,12 @@ export default function AdminPanel() {
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-bold animate-in zoom-in-95">
           ⚠️ {error}
+        </div>
+      )}
+
+      {activeTab === 'analytics' && (
+        <div className="animate-in fade-in duration-300">
+          <AdminAnalytics />
         </div>
       )}
 
@@ -470,7 +479,7 @@ export default function AdminPanel() {
                 try {
                   const data = JSON.parse(e.target.value);
                   if (Array.isArray(data)) {
-                    API.post('/api/admin/questions', data)
+                    axios.post(`${API_URL}/api/admin/questions`, data)
                       .then(() => {
                         alert("Bulk upload success!");
                         fetchQuestions();

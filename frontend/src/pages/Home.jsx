@@ -128,15 +128,6 @@ export default function Home() {
         
         {/* Left Column (Content) */}
         <div className="lg:col-span-6 space-y-8 text-left">
-          
-          {/* Status Version Tag */}
-          <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-full bg-slate-950/95 border ${themeConfig.badgeBorder} backdrop-blur-xl shadow-lg text-[9px] font-black uppercase tracking-[0.22em] ${themeConfig.badgeText} transition-all duration-1000`}>
-            <span className="relative flex h-2 w-2">
-              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75`}></span>
-              <span className={`relative inline-flex rounded-full h-2 w-2 bg-slate-500`}></span>
-            </span>
-            <span>{themeConfig.badgeLabel}</span>
-          </div>
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-black font-headline tracking-tight leading-[1.06] text-slate-100">
@@ -170,7 +161,7 @@ export default function Home() {
 
           {/* Why Choose Us benefits */}
           <div className="space-y-6 pt-10 border-t border-slate-900/60">
-            <h3 className="text-lg font-black tracking-tight text-slate-200 uppercase font-mono text-[11px] tracking-[0.2em]">// WHY CHOOSE US</h3>
+            <h3 className="text-2xl md:text-3xl font-black tracking-tight text-slate-100 font-headline">Why Choose Us</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
               <WhyChooseUsCard title="Analytics" icon="insights" activeGlow={themeConfig.glowHover}>
@@ -223,8 +214,7 @@ export default function Home() {
           
           <div className="flex flex-col items-center md:items-start gap-3">
             <div className="flex items-center gap-3">
-              <Logo className="h-9 w-auto grayscale contrast-200 opacity-90" />
-              <span className="text-lg font-black tracking-wider text-slate-200 font-headline">IKSHATESTS</span>
+              <Logo className="h-8 w-auto" />
             </div>
             <p className="text-xs text-slate-500 font-medium max-w-sm">
               High-accuracy educational mock consoles and diagnostic behavioral reporting for all exams.
@@ -232,7 +222,7 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-8 text-xs font-bold text-slate-400 font-mono">
-            <Link to="/exams" className="hover:text-emerald-400 transition-colors">Exams</Link>
+            <Link to="/exams" className="hover:text-emerald-400 transition-colors">Exam Series</Link>
             <Link to="/dashboard" className="hover:text-emerald-400 transition-colors">Dashboard</Link>
             <Link to="/login" className="hover:text-emerald-400 transition-colors font-bold text-emerald-400">Student Portal</Link>
           </div>
