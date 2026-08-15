@@ -6,6 +6,7 @@ import { API_URL } from '../config/api';
 import { CutoffGauge } from '../components/CutoffGauge';
 import { ReattemptModal } from '../components/ReattemptModal';
 import LatexRenderer from '../components/LatexRenderer';
+import AdminPanel from './AdminPanel';
 
 // Sample mock submission data for immediate rich demonstration
 const sampleSubmissions = [
@@ -459,95 +460,7 @@ export default function Dashboard() {
       </div>
 
       {isAdmin ? (
-        /* ── Admin Analytics & Quick Access Banner ── */
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-orange-500/30 p-6 md:p-8 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div>
-              <div className="flex items-center gap-2 text-orange-400 font-bold text-xs uppercase tracking-widest mb-1">
-                <span className="material-symbols-outlined text-sm">shield</span> Administrator Access
-              </div>
-              <h3 className="text-2xl md:text-3xl font-black text-white font-headline">
-                Admin Analytics & Faculty Control Panel
-              </h3>
-              <p className="text-sm text-slate-400 font-medium mt-1">
-                View student performance metrics, live proctoring security logs, and question bank repositories.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => navigate('/admin')}
-                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-extrabold rounded-xl text-sm shadow-lg shadow-orange-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-lg">insights</span>
-                Open Admin Analytics
-              </button>
-              <button
-                onClick={() => navigate('/admin/add-test')}
-                className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-sm border border-slate-700 cursor-pointer transition-all active:scale-95 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-base">add</span>
-                Add Test
-              </button>
-            </div>
-          </div>
-
-          {/* ── Admin Test Registry ── */}
-          <div className="bg-surface-container-lowest border border-outline-variant/20 p-6 md:p-8 rounded-2xl shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-black text-on-surface font-headline flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-3xl">assignment</span>
-                All Posted Tests
-              </h3>
-            </div>
-
-          {adminError && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-bold mb-4">
-              ⚠️ {adminError}
-            </div>
-          )}
-
-          <div className="space-y-4 max-h-[520px] overflow-y-auto pr-1">
-            {loadingAdminTests ? (
-              <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant gap-3">
-                <div className="w-8 h-8 border-4 border-t-primary rounded-full animate-spin opacity-50" />
-                <p className="text-sm font-bold">Retrieving test blueprints…</p>
-              </div>
-            ) : adminTests.length > 0 ? (
-              adminTests.map(test => (
-                <div key={test.id} className="bg-surface p-4 rounded-xl flex flex-col sm:flex-row gap-4 justify-between sm:items-center border border-outline-variant/20 hover:border-primary/50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${test.category?.startsWith('jee') ? 'bg-primary' : 'bg-blue-500'}`} />
-                    <div>
-                      <span className="font-bold text-on-surface text-lg block">{test.title}</span>
-                      <div className="flex gap-2 mt-1 flex-wrap">
-                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-black border bg-red-50 text-red-700 border-red-200">
-                          {test.category?.startsWith('jee') ? 'JEE' : 'NEET'}
-                        </span>
-                        <span className="text-[10px] text-on-surface-variant font-medium flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[12px]">schedule</span>
-                          {test.duration_minutes} Mins
-                        </span>
-                        <span className="text-[10px] text-on-surface-variant font-medium flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[12px]">help</span>
-                          {test.question_count} Qs
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteTest(test.id, test.title)}
-                    className="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                  </button>
-                </div>
-              ))
-            ) : (
-              <p className="text-center py-12 text-slate-400">No tests posted yet.</p>
-            )}
-          </div>
-        </div>
-      </div>
+        <AdminPanel />
       ) : (
         /* ── STUDENT ANALYTICS DASHBOARD ── */
         <div className="space-y-10">

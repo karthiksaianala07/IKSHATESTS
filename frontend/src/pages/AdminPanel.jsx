@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../config/api';
 import { supabase } from '../config/supabase';
@@ -7,10 +8,13 @@ import MathKeypad from '../components/MathKeypad';
 import AdminAnalytics from '../components/AdminAnalytics';
 
 export default function AdminPanel() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('analytics');
   const [stats, setStats] = useState({ activeStudents: 0, testsSubmitted: 0, avgScore: 0 });
   const [questions, setQuestions] = useState([]);
   const [violations, setViolations] = useState([]);
+  const [adminTests, setAdminTests] = useState([]);
+  const [loadingAdminTests, setLoadingAdminTests] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [error, setError] = useState(null);
   
@@ -40,6 +44,7 @@ export default function AdminPanel() {
   const [optUploading, setOptUploading] = useState(null); 
 
   useEffect(() => {
+    fetchAdminTests();
     if (activeTab === 'monitoring') {
       fetchStats();
       fetchViolations();
@@ -49,6 +54,28 @@ export default function AdminPanel() {
       fetchQuestions();
     }
   }, [activeTab]);
+
+  const fetchAdminTests = async () => {
+    setLoadingAdminTests(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/admin/tests`);
+      setAdminTests(res.data || []);
+    } catch (err) {
+      console.error('Fetch tests error:', err);
+    } finally {
+      setLoadingAdminTests(false);
+    }
+  };
+
+  const handleDeleteTest = async (testId, testTitle) => {
+    if (!window.confirm(`Delete "${testTitle}"? This will un-link all questions.`)) return;
+    try {
+      await axios.delete(`${API_URL}/api/admin/tests/${testId}`);
+      fetchAdminTests();
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || 'Failed to delete test');
+    }
+  };
 
   const fetchStats = () => {
     axios.get(`${API_URL}/api/admin/stats`)
@@ -162,7 +189,7 @@ export default function AdminPanel() {
         <div className="flex bg-surface-container rounded-lg p-1 border border-outline-variant/20 w-full sm:w-auto overflow-x-auto shadow-inner">
           <button onClick={() => setActiveTab('analytics')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'analytics' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Analytics Insights</button>
           <button onClick={() => setActiveTab('monitoring')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'monitoring' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Security Feed</button>
-          <button onClick={() => setActiveTab('question-bank')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'question-bank' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Question Bank</button>
+          <button onClick={() => setActiveTab('question-bank')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'question-bank' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Tests & Question Bank</button>
         </div>
       </div>
 
@@ -268,7 +295,70 @@ export default function AdminPanel() {
       )}
 
       {activeTab === 'question-bank' && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 animate-in fade-in duration-300">
+        <div className="space-y-8 animate-in fade-in duration-300">
+          {/* ── Posted Mock Tests Registry ── */}
+          <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-6 md:p-8 flex flex-col space-y-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h3 className="text-2xl font-black text-on-surface font-headline flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-3xl">assignment</span>
+                  All Posted Mock Tests
+                </h3>
+                <p className="text-on-surface-variant text-sm mt-1">Manage active mock exams, test duration, and question allocations.</p>
+              </div>
+              <button
+                onClick={() => navigate('/admin/add-test')}
+                className="px-5 py-2.5 bg-primary hover:brightness-110 text-white rounded-lg text-sm font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                Add New Test
+              </button>
+            </div>
+
+            <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1">
+              {loadingAdminTests ? (
+                <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant gap-3">
+                  <div className="w-8 h-8 border-4 border-t-primary rounded-full animate-spin opacity-50" />
+                  <p className="text-sm font-bold">Retrieving test blueprints…</p>
+                </div>
+              ) : adminTests.length > 0 ? (
+                adminTests.map(test => (
+                  <div key={test.id} className="bg-surface p-4 rounded-xl flex flex-col sm:flex-row gap-4 justify-between sm:items-center border border-outline-variant/20 hover:border-primary/50 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-3 h-3 rounded-full flex-shrink-0 ${test.category?.startsWith('jee') ? 'bg-primary' : 'bg-blue-500'}`} />
+                      <div>
+                        <span className="font-bold text-on-surface text-lg block">{test.title}</span>
+                        <div className="flex gap-2 mt-1 flex-wrap">
+                          <span className="px-2 py-0.5 rounded text-[10px] uppercase font-black border bg-red-50 text-red-700 border-red-200">
+                            {test.category?.startsWith('jee') ? 'JEE' : 'NEET'}
+                          </span>
+                          <span className="text-[10px] text-on-surface-variant font-medium flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">schedule</span>
+                            {test.duration_minutes} Mins
+                          </span>
+                          <span className="text-[10px] text-on-surface-variant font-medium flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">help</span>
+                            {test.question_count} Qs
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteTest(test.id, test.title)}
+                      className="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-8 text-slate-400 font-bold">No tests posted yet.</p>
+              )}
+            </div>
+          </div>
+
+          {/* ── Question Bank Repository ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3 bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-6 md:p-8 flex flex-col space-y-6 shadow-sm">
             <div className="flex justify-between items-center">
                <h3 className="text-2xl font-black text-on-surface font-headline flex items-center gap-2"><span className="material-symbols-outlined text-primary text-3xl">source_notes</span> Question Repository</h3>
@@ -494,6 +584,7 @@ export default function AdminPanel() {
             />
           </div>
         </div>
+      </div>
       )}
     </div>
   );
