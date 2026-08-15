@@ -41,6 +41,12 @@ export function AuthProvider({ children }) {
     // 1. Background verification of the session
     const checkUser = async () => {
       try {
+        const initial = getInitialUser();
+        if (initial && initial.id === 'mock-admin-id') {
+          setLoading(false);
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           await fetchProfile(session.user);
@@ -61,6 +67,12 @@ export function AuthProvider({ children }) {
     // 2. Continuous Auth Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       try {
+        const initial = getInitialUser();
+        if (initial && initial.id === 'mock-admin-id') {
+          setLoading(false);
+          return;
+        }
+
         if (session) {
           await fetchProfile(session.user);
         } else {

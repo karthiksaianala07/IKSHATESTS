@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import API from '../config/api';
+import axios from 'axios';
+import { API_URL } from '../config/api';
 
 // All 6 unique section slugs fully described
 // All 6 unique section slugs fully described in cyber themes
@@ -31,7 +32,7 @@ export default function LibrarySection() {
     setLoading(true);
     setError(null);
     // Use the section slug directly as the category filter in the DB
-    API.get(`/api/tests?category=${encodeURIComponent(section)}`)
+    axios.get(`${API_URL}/api/tests?category=${encodeURIComponent(section)}`)
       .then(res => setTests(res.data || []))
       .catch(err => {
         console.error('Failed to fetch tests:', err);
