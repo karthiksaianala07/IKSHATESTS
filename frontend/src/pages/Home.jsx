@@ -72,43 +72,34 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Theme morph configurations
+  // Theme configurations built from brand colors #882D2D, #E7CF29, #4EC6D7
   const themes = {
-    gunmetal: {
-      accent: "from-slate-300 via-slate-400 to-zinc-500",
-      accentText: "text-slate-300",
-      glowBg: "rgba(148,163,184,0.04)",
-      borderColor: "border-slate-500/20",
-      badgeBorder: "border-slate-500/30",
-      badgeText: "text-slate-400",
-      badgeLabel: "GUNMETAL ENGINE // ACTIVE",
-      glowHover: "rgba(148,163,184,0.15)",
-      btnStyle: "bg-slate-300 hover:bg-slate-200 text-slate-950 shadow-[0_0_20px_rgba(148,163,184,0.2)]",
-      borderNeon: "border-slate-500/40 shadow-[0_0_15px_rgba(148,163,184,0.2)]"
+    cyan: {
+      accent: "from-[#4EC6D7] via-cyan-300 to-[#E7CF29]",
+      accentText: "text-[#4EC6D7]",
+      glowBg: "rgba(78,198,215,0.06)",
+      borderColor: "border-[#4EC6D7]/30",
+      glowHover: "rgba(78,198,215,0.2)",
+      btnStyle: "bg-[#4EC6D7] hover:bg-[#6dd4e2] text-slate-950 font-black shadow-[0_0_25px_rgba(78,198,215,0.35)]",
+      borderNeon: "border-[#4EC6D7] shadow-[0_0_20px_rgba(78,198,215,0.35)]"
     },
     orange: {
-      accent: "from-amber-400 via-orange-500 to-red-500",
-      accentText: "text-orange-400",
-      glowBg: "rgba(249,115,22,0.04)",
-      borderColor: "border-orange-500/20",
-      badgeBorder: "border-orange-500/30",
-      badgeText: "text-orange-400",
-      badgeLabel: "VIBRANT ORANGE // SYLLABUS GATE",
-      glowHover: "rgba(249,115,22,0.15)",
-      btnStyle: "bg-orange-500 hover:bg-orange-400 text-slate-950 shadow-[0_0_20px_rgba(249,115,22,0.3)]",
-      borderNeon: "border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+      accent: "from-[#E7CF29] via-[#4EC6D7] to-[#882D2D]",
+      accentText: "text-[#E7CF29]",
+      glowBg: "rgba(231,207,41,0.06)",
+      borderColor: "border-[#E7CF29]/30",
+      glowHover: "rgba(231,207,41,0.2)",
+      btnStyle: "bg-[#882D2D] hover:bg-[#a33939] text-white font-black shadow-[0_0_25px_rgba(136,45,45,0.4)]",
+      borderNeon: "border-[#E7CF29] shadow-[0_0_20px_rgba(231,207,41,0.35)]"
     },
     red: {
-      accent: "from-rose-500 via-red-600 to-rose-700",
-      accentText: "text-red-400",
-      glowBg: "rgba(239,68,68,0.04)",
-      borderColor: "border-red-500/20",
-      badgeBorder: "border-red-500/30",
-      badgeText: "text-red-400",
-      badgeLabel: "BLOOD RED CONSOLE // SECURE LOCKDOWN",
-      glowHover: "rgba(239,68,68,0.15)",
-      btnStyle: "bg-red-500 hover:bg-red-400 text-slate-950 shadow-[0_0_20px_rgba(239,68,68,0.3)]",
-      borderNeon: "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+      accent: "from-[#882D2D] via-red-400 to-[#E7CF29]",
+      accentText: "text-[#882D2D]",
+      glowBg: "rgba(136,45,45,0.06)",
+      borderColor: "border-[#882D2D]/30",
+      glowHover: "rgba(136,45,45,0.2)",
+      btnStyle: "bg-[#882D2D] hover:bg-[#a33939] text-white font-black shadow-[0_0_25px_rgba(136,45,45,0.35)]",
+      borderNeon: "border-[#882D2D] shadow-[0_0_20px_rgba(136,45,45,0.35)]"
     }
   };
 

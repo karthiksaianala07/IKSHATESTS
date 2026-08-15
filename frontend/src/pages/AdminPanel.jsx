@@ -186,10 +186,10 @@ export default function AdminPanel() {
           <h2 className="text-3xl lg:text-4xl font-black text-on-surface mb-2 font-headline">Faculty & Admin Panel</h2>
           <p className="text-on-surface-variant text-lg max-w-2xl">Manage study materials, question repositories, and student analytics.</p>
         </div>
-        <div className="flex bg-surface-container rounded-lg p-1 border border-outline-variant/20 w-full sm:w-auto overflow-x-auto shadow-inner">
-          <button onClick={() => setActiveTab('analytics')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'analytics' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Analytics Insights</button>
-          <button onClick={() => setActiveTab('monitoring')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'monitoring' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Security Feed</button>
-          <button onClick={() => setActiveTab('question-bank')} className={`px-5 py-2.5 rounded-md font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'question-bank' ? 'bg-white text-primary shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}>Tests & Question Bank</button>
+        <div className="flex bg-slate-900 rounded-xl p-1 border border-slate-800 w-full sm:w-auto overflow-x-auto shadow-inner">
+          <button onClick={() => setActiveTab('analytics')} className={`px-5 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'analytics' ? 'bg-[#882D2D] text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Analytics Insights</button>
+          <button onClick={() => setActiveTab('monitoring')} className={`px-5 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'monitoring' ? 'bg-[#882D2D] text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Security Feed</button>
+          <button onClick={() => setActiveTab('question-bank')} className={`px-5 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap transition-colors flex-1 sm:flex-none cursor-pointer ${activeTab === 'question-bank' ? 'bg-[#882D2D] text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Tests & Question Bank</button>
         </div>
       </div>
 
