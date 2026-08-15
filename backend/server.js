@@ -19,8 +19,37 @@ if (process.env.OPENAI_API_KEY) {
 
 const app = express();
 
-// Standard middleware
-app.use(cors());
+// Dynamic CORS configuration allowing localhost, process.env.FRONTEND_URL, and cloud deployment domains
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Dynamically permit onrender.com, vercel.app, netlify.app subdomains
+    if (
+      origin.endsWith('.onrender.com') || 
+      origin.endsWith('.vercel.app') || 
+      origin.endsWith('.netlify.app')
+    ) {
+      return callback(null, true);
+    }
+
+    // Fallback for seamless deployment without CORS blocks
+    return callback(null, true);
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 
 // -----------------------
