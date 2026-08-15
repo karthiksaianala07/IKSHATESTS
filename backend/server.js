@@ -27,7 +27,11 @@ app.use(express.json({ limit: '50mb' }));
 // LIVE SUPABASE ROUTES
 // -----------------------
 
-// 0. Health Check Ping
+// 0. Health Check Root Endpoint for Cloud Deployments (Render / Vercel / Railway)
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'IKSHATESTS API is running smoothly!' });
+});
+
 app.get('/api/ping', (req, res) => {
   res.json({ status: "ok", message: "IkshaTests API Bridge is ACTIVE" });
 });
