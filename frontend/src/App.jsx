@@ -233,11 +233,6 @@ function AppContent() {
             </div>
 
             <Link to="/dashboard" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900/30 transition-all">Dashboard</Link>
-            {user?.role === 'admin' && (
-              <Link to="/admin" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-orange-400 hover:text-orange-300 hover:bg-orange-950/30 border border-orange-500/30 transition-all flex items-center gap-1.5">
-                <Shield className="w-3 h-3" /> Admin Analytics
-              </Link>
-            )}
           </nav>
 
           <div className="w-[1px] h-6 bg-slate-800/80"></div>
@@ -303,7 +298,7 @@ function AppContent() {
             <Route path="/jee-library" element={<div className="p-4 md:p-8 min-h-[calc(100vh-4rem)]"><TestLibrary pathway="jee" /></div>} />
             <Route path="/neet-library" element={<div className="p-4 md:p-8 min-h-[calc(100vh-4rem)]"><TestLibrary pathway="neet" /></div>} />
             <Route path="/library/:section" element={<ProtectedRoute><div className="p-4 md:p-8 min-h-[calc(100vh-4rem)]"><LibrarySection /></div></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><div className="p-4 md:p-8 min-h-[calc(100vh-4rem)]"><AdminPanel /></div></ProtectedRoute>} />
+            <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
             <Route path="/admin/add-test" element={<ProtectedRoute requireAdmin={true}><AddTestPage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
