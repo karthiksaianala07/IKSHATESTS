@@ -81,7 +81,7 @@ function AppContent() {
       } else if (scrollY < 750) {
         setActiveTheme('red');
       } else {
-        setActiveTheme('gunmetal');
+        setActiveTheme('cyan');
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -111,7 +111,7 @@ function AppContent() {
   // Sync theme string to DOM document root to dynamically load global Tailwind color tokens
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('theme-orange', 'theme-red', 'theme-gunmetal');
+    root.classList.remove('theme-orange', 'theme-red', 'theme-cyan');
     root.classList.add(`theme-${activeTheme}`);
   }, [activeTheme]);
 
@@ -175,6 +175,7 @@ function AppContent() {
             backgroundColor: 
               activeTheme === 'orange' ? 'rgba(249,115,22,0.15)' :
               activeTheme === 'red' ? 'rgba(239,68,68,0.15)' :
+              activeTheme === 'cyan' ? 'rgba(78,198,215,0.15)' :
               'rgba(148,163,184,0.15)'
           }}
         />
@@ -188,6 +189,7 @@ function AppContent() {
             backgroundColor: 
               activeTheme === 'orange' ? 'rgba(249,115,22,0.13)' :
               activeTheme === 'red' ? 'rgba(239,68,68,0.13)' :
+              activeTheme === 'cyan' ? 'rgba(78,198,215,0.13)' :
               'rgba(148,163,184,0.13)'
           }}
         />

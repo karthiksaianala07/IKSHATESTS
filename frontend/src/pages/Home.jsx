@@ -65,7 +65,7 @@ export default function Home() {
       } else if (currentScrollY < 750) {
         setActiveTheme('red');
       } else {
-        setActiveTheme('gunmetal');
+        setActiveTheme('cyan');
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
