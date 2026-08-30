@@ -7,8 +7,7 @@ import TestLibrary from './pages/TestLibrary';
 import LibrarySection from './pages/LibrarySection';
 import Exams from './pages/Exams';
 import TestConsole from './pages/TestConsole';
-import AdminPanel from './pages/AdminPanel';
-import AddTestPage from './pages/AddTestPage';
+import AdminPortal from './pages/AdminPortal';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -137,6 +136,7 @@ function AppContent() {
 
   const isTestConsole = location.pathname.includes('/test/');
   const isLoginPage = location.pathname === '/login';
+  const isAdminPortal = location.pathname.startsWith('/admin');
 
   if (loading && !isLoginPage) {
     return (
@@ -156,6 +156,16 @@ function AppContent() {
       <div className="min-h-screen bg-[#0f172a] text-white">
         <Routes>
           <Route path="/test/:id" element={<ProtectedRoute><TestConsole /></ProtectedRoute>} />
+        </Routes>
+      </div>
+    );
+  }
+
+  if (isAdminPortal) {
+    return (
+      <div className="bg-[#020306] text-slate-100 font-sans min-h-screen flex flex-col selection:bg-red-500/30 selection:text-red-200 relative antialiased">
+        <Routes>
+          <Route path="/admin/*" element={<ProtectedRoute requireAdmin={true}><AdminPortal /></ProtectedRoute>} />
         </Routes>
       </div>
     );
@@ -300,8 +310,7 @@ function AppContent() {
             <Route path="/jee-library" element={<div className="p-4 md:p-8 min-h-[calc(100vh-4rem)]"><TestLibrary pathway="jee" /></div>} />
             <Route path="/neet-library" element={<div className="p-4 md:p-8 min-h-[calc(100vh-4rem)]"><TestLibrary pathway="neet" /></div>} />
             <Route path="/library/:section" element={<ProtectedRoute><div className="p-4 md:p-8 min-h-[calc(100vh-4rem)]"><LibrarySection /></div></ProtectedRoute>} />
-            <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/admin/add-test" element={<ProtectedRoute requireAdmin={true}><AddTestPage /></ProtectedRoute>} />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

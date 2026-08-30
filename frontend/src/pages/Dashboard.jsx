@@ -6,8 +6,6 @@ import { API_URL } from '../config/api';
 import { CutoffGauge } from '../components/CutoffGauge';
 import { ReattemptModal } from '../components/ReattemptModal';
 import LatexRenderer from '../components/LatexRenderer';
-import AdminPanel from './AdminPanel';
-
 // Sample mock submission data for immediate rich demonstration
 const sampleSubmissions = [
   {
@@ -168,11 +166,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (user?.role === 'admin') {
-      fetchAdminTests();
+      navigate('/admin');
     } else {
       fetchUserSubmissions();
     }
-  }, [user]);
+  }, [user, navigate]);
 
   // Load detailed submission metrics dynamically when user clicks a test in view list
   useEffect(() => {
@@ -459,9 +457,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {isAdmin ? (
-        <AdminPanel />
-      ) : (
         /* ── STUDENT ANALYTICS DASHBOARD ── */
         <div className="space-y-10">
           {selectedSubId === null ? (
@@ -987,7 +982,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-    )}
+
 
       {/* ── Re-attempt Inverted Modal ── */}
       {showReattemptModal && (
