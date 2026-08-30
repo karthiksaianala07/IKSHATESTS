@@ -8,10 +8,12 @@ import MathKeypad from '../components/MathKeypad';
 import AdminAnalytics from '../components/AdminAnalytics';
 import AddTestPage from './AddTestPage';
 import { Logo } from '../components/Logo';
+import { useAuth } from '../context/AuthContext';
 
 export default function AdminPortal() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   // Route state
   const isAddTestView = location.pathname === '/admin/add-test';
@@ -199,8 +201,7 @@ export default function AdminPortal() {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
-      sessionStorage.removeItem('ikshatests_user');
+      await logout();
       navigate('/login');
     } catch (e) {
       console.error(e);
