@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, Shield } from 'lucide-react';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
@@ -49,7 +49,18 @@ export default function App() {
 
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (e) {
+      console.error(e);
+      navigate('/login');
+    }
+  };
 
   useEffect(() => {
     // Remove legacy theme class triggers if any exist
@@ -251,7 +262,7 @@ function AppContent() {
 
           {user ? (
             <button 
-              onClick={logout} 
+              onClick={handleLogout} 
               className="bg-slate-900 hover:bg-slate-800 text-slate-200 px-4 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all border border-slate-800 cursor-pointer"
             >
               Logout
