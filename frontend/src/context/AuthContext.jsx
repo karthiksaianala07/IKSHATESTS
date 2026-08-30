@@ -146,13 +146,18 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    // Optimistically clear local React auth state & sessionStorage first 
+    // to prevent network/CORS sign-out latency from blocking the UI.
+    setUser(null);
+    safeSessionStorage.removeItem('ikshatests_user');
+
     try {
-      await supabase.auth.signOut();
+      // Fire-and-forget Supabase sign-out in the background
+      supabase.auth.signOut().catch(err => {
+        console.warn("Background Supabase sign-out failed/prevented:", err.message);
+      });
     } catch (e) {
-      console.error(e);
-    } finally {
-      setUser(null);
-      safeSessionStorage.removeItem('ikshatests_user');
+      console.error("Sign-out trigger error:", e);
     }
   };
 
