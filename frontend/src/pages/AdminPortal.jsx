@@ -221,10 +221,6 @@ export default function AdminPortal() {
       <aside className="w-72 fixed left-0 top-0 bottom-0 bg-[#060913] border-r border-slate-900/60 flex flex-col z-50">
         <div className="p-6 border-b border-slate-900/60 flex items-center gap-3">
           <Logo className="h-10 w-auto" />
-          <div>
-            <h1 className="font-headline font-black text-xl text-primary uppercase tracking-tight">IkshaTests</h1>
-            <p className="text-[10px] uppercase font-bold text-slate-500 font-mono tracking-widest mt-0.5">Pariksha Shikshak</p>
-          </div>
         </div>
 
         <nav className="flex-grow py-6 px-4">
