@@ -23,6 +23,14 @@ const getSafeSessionStorage = () => {
 };
 const safeSessionStorage = getSafeSessionStorage();
 
+// Helper to timeout async operations preventing UI lockup
+const withTimeout = (promise, ms = 2500) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Auth request timed out')), ms))
+  ]);
+};
+
 export function AuthProvider({ children }) {
   // OPTIMISTIC HYDRATION: Synchronously check for a stored user to avoid the refresh delay
   const getInitialUser = () => {
@@ -38,6 +46,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(!getInitialUser()); // Only "load" if we have no cached state
 
   useEffect(() => {
+    // Fail-safe timer to guarantee loading is never indefinitely stuck
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2500);
+
     // 1. Background verification of the session
     const checkUser = async () => {
       try {
@@ -47,7 +60,9 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
+        const sessionRes = await withTimeout(supabase.auth.getSession(), 2500).catch(() => ({ data: {} }));
+        const session = sessionRes?.data?.session;
+
         if (session) {
           await fetchProfile(session.user);
         } else {
@@ -56,7 +71,6 @@ export function AuthProvider({ children }) {
         }
       } catch (err) {
         console.error("Auth initialization check failed:", err);
-        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -86,30 +100,39 @@ export function AuthProvider({ children }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchProfile = async (supabaseUser) => {
     if (!supabaseUser) return null;
     const isAdminEmail = supabaseUser.email?.toLowerCase().trim() === 'karthiksaianala@gmail.com';
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('role, full_name')
-      .eq('id', supabaseUser.id)
-      .single();
-
-    let fullUser;
-    if (error) {
-      console.warn("Profile fetch error:", error.message);
-      fullUser = { ...supabaseUser, role: isAdminEmail ? 'admin' : 'student' };
-    } else {
-      fullUser = { 
-        ...supabaseUser, 
-        ...data,
-        role: (data.role === 'admin' || isAdminEmail) ? 'admin' : (data.role || 'student') 
-      };
+    let profileData = null;
+    try {
+      const res = await withTimeout(
+        supabase
+          .from('profiles')
+          .select('role, full_name')
+          .eq('id', supabaseUser.id)
+          .single(),
+        2000
+      );
+      if (res?.data && !res?.error) {
+        profileData = res.data;
+      }
+    } catch (err) {
+      console.warn("Profile fetch skipped/timed out:", err.message);
     }
+
+    const fullUser = { 
+      ...supabaseUser, 
+      ...(profileData || {}),
+      role: (profileData?.role === 'admin' || isAdminEmail) ? 'admin' : (profileData?.role || 'student') 
+    };
+
     setUser(fullUser);
     safeSessionStorage.setItem('ikshatests_user', JSON.stringify(fullUser));
     return fullUser;
