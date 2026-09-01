@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
-import { Lock, Mail, KeyRound, Smartphone, User, RefreshCw, Shield, CheckCircle } from 'lucide-react';
+import { Lock, Mail, KeyRound, Smartphone, User, RefreshCw, Shield, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Logo } from '../components/Logo';
 
 // Helper to generate a random 6-character visual CAPTCHA code
@@ -92,9 +92,16 @@ export default function Login() {
   const [generatedCaptcha, setGeneratedCaptcha] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const { login, register, loginWithGoogle } = useAuth();
+  const { user, login, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const canvasRef = useRef(null);
+
+  // Automatically redirect if already authenticated as admin
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, navigate]);
 
   // Redraw CAPTCHA on code refresh/step change
   useEffect(() => {
@@ -117,10 +124,11 @@ export default function Login() {
     setSuccessMessage('');
     const res = await login(email, password);
     if (res.success) {
-      if (email.toLowerCase() === 'karthiksaianala@gmail.com') {
-        navigate('/admin');
+      const isAdmin = res.user?.role === 'admin' || email.trim().toLowerCase() === 'karthiksaianala@gmail.com';
+      if (isAdmin) {
+        navigate('/admin', { replace: true });
       } else {
-        navigate('/');
+        navigate('/dashboard', { replace: true });
       }
     } else {
       setError(res.error);
@@ -175,7 +183,32 @@ export default function Login() {
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#10b981] rounded-full mix-blend-screen filter blur-[160px] opacity-[0.06] pointer-events-none animate-pulse"></div>
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#22c55e] rounded-full mix-blend-screen filter blur-[160px] opacity-[0.04] pointer-events-none animate-[pulse_3s_ease-in-out_infinite]" style={{ animationDelay: '1s' }}></div>
       
+      {/* Back to Home Button */}
+      <button 
+        type="button" 
+        onClick={() => navigate('/')} 
+        className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-emerald-400 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 hover:border-emerald-500/30 px-4 py-2.5 rounded-xl backdrop-blur-md transition-all duration-200 z-20 cursor-pointer shadow-xl group"
+      >
+        <ArrowLeft size={18} className="transition-transform duration-200 group-hover:-translate-x-1 text-emerald-400" />
+        <span>Back to Home</span>
+      </button>
+
       <Card className="w-full max-w-md bg-slate-950/40 backdrop-blur-2xl border-slate-900/60 shadow-[0_0_50px_rgba(0,0,0,0.6)] relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        {step !== 'email' && (
+          <button
+            type="button"
+            onClick={() => {
+              setError('');
+              setStep('email');
+            }}
+            className="absolute top-6 left-6 flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-emerald-400 bg-slate-900/50 hover:bg-slate-900 border border-slate-800/80 hover:border-emerald-500/30 px-3 py-1.5 rounded-lg transition-all cursor-pointer group z-20"
+            title="Back to Email"
+          >
+            <ArrowLeft size={14} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
+            <span>Back</span>
+          </button>
+        )}
+
         <div className="text-center mb-10">
           <div className="flex justify-center mb-8 hover:scale-105 transition-transform duration-500">
             <Logo className="h-12 w-auto" />
