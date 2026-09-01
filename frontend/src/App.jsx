@@ -72,6 +72,15 @@ function AppContent() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // Automatically redirect any authenticated admin user to the admin panel
+  useEffect(() => {
+    if (!loading && user?.role === 'admin') {
+      if (location.pathname === '/' || location.pathname === '/login') {
+        navigate('/admin', { replace: true });
+      }
+    }
+  }, [user, loading, location.pathname, navigate]);
+
   const [activeTheme, setActiveTheme] = useState('orange');
   const [blob1Pos, setBlob1Pos] = useState({ top: '0%', right: '0%' });
   const [blob2Pos, setBlob2Pos] = useState({ bottom: '0%', left: '0%' });
@@ -255,7 +264,13 @@ function AppContent() {
               </div>
             </div>
 
-            <Link to="/dashboard" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900/30 transition-all">Dashboard</Link>
+            {user?.role === 'admin' ? (
+              <Link to="/admin" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-red-900/50 transition-all flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5" /> Admin Panel
+              </Link>
+            ) : (
+              <Link to="/dashboard" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900/30 transition-all">Dashboard</Link>
+            )}
           </nav>
 
           <div className="w-[1px] h-6 bg-slate-800/80"></div>
@@ -342,7 +357,9 @@ function AppContent() {
 
               <div className="flex items-center gap-8 text-xs font-bold text-slate-400 font-mono">
                 <Link to="/exams" className="hover:text-emerald-400 transition-colors">Exam Series</Link>
-                <Link to="/dashboard" className="hover:text-emerald-400 transition-colors">Dashboard</Link>
+                <Link to={user?.role === 'admin' ? "/admin" : "/dashboard"} className="hover:text-emerald-400 transition-colors">
+                  {user?.role === 'admin' ? "Admin Panel" : "Dashboard"}
+                </Link>
                 <Link to="/login" className="hover:text-emerald-400 transition-colors font-bold text-emerald-400">Student Portal</Link>
               </div>
 

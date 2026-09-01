@@ -214,7 +214,9 @@ export default function Home() {
 
           <div className="flex items-center gap-8 text-xs font-bold text-slate-400 font-mono">
             <Link to="/exams" className="hover:text-emerald-400 transition-colors">Exam Series</Link>
-            <Link to="/dashboard" className="hover:text-emerald-400 transition-colors">Dashboard</Link>
+            <Link to={user?.role === 'admin' ? "/admin" : "/dashboard"} className="hover:text-emerald-400 transition-colors">
+              {user?.role === 'admin' ? "Admin Panel" : "Dashboard"}
+            </Link>
             <Link to="/login" className="hover:text-emerald-400 transition-colors font-bold text-emerald-400">Student Portal</Link>
           </div>
 

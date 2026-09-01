@@ -90,7 +90,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const fetchProfile = async (supabaseUser) => {
-    const isAdminEmail = supabaseUser.email?.toLowerCase() === 'karthiksaianala@gmail.com';
+    if (!supabaseUser) return null;
+    const isAdminEmail = supabaseUser.email?.toLowerCase().trim() === 'karthiksaianala@gmail.com';
 
     const { data, error } = await supabase
       .from('profiles')
@@ -98,26 +99,30 @@ export function AuthProvider({ children }) {
       .eq('id', supabaseUser.id)
       .single();
 
+    let fullUser;
     if (error) {
       console.warn("Profile fetch error:", error.message);
-      const fallbackUser = { ...supabaseUser, role: isAdminEmail ? 'admin' : 'student' };
-      setUser(fallbackUser);
-      safeSessionStorage.setItem('ikshatests_user', JSON.stringify(fallbackUser));
+      fullUser = { ...supabaseUser, role: isAdminEmail ? 'admin' : 'student' };
     } else {
-      const fullUser = { 
+      fullUser = { 
         ...supabaseUser, 
         ...data,
-        role: isAdminEmail ? 'admin' : (data.role || 'student') 
+        role: (data.role === 'admin' || isAdminEmail) ? 'admin' : (data.role || 'student') 
       };
-      setUser(fullUser);
-      safeSessionStorage.setItem('ikshatests_user', JSON.stringify(fullUser));
     }
+    setUser(fullUser);
+    safeSessionStorage.setItem('ikshatests_user', JSON.stringify(fullUser));
+    return fullUser;
   };
 
   const login = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) return { success: false, error: error.message };
-    return { success: true };
+    let userProfile = null;
+    if (data?.user) {
+      userProfile = await fetchProfile(data.user);
+    }
+    return { success: true, user: userProfile || data.user };
   };
 
   const register = async (email, password, fullName) => {
