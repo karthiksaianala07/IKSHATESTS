@@ -158,17 +158,6 @@ function AppContent() {
   const isLoginPage = location.pathname === '/login';
   const isAdminPortal = location.pathname.startsWith('/admin');
 
-  if (loading && !isLoginPage) {
-    return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-6">
-          <div className="w-12 h-12 border-4 border-t-primary rounded-full animate-spin opacity-50"></div>
-          <p className="text-[#94a3b8] text-[10px] uppercase font-bold tracking-widest">Architecting Session...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (isLoginPage) return <Login />;
   
   if (isTestConsole) {

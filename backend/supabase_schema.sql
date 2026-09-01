@@ -55,30 +55,34 @@ ALTER TABLE tests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
 
--- 6. RLS POLICIES
+-- 6. HELPER FUNCTION & RLS POLICIES
 
--- PROFILES: Users can view their own; Admins can view all.
+-- Helper to check admin status without triggering RLS infinite recursion
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- PROFILES: Users can view and update their own profile; Admins can view all.
 CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Admins can view all profiles" ON profiles FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-);
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admins can view all profiles" ON profiles FOR ALL USING (public.is_admin());
 
 -- TESTS & QUESTIONS: Everyone can view; Only admins can modify.
 CREATE POLICY "Everyone can view tests" ON tests FOR SELECT USING (true);
-CREATE POLICY "Admins can manage tests" ON tests FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-);
+CREATE POLICY "Admins can manage tests" ON tests FOR ALL USING (public.is_admin());
 
 CREATE POLICY "Everyone can view questions" ON questions FOR SELECT USING (true);
-CREATE POLICY "Admins can manage questions" ON questions FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-);
+CREATE POLICY "Admins can manage questions" ON questions FOR ALL USING (public.is_admin());
 
 -- SUBMISSIONS: Users can manage their own; Admins can view all.
 CREATE POLICY "Users can manage own submissions" ON submissions FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Admins can view all submissions" ON submissions FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-);
+CREATE POLICY "Admins can view all submissions" ON submissions FOR SELECT USING (public.is_admin());
 
 -- 7. TRIGGER: Automatically create a profile on Signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
