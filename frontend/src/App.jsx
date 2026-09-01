@@ -158,6 +158,11 @@ function AppContent() {
   const isLoginPage = location.pathname === '/login';
   const isAdminPortal = location.pathname.startsWith('/admin');
 
+  // If user is admin and on /login or /, immediately redirect to /admin without rendering Home
+  if (user?.role === 'admin' && (isLoginPage || location.pathname === '/')) {
+    return <Navigate to="/admin" replace />;
+  }
+
   if (isLoginPage) return <Login />;
   
   if (isTestConsole) {

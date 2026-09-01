@@ -166,7 +166,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (user?.role === 'admin') {
-      navigate('/admin');
+      navigate('/admin', { replace: true });
     } else {
       fetchUserSubmissions();
     }
