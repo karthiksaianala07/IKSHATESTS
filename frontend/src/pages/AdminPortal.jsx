@@ -10,6 +10,41 @@ import AddTestPage from './AddTestPage';
 import { Logo } from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
 
+const DEFAULT_SERIES = [
+  {
+    id: 'series-jee',
+    key: 'jee',
+    title: 'IIT JEE Series',
+    categoryType: 'Engineering',
+    description: 'Premier mock exams for JEE Main and JEE Advanced engineering aspirants.',
+    icon: 'architecture',
+    color: '#882D2D',
+    badgeColor: 'border-red-500/30 bg-red-950/40 text-red-400',
+    isDefault: true,
+    sections: [
+      { id: 'full', label: 'Full-Length Mocks', icon: 'assignment' },
+      { id: 'pyq', label: 'Previous Year Papers', icon: 'history_edu' },
+      { id: 'chapter', label: 'Subject-wise Tests', icon: 'category' }
+    ]
+  },
+  {
+    id: 'series-neet',
+    key: 'neet',
+    title: 'NEET (UG) Series',
+    categoryType: 'Medical',
+    description: 'Comprehensive testing and diagnostic blueprints for medical aspirants.',
+    icon: 'biotech',
+    color: '#4EC6D7',
+    badgeColor: 'border-cyan-500/30 bg-cyan-950/40 text-cyan-400',
+    isDefault: true,
+    sections: [
+      { id: 'full', label: 'Full-Length Mocks', icon: 'assignment' },
+      { id: 'pyq', label: 'Previous Year Papers', icon: 'history_edu' },
+      { id: 'chapter', label: 'Subject-wise Tests', icon: 'biotech' }
+    ]
+  }
+];
+
 export default function AdminPortal() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -28,6 +63,35 @@ export default function AdminPortal() {
   const [adminTests, setAdminTests] = useState([]);
   const [loadingAdminTests, setLoadingAdminTests] = useState(false);
   const [showAddForm, setShowAddForm] = useState(true);
+
+  // Exam Series management state (initialized with existing platform series)
+  const [examSeriesList, setExamSeriesList] = useState(DEFAULT_SERIES);
+  const [loadingSeries, setLoadingSeries] = useState(false);
+  const [selectedSeries, setSelectedSeries] = useState(null);
+  const [seriesSectionFilter, setSeriesSectionFilter] = useState('all');
+
+  // Series Modals
+  const [showCreateSeriesModal, setShowCreateSeriesModal] = useState(false);
+  const [showEditSeriesModal, setShowEditSeriesModal] = useState(false);
+  const [seriesFormData, setSeriesFormData] = useState({
+    title: '',
+    key: '',
+    categoryType: 'Engineering',
+    description: '',
+    icon: 'quiz',
+    color: '#882D2D'
+  });
+  const [editingSeries, setEditingSeries] = useState(null);
+
+  // Test Edit Modal
+  const [showEditTestModal, setShowEditTestModal] = useState(false);
+  const [editingTest, setEditingTest] = useState({
+    id: '',
+    title: '',
+    category: '',
+    duration_minutes: 180,
+    scheduled_at: ''
+  });
 
   // Manual Question state
   const textRef = useRef(null);
@@ -60,10 +124,49 @@ export default function AdminPortal() {
   const [primaryColor, setPrimaryColor] = useState('#882D2D');
   const [secondaryColor, setSecondaryColor] = useState('#E7CF29');
 
+  // Discover and combine series from state, default series, and any active tests in database
+  const getDiscoveredSeriesList = () => {
+    const list = [...(examSeriesList.length > 0 ? examSeriesList : DEFAULT_SERIES)];
+
+    // Ensure core default series are always present
+    DEFAULT_SERIES.forEach(def => {
+      if (!list.some(s => s.key?.toLowerCase() === def.key.toLowerCase())) {
+        list.push(def);
+      }
+    });
+
+    // Dynamically auto-discover any other custom series present across database tests
+    adminTests.forEach(test => {
+      if (!test.category) return;
+      const cleanCat = test.category.toLowerCase().split('-')[0].split('_')[0].trim();
+      if (cleanCat && !list.some(s => s.key?.toLowerCase() === cleanCat)) {
+        list.push({
+          id: `series-auto-${cleanCat}`,
+          key: cleanCat,
+          title: cleanCat.toUpperCase() + ' Series',
+          categoryType: 'General',
+          description: `Allotted test blueprints and examinations under the ${cleanCat.toUpperCase()} track.`,
+          icon: 'quiz',
+          color: '#E7CF29',
+          badgeColor: 'border-amber-500/30 bg-amber-950/40 text-amber-400',
+          isDefault: false,
+          sections: [
+            { id: 'full', label: 'Full-Length Mocks', icon: 'assignment' },
+            { id: 'pyq', label: 'Previous Year Papers', icon: 'history_edu' },
+            { id: 'chapter', label: 'Subject-wise Tests', icon: 'category' }
+          ]
+        });
+      }
+    });
+
+    return list;
+  };
+
   // Load resources based on active view/tab
   useEffect(() => {
     fetchStats();
     fetchAdminTests();
+    fetchExamSeries();
     fetchQuestions();
     fetchViolations();
 
@@ -79,6 +182,127 @@ export default function AdminPortal() {
       setActiveTab('dashboard');
     }
   }, [location.pathname]);
+
+  const fetchExamSeries = async () => {
+    setLoadingSeries(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/admin/series`);
+      let list = res.data && Array.isArray(res.data) && res.data.length > 0 ? res.data : DEFAULT_SERIES;
+      
+      DEFAULT_SERIES.forEach(def => {
+        if (!list.some(s => s.key?.toLowerCase() === def.key.toLowerCase())) {
+          list.unshift(def);
+        }
+      });
+      
+      setExamSeriesList(list);
+      if (selectedSeries) {
+        const found = list.find(s => s.id === selectedSeries.id || s.key === selectedSeries.key);
+        if (found) setSelectedSeries(found);
+      }
+    } catch (err) {
+      console.error('Fetch series error:', err);
+      setExamSeriesList(DEFAULT_SERIES);
+    } finally {
+      setLoadingSeries(false);
+    }
+  };
+
+  const handleCreateSeries = async (e) => {
+    e.preventDefault();
+    if (!seriesFormData.title || !seriesFormData.key) {
+      alert('Please provide Series Title and Key.');
+      return;
+    }
+    try {
+      await axios.post(`${API_URL}/api/admin/series`, seriesFormData);
+      setShowCreateSeriesModal(false);
+      setSeriesFormData({
+        title: '',
+        key: '',
+        categoryType: 'Engineering',
+        description: '',
+        icon: 'quiz',
+        color: '#882D2D'
+      });
+      fetchExamSeries();
+      alert('Exam series created successfully!');
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || 'Failed to create exam series');
+    }
+  };
+
+  const handleEditSeries = async (e) => {
+    e.preventDefault();
+    if (!editingSeries) return;
+    try {
+      await axios.patch(`${API_URL}/api/admin/series/${editingSeries.id}`, {
+        title: editingSeries.title,
+        description: editingSeries.description,
+        categoryType: editingSeries.categoryType,
+        icon: editingSeries.icon,
+        color: editingSeries.color
+      });
+      setShowEditSeriesModal(false);
+      setEditingSeries(null);
+      fetchExamSeries();
+      alert('Exam series updated successfully!');
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || 'Failed to update exam series');
+    }
+  };
+
+  const handleDeleteSeries = async (series) => {
+    if (series.isDefault) {
+      alert('Core platform series (IIT JEE / NEET UG) cannot be deleted.');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to delete "${series.title}"?`)) return;
+    try {
+      await axios.delete(`${API_URL}/api/admin/series/${series.id}`);
+      if (selectedSeries && (selectedSeries.id === series.id || selectedSeries.key === series.key)) {
+        setSelectedSeries(null);
+      }
+      fetchExamSeries();
+      alert('Exam series deleted.');
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || 'Failed to delete exam series');
+    }
+  };
+
+  const handleOpenEditTest = (test) => {
+    setEditingTest({
+      id: test.id,
+      title: test.title,
+      category: test.category || '',
+      duration_minutes: test.duration_minutes || 180,
+      scheduled_at: test.scheduled_at ? new Date(test.scheduled_at).toISOString().slice(0, 16) : ''
+    });
+    setShowEditTestModal(true);
+  };
+
+  const handleSaveEditTest = async (e) => {
+    e.preventDefault();
+    if (!editingTest.id || !editingTest.title) return;
+    try {
+      await axios.patch(`${API_URL}/api/admin/tests/${editingTest.id}`, {
+        title: editingTest.title,
+        category: editingTest.category,
+        duration_minutes: parseInt(editingTest.duration_minutes),
+        scheduled_at: editingTest.scheduled_at ? new Date(editingTest.scheduled_at).toISOString() : null
+      });
+      setShowEditTestModal(false);
+      fetchAdminTests();
+      fetchExamSeries();
+      alert('Test updated successfully!');
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || 'Failed to update test');
+    }
+  };
+
+  const handleQuickQuestionView = (testId) => {
+    window.open(`/admin/test-paper/${testId}`, '_blank');
+  };
 
   const fetchAdminTests = async () => {
     setLoadingAdminTests(true);
@@ -97,6 +321,7 @@ export default function AdminPortal() {
     try {
       await axios.delete(`${API_URL}/api/admin/tests/${testId}`);
       fetchAdminTests();
+      fetchExamSeries();
     } catch (err) {
       alert(err.response?.data?.error || err.message || 'Failed to delete test');
     }
@@ -482,72 +707,402 @@ export default function AdminPortal() {
 
               {activeTab === 'exams' && (
                 <div className="space-y-8 animate-in fade-in duration-300">
-                  {/* Exams Header */}
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <h2 className="font-headline font-black text-3xl text-slate-100">Exam Series Management</h2>
-                      <p className="text-sm text-slate-400 mt-1">Configure, monitor, and analyze active testing modules.</p>
-                    </div>
-                    <button
-                      onClick={() => navigate('/admin/add-test')}
-                      className="px-5 py-2.5 bg-primary hover:brightness-110 text-white rounded-xl text-xs uppercase tracking-wider font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-2 border-none"
-                    >
-                      <span className="material-symbols-outlined text-sm">add</span>
-                      Add New Test
-                    </button>
-                  </div>
-
-                  {/* Active Tests List */}
-                  <div className="bg-[#060913]/60 border border-slate-900/60 rounded-2xl overflow-hidden shadow-xl">
-                    <div className="p-6 border-b border-slate-900/60 bg-slate-950/20">
-                      <h3 className="font-headline font-bold text-lg">Posted Mock Tests</h3>
-                    </div>
-                    <div className="p-6 space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                      {loadingAdminTests ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-slate-500 gap-3">
-                          <div className="w-8 h-8 border-4 border-t-primary rounded-full animate-spin opacity-50" />
-                          <p className="text-xs font-bold uppercase tracking-widest font-mono">Retrieving blueprints…</p>
+                  {!selectedSeries ? (
+                    /* ── TIER 1: ALL EXAM SERIES OVERVIEW ── */
+                    <div className="space-y-8">
+                      {/* Header with Series & Test Actions */}
+                      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="material-symbols-outlined text-primary text-2xl">layers</span>
+                            <h2 className="font-headline font-black text-3xl text-slate-100">Exam Series Tracks</h2>
+                          </div>
+                          <p className="text-sm text-slate-400">
+                            Create, configure, and manage curriculum series. Select any track to view and edit its allotted tests.
+                          </p>
                         </div>
-                      ) : adminTests.length > 0 ? (
-                        adminTests.map(test => (
-                          <div key={test.id} className="bg-slate-950/50 p-4 rounded-xl flex flex-col sm:flex-row gap-4 justify-between sm:items-center border border-slate-900/60 hover:border-primary/40 transition-colors group">
-                            <div className="flex items-center gap-4">
-                              <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${test.category?.startsWith('jee') ? 'bg-primary' : 'bg-cyan-500'}`} />
-                              <div>
-                                <span className="font-bold text-slate-200 text-base group-hover:text-primary transition-colors block">{test.title}</span>
-                                <div className="flex gap-3 mt-1.5 flex-wrap font-mono text-[10px]">
-                                  <span className="px-1.5 py-0.5 rounded uppercase font-bold border bg-red-950/30 text-red-400 border-red-900/40">
-                                    {test.category?.startsWith('jee') ? 'JEE' : 'NEET'}
-                                  </span>
-                                  <span className="text-slate-500 flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-[14px]">schedule</span>
-                                    {test.duration_minutes} Mins
-                                  </span>
-                                  <span className="text-slate-500 flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-[14px]">help</span>
-                                    {test.question_count} Questions
-                                  </span>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setShowCreateSeriesModal(true)}
+                            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-slate-500 rounded-xl text-xs uppercase tracking-wider font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-base text-primary">add_circle</span>
+                            New Series
+                          </button>
+                          <button
+                            onClick={() => navigate('/admin/add-test')}
+                            className="px-5 py-2.5 bg-primary hover:brightness-110 text-white rounded-xl text-xs uppercase tracking-wider font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-2 border-none"
+                          >
+                            <span className="material-symbols-outlined text-sm">add</span>
+                            Add Test
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Series Cards Grid */}
+                      {loadingSeries ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-3">
+                          <div className="w-10 h-10 border-4 border-t-primary rounded-full animate-spin opacity-60" />
+                          <p className="text-xs font-bold uppercase tracking-widest font-mono">Loading Exam Tracks…</p>
+                        </div>
+                      ) : (() => {
+                        const activeList = getDiscoveredSeriesList();
+                        return activeList.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {activeList.map((series) => {
+                              const allottedCount = adminTests.filter((t) => {
+                                const cat = (t.category || '').toLowerCase();
+                                const k = (series.key || '').toLowerCase();
+                                return cat === k || cat.startsWith(k + '-') || cat.startsWith(k + '_') || cat.includes(k);
+                              }).length;
+
+                              return (
+                                <div
+                                  key={series.id || series.key}
+                                  className="bg-[#060913]/70 border border-slate-900/80 hover:border-slate-700/80 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 shadow-xl group hover:-translate-y-1 relative overflow-hidden"
+                                >
+                                  <div
+                                    className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-10 pointer-events-none"
+                                    style={{ backgroundColor: series.color || '#882D2D' }}
+                                  />
+                                  <div>
+                                    {/* Header Badge Row */}
+                                    <div className="flex items-start justify-between gap-2 mb-4">
+                                      <div className="flex items-center gap-3">
+                                        <div
+                                          className="w-11 h-11 rounded-xl flex items-center justify-center border shadow-inner"
+                                          style={{
+                                            backgroundColor: `${series.color || '#882D2D'}20`,
+                                            borderColor: `${series.color || '#882D2D'}50`,
+                                            color: series.color || '#882D2D'
+                                          }}
+                                        >
+                                          <span className="material-symbols-outlined text-2xl">
+                                            {series.icon || 'quiz'}
+                                          </span>
+                                        </div>
+                                        <div>
+                                          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+                                            {series.categoryType || 'Curriculum'}
+                                          </span>
+                                          <h3 className="font-headline font-bold text-lg text-slate-100 group-hover:text-primary transition-colors leading-tight">
+                                            {series.title}
+                                          </h3>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          onClick={() => {
+                                            setEditingSeries({ ...series });
+                                            setShowEditSeriesModal(true);
+                                          }}
+                                          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-colors border-none bg-transparent cursor-pointer"
+                                          title="Edit Series Configuration"
+                                        >
+                                          <span className="material-symbols-outlined text-base">edit</span>
+                                        </button>
+                                        {!series.isDefault && (
+                                          <button
+                                            onClick={() => handleDeleteSeries(series)}
+                                            className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors border-none bg-transparent cursor-pointer"
+                                            title="Delete Custom Series"
+                                          >
+                                            <span className="material-symbols-outlined text-base">delete</span>
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Series Description */}
+                                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-6">
+                                      {series.description || 'Comprehensive test series with full mocks, chapter-wise practice and PYQ archives.'}
+                                    </p>
+
+                                    {/* Stats Pill Row */}
+                                    <div className="grid grid-cols-2 gap-2 mb-6 bg-slate-950/60 p-3 rounded-xl border border-slate-900">
+                                      <div>
+                                        <span className="text-[10px] font-mono text-slate-500 uppercase block">Allotted Tests</span>
+                                        <span className="text-sm font-bold font-headline text-slate-200">
+                                          {allottedCount} {allottedCount === 1 ? 'Exam' : 'Exams'}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[10px] font-mono text-slate-500 uppercase block">Track Key</span>
+                                        <span className="text-xs font-mono font-bold text-slate-300 uppercase">
+                                          {series.key}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Manage Button */}
+                                  <button
+                                    onClick={() => {
+                                      setSelectedSeries(series);
+                                      setSeriesSectionFilter('all');
+                                    }}
+                                    className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-primary text-slate-200 hover:text-white border border-slate-800 hover:border-transparent font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer group/btn"
+                                  >
+                                    <span>Manage Tests & Blueprints</span>
+                                    <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">
+                                      arrow_forward
+                                    </span>
+                                  </button>
                                 </div>
-                              </div>
-                            </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-12 text-center text-slate-500">
+                            <span className="material-symbols-outlined text-5xl mb-3 text-slate-600">layers_clear</span>
+                            <h3 className="font-bold text-base text-slate-300">No Exam Series Available</h3>
+                            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                              Get started by creating your first exam series track to organize mock test blueprints.
+                            </p>
                             <button
-                              onClick={() => handleDeleteTest(test.id, test.title)}
-                              className="p-2 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer border-none bg-transparent"
-                              title="Delete Test Blueprint"
+                              onClick={() => setShowCreateSeriesModal(true)}
+                              className="mt-5 px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer border-none shadow-md"
                             >
-                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                              Create First Series
                             </button>
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-12 text-slate-500">
-                          <span className="material-symbols-outlined text-4xl mb-2 text-slate-600">assignment_late</span>
-                          <p className="text-xs font-bold uppercase tracking-wider">No tests posted yet.</p>
-                          <p className="text-[10px] text-slate-600 mt-1">Click "Add New Test" to get started.</p>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
-                  </div>
+                  ) : (
+                    /* ── TIER 2: ALLOTTED TESTS WITHIN SELECTED SERIES ── */
+                    <div className="space-y-6">
+                      {/* Breadcrumbs */}
+                      <nav className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                        <button
+                          onClick={() => setSelectedSeries(null)}
+                          className="hover:text-primary transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 text-slate-400 font-mono text-xs"
+                        >
+                          <span className="material-symbols-outlined text-sm">arrow_back</span>
+                          All Exam Series
+                        </button>
+                        <span className="text-slate-600">/</span>
+                        <span className="text-slate-200 font-bold">{selectedSeries.title}</span>
+                      </nav>
+
+                      {/* Series Banner Card */}
+                      <div className="bg-[#060913]/80 border border-slate-900/80 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
+                        <div
+                          className="absolute -top-12 -right-12 w-64 h-64 rounded-full blur-3xl opacity-15 pointer-events-none"
+                          style={{ backgroundColor: selectedSeries.color || '#882D2D' }}
+                        />
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                          <div className="flex items-start gap-4">
+                            <div
+                              className="w-14 h-14 rounded-2xl flex items-center justify-center border shadow-lg flex-shrink-0"
+                              style={{
+                                backgroundColor: `${selectedSeries.color || '#882D2D'}25`,
+                                borderColor: `${selectedSeries.color || '#882D2D'}60`,
+                                color: selectedSeries.color || '#882D2D'
+                              }}
+                            >
+                              <span className="material-symbols-outlined text-3xl">
+                                {selectedSeries.icon || 'quiz'}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-slate-900 border border-slate-800 text-slate-300">
+                                  {selectedSeries.categoryType || 'Curriculum'}
+                                </span>
+                                <span className="text-xs font-mono text-slate-500 uppercase tracking-wider">
+                                  Key: {selectedSeries.key}
+                                </span>
+                              </div>
+                              <h2 className="font-headline font-black text-2xl md:text-3xl text-slate-100">
+                                {selectedSeries.title}
+                              </h2>
+                              <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                                {selectedSeries.description || 'Configured test blueprints, mocks, and full examination archives.'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-3">
+                            <button
+                              onClick={() => {
+                                setEditingSeries({ ...selectedSeries });
+                                setShowEditSeriesModal(true);
+                              }}
+                              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all flex items-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-base">edit</span>
+                              Edit Series
+                            </button>
+                            <button
+                              onClick={() => navigate('/admin/add-test')}
+                              className="px-5 py-2.5 bg-primary hover:brightness-110 text-white rounded-xl text-xs uppercase tracking-wider font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-2 border-none"
+                            >
+                              <span className="material-symbols-outlined text-sm">add</span>
+                              Add Test to Series
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section Filter Pills */}
+                      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-slate-900/80 pb-4">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-mono text-slate-500 uppercase mr-1">Filter:</span>
+                          {[
+                            { id: 'all', label: 'All Tests' },
+                            { id: 'full', label: 'Full Length Mocks' },
+                            { id: 'pyq', label: 'PYQ Archive' },
+                            { id: 'chapter', label: 'Chapter / Topic Wise' }
+                          ].map((tab) => (
+                            <button
+                              key={tab.id}
+                              onClick={() => setSeriesSectionFilter(tab.id)}
+                              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                                seriesSectionFilter === tab.id
+                                  ? 'bg-primary/20 text-primary border-primary/40'
+                                  : 'bg-slate-950/60 text-slate-400 border-slate-900 hover:text-slate-200'
+                              }`}
+                            >
+                              {tab.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="text-xs font-mono text-slate-500">
+                          Showing{' '}
+                          <span className="font-bold text-slate-300">
+                            {
+                              adminTests
+                                .filter((t) => {
+                                  const cat = (t.category || '').toLowerCase();
+                                  const k = (selectedSeries.key || '').toLowerCase();
+                                  return cat === k || cat.startsWith(k + '-') || cat.startsWith(k + '_') || cat.includes(k);
+                                })
+                                .filter((t) => {
+                                  if (seriesSectionFilter === 'all') return true;
+                                  const cat = (t.category || '').toLowerCase();
+                                  if (seriesSectionFilter === 'full') return cat.includes('full');
+                                  if (seriesSectionFilter === 'pyq') return cat.includes('pyq');
+                                  if (seriesSectionFilter === 'chapter') return cat.includes('chapter') || cat.includes('topic');
+                                  return true;
+                                }).length
+                            }
+                          </span>{' '}
+                          Tests
+                        </div>
+                      </div>
+
+                      {/* Tests List */}
+                      <div className="bg-[#060913]/60 border border-slate-900/60 rounded-2xl overflow-hidden shadow-xl">
+                        <div className="p-6 space-y-4">
+                          {loadingAdminTests ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-slate-500 gap-3">
+                              <div className="w-8 h-8 border-4 border-t-primary rounded-full animate-spin opacity-50" />
+                              <p className="text-xs font-bold uppercase tracking-widest font-mono">Retrieving blueprints…</p>
+                            </div>
+                          ) : (() => {
+                              const filteredTests = adminTests
+                                .filter((t) => {
+                                  const cat = (t.category || '').toLowerCase();
+                                  const k = (selectedSeries.key || '').toLowerCase();
+                                  return cat === k || cat.startsWith(k + '-') || cat.startsWith(k + '_') || cat.includes(k);
+                                })
+                                .filter((t) => {
+                                  if (seriesSectionFilter === 'all') return true;
+                                  const cat = (t.category || '').toLowerCase();
+                                  if (seriesSectionFilter === 'full') return cat.includes('full');
+                                  if (seriesSectionFilter === 'pyq') return cat.includes('pyq');
+                                  if (seriesSectionFilter === 'chapter') return cat.includes('chapter') || cat.includes('topic');
+                                  return true;
+                                });
+
+                              if (filteredTests.length === 0) {
+                                return (
+                                  <div className="text-center py-16 text-slate-500 space-y-3">
+                                    <span className="material-symbols-outlined text-5xl text-slate-600">assignment_late</span>
+                                    <p className="text-sm font-bold uppercase tracking-wider text-slate-400">
+                                      No tests found in this category
+                                    </p>
+                                    <p className="text-xs text-slate-600 max-w-sm mx-auto">
+                                      Add a new test configured for the "{selectedSeries.title}" series.
+                                    </p>
+                                    <button
+                                      onClick={() => navigate('/admin/add-test')}
+                                      className="mt-2 px-4 py-2 bg-primary hover:brightness-110 text-white rounded-xl text-xs font-bold uppercase tracking-wider border-none cursor-pointer"
+                                    >
+                                      Create Test Now
+                                    </button>
+                                  </div>
+                                );
+                              }
+
+                              return filteredTests.map((test) => (
+                                <div
+                                  key={test.id}
+                                  className="bg-slate-950/60 p-4 md:p-5 rounded-xl flex flex-col md:flex-row gap-4 justify-between md:items-center border border-slate-900/80 hover:border-primary/40 transition-all group"
+                                >
+                                  <div className="flex items-center gap-4">
+                                    <div
+                                      className="w-3 h-3 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: selectedSeries.color || '#882D2D' }}
+                                    />
+                                    <div>
+                                      <h4 className="font-bold text-slate-200 text-base group-hover:text-primary transition-colors">
+                                        {test.title}
+                                      </h4>
+                                      <div className="flex gap-3 mt-1.5 flex-wrap font-mono text-[10px]">
+                                        <span className="px-2 py-0.5 rounded uppercase font-bold border bg-red-950/30 text-red-400 border-red-900/40">
+                                          {test.category || selectedSeries.key}
+                                        </span>
+                                        <span className="text-slate-400 flex items-center gap-1">
+                                          <span className="material-symbols-outlined text-[14px]">schedule</span>
+                                          {test.duration_minutes} Mins
+                                        </span>
+                                        <span className="text-slate-400 flex items-center gap-1">
+                                          <span className="material-symbols-outlined text-[14px]">help</span>
+                                          {test.question_count || 0} Questions
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 flex-wrap self-end md:self-center">
+                                    {/* Quick Question View (PDF in Light Theme) */}
+                                    <button
+                                      onClick={() => handleQuickQuestionView(test.id)}
+                                      className="px-3.5 py-2 rounded-xl bg-blue-600/15 text-blue-400 border border-blue-500/30 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                                      title="Open printable light-themed PDF with Answer Key and Solutions in new tab"
+                                    >
+                                      <span className="material-symbols-outlined text-base">picture_as_pdf</span>
+                                      <span>Quick Question View</span>
+                                    </button>
+
+                                    {/* Edit Test Blueprint */}
+                                    <button
+                                      onClick={() => handleOpenEditTest(test)}
+                                      className="p-2 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 border border-slate-800 hover:border-amber-400/30 transition-all cursor-pointer bg-transparent"
+                                      title="Edit Test Blueprint Details"
+                                    >
+                                      <span className="material-symbols-outlined text-base">edit</span>
+                                    </button>
+
+                                    {/* Delete Test Blueprint */}
+                                    <button
+                                      onClick={() => handleDeleteTest(test.id, test.title)}
+                                      className="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-slate-800 hover:border-red-500/30 transition-all cursor-pointer bg-transparent"
+                                      title="Delete Test Blueprint"
+                                    >
+                                      <span className="material-symbols-outlined text-base">delete</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              ));
+                            })()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1070,6 +1625,366 @@ export default function AdminPortal() {
           )}
         </main>
       </div>
+
+      {/* ── Create Series Modal ── */}
+      {showCreateSeriesModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0b0f19] border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-900 flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-primary text-2xl">add_circle</span>
+                <h3 className="font-headline font-bold text-lg text-slate-100">Create Exam Series</h3>
+              </div>
+              <button
+                onClick={() => setShowCreateSeriesModal(false)}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-900 border-none bg-transparent cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSeries} className="p-6 space-y-4">
+              <div>
+                <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                  Series Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. UPSC Civil Services Prelims"
+                  value={seriesFormData.title}
+                  onChange={(e) => setSeriesFormData({ ...seriesFormData, title: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-primary font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Series Key (Unique) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. upsc"
+                    value={seriesFormData.key}
+                    onChange={(e) => setSeriesFormData({ ...seriesFormData, key: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Category Track
+                  </label>
+                  <select
+                    value={seriesFormData.categoryType}
+                    onChange={(e) => setSeriesFormData({ ...seriesFormData, categoryType: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-bold focus:outline-none focus:border-primary"
+                  >
+                    <option value="Engineering">Engineering</option>
+                    <option value="Medical">Medical</option>
+                    <option value="Civil Services">Civil Services</option>
+                    <option value="Foundation">Foundation</option>
+                    <option value="Aptitude">Aptitude</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Brief description of the examination series curriculum..."
+                  value={seriesFormData.description}
+                  onChange={(e) => setSeriesFormData({ ...seriesFormData, description: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Material Icon Name
+                  </label>
+                  <select
+                    value={seriesFormData.icon}
+                    onChange={(e) => setSeriesFormData({ ...seriesFormData, icon: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-primary"
+                  >
+                    <option value="quiz">quiz</option>
+                    <option value="school">school</option>
+                    <option value="science">science</option>
+                    <option value="biotech">biotech</option>
+                    <option value="engineering">engineering</option>
+                    <option value="calculate">calculate</option>
+                    <option value="terminal">terminal</option>
+                    <option value="psychology">psychology</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Accent Color
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={seriesFormData.color}
+                      onChange={(e) => setSeriesFormData({ ...seriesFormData, color: e.target.value })}
+                      className="w-10 h-10 rounded-lg bg-transparent border border-slate-800 cursor-pointer p-0.5"
+                    />
+                    <input
+                      type="text"
+                      value={seriesFormData.color}
+                      onChange={(e) => setSeriesFormData({ ...seriesFormData, color: e.target.value })}
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-900 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateSeriesModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-bold uppercase tracking-wider cursor-pointer bg-transparent"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-primary hover:brightness-110 text-white text-xs font-bold uppercase tracking-wider cursor-pointer border-none shadow-md"
+                >
+                  Create Series
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Series Modal ── */}
+      {showEditSeriesModal && editingSeries && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0b0f19] border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-900 flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-primary text-2xl">edit_note</span>
+                <h3 className="font-headline font-bold text-lg text-slate-100">Edit Exam Series</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditSeriesModal(false);
+                  setEditingSeries(null);
+                }}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-900 border-none bg-transparent cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSeries} className="p-6 space-y-4">
+              <div>
+                <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                  Series Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingSeries.title}
+                  onChange={(e) => setEditingSeries({ ...editingSeries, title: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-primary font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Series Key
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={editingSeries.key}
+                    className="w-full bg-slate-950/50 border border-slate-900 rounded-xl p-3 text-xs text-slate-500 font-mono cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Category Track
+                  </label>
+                  <select
+                    value={editingSeries.categoryType || 'Engineering'}
+                    onChange={(e) => setEditingSeries({ ...editingSeries, categoryType: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-bold focus:outline-none focus:border-primary"
+                  >
+                    <option value="Engineering">Engineering</option>
+                    <option value="Medical">Medical</option>
+                    <option value="Civil Services">Civil Services</option>
+                    <option value="Foundation">Foundation</option>
+                    <option value="Aptitude">Aptitude</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={editingSeries.description || ''}
+                  onChange={(e) => setEditingSeries({ ...editingSeries, description: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Material Icon Name
+                  </label>
+                  <select
+                    value={editingSeries.icon || 'quiz'}
+                    onChange={(e) => setEditingSeries({ ...editingSeries, icon: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-primary"
+                  >
+                    <option value="quiz">quiz</option>
+                    <option value="school">school</option>
+                    <option value="science">science</option>
+                    <option value="biotech">biotech</option>
+                    <option value="engineering">engineering</option>
+                    <option value="calculate">calculate</option>
+                    <option value="terminal">terminal</option>
+                    <option value="psychology">psychology</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Accent Color
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={editingSeries.color || '#882D2D'}
+                      onChange={(e) => setEditingSeries({ ...editingSeries, color: e.target.value })}
+                      className="w-10 h-10 rounded-lg bg-transparent border border-slate-800 cursor-pointer p-0.5"
+                    />
+                    <input
+                      type="text"
+                      value={editingSeries.color || '#882D2D'}
+                      onChange={(e) => setEditingSeries({ ...editingSeries, color: e.target.value })}
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-900 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditSeriesModal(false);
+                    setEditingSeries(null);
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-bold uppercase tracking-wider cursor-pointer bg-transparent"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-primary hover:brightness-110 text-white text-xs font-bold uppercase tracking-wider cursor-pointer border-none shadow-md"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Test Modal ── */}
+      {showEditTestModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0b0f19] border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-900 flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-primary text-2xl">edit_document</span>
+                <h3 className="font-headline font-bold text-lg text-slate-100">Edit Test Blueprint</h3>
+              </div>
+              <button
+                onClick={() => setShowEditTestModal(false)}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-900 border-none bg-transparent cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditTest} className="p-6 space-y-4">
+              <div>
+                <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                  Test Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingTest.title}
+                  onChange={(e) => setEditingTest({ ...editingTest, title: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-primary font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Category Tag
+                  </label>
+                  <input
+                    type="text"
+                    value={editingTest.category}
+                    onChange={(e) => setEditingTest({ ...editingTest, category: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-primary"
+                    placeholder="e.g. jee-full, neet-pyq"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Duration (Minutes)
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="600"
+                    value={editingTest.duration_minutes}
+                    onChange={(e) => setEditingTest({ ...editingTest, duration_minutes: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-900 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditTestModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-bold uppercase tracking-wider cursor-pointer bg-transparent"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-primary hover:brightness-110 text-white text-xs font-bold uppercase tracking-wider cursor-pointer border-none shadow-md"
+                >
+                  Update Test Blueprint
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

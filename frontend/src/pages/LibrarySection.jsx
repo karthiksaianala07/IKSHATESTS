@@ -142,10 +142,6 @@ export default function LibrarySection() {
                     <span className="material-symbols-outlined text-[14px]">schedule</span>
                     {test.duration_minutes} Mins
                   </span>
-                  <span className="text-xs font-bold text-slate-400 bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-900 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                    {new Date(test.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
                 </div>
 
                 {/* Scheduled date notice */}

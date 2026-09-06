@@ -1069,6 +1069,234 @@ app.post('/api/admin/migrate-categories', async (req, res) => {
   }
 });
 
+// ----------------------------------------------------
+// 7.14 Exam Series CRUD and Management System
+// ----------------------------------------------------
+const fs = require('fs');
+const path = require('path');
+const seriesFilePath = path.join(__dirname, 'custom_series.json');
+
+const DEFAULT_SERIES = [
+  {
+    id: 'series-jee',
+    key: 'jee',
+    title: 'IIT JEE Series',
+    categoryType: 'Engineering',
+    description: 'Premier mock exams for JEE Main and JEE Advanced engineering aspirants.',
+    icon: 'architecture',
+    color: '#882D2D',
+    badgeColor: 'border-red-500/30 bg-red-950/40 text-red-400',
+    isDefault: true,
+    sections: [
+      { id: 'full', label: 'Full-Length Mocks', icon: 'assignment' },
+      { id: 'pyq', label: 'Previous Year Papers', icon: 'history_edu' },
+      { id: 'chapter', label: 'Subject-wise Tests', icon: 'category' }
+    ]
+  },
+  {
+    id: 'series-neet',
+    key: 'neet',
+    title: 'NEET (UG) Series',
+    categoryType: 'Medical',
+    description: 'Comprehensive testing and diagnostic blueprints for medical aspirants.',
+    icon: 'biotech',
+    color: '#4EC6D7',
+    badgeColor: 'border-cyan-500/30 bg-cyan-950/40 text-cyan-400',
+    isDefault: true,
+    sections: [
+      { id: 'full', label: 'Full-Length Mocks', icon: 'assignment' },
+      { id: 'pyq', label: 'Previous Year Papers', icon: 'history_edu' },
+      { id: 'chapter', label: 'Subject-wise Tests', icon: 'biotech' }
+    ]
+  }
+];
+
+function getStoredSeries() {
+  try {
+    if (fs.existsSync(seriesFilePath)) {
+      const data = fs.readFileSync(seriesFilePath, 'utf8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (err) {
+    console.error('[SERIES_STORAGE] Failed to read custom series:', err.message);
+  }
+  return DEFAULT_SERIES;
+}
+
+function saveStoredSeries(seriesList) {
+  try {
+    fs.writeFileSync(seriesFilePath, JSON.stringify(seriesList, null, 2), 'utf8');
+  } catch (err) {
+    console.error('[SERIES_STORAGE] Failed to write custom series:', err.message);
+  }
+}
+
+// Get all exam series with aggregated metrics
+app.get('/api/admin/series', async (req, res) => {
+  try {
+    const seriesList = getStoredSeries();
+    
+    // Fetch all tests with questions count to aggregate per series
+    const { data: tests, error } = await supabaseAdmin
+      .from('tests')
+      .select('id, category, duration_minutes, scheduled_at, questions(id)');
+    
+    const allTests = tests || [];
+    
+    const enhancedSeries = seriesList.map(s => {
+      const matchingTests = allTests.filter(t => {
+        if (!t.category) return false;
+        const cat = t.category.toLowerCase();
+        return cat.startsWith(`${s.key.toLowerCase()}-`) || cat === s.key.toLowerCase();
+      });
+      
+      const totalQuestions = matchingTests.reduce((acc, t) => acc + (t.questions ? t.questions.length : 0), 0);
+      
+      return {
+        ...s,
+        testCount: matchingTests.length,
+        questionCount: totalQuestions
+      };
+    });
+    
+    res.json(enhancedSeries);
+  } catch (err) {
+    console.error('[GET_SERIES_ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to fetch exam series' });
+  }
+});
+
+// Create new Exam Series
+app.post('/api/admin/series', async (req, res) => {
+  try {
+    const { title, key, categoryType, description, icon, color, sections } = req.body;
+    if (!title || !key) {
+      return res.status(400).json({ error: 'Series title and unique key are required.' });
+    }
+    
+    const currentList = getStoredSeries();
+    const cleanKey = key.toLowerCase().trim().replace(/[^a-z0-9_-]/g, '-');
+    
+    if (currentList.some(s => s.key === cleanKey)) {
+      return res.status(409).json({ error: `An exam series with key "${cleanKey}" already exists.` });
+    }
+    
+    const newSeries = {
+      id: `series-${Date.now()}`,
+      key: cleanKey,
+      title: title.trim(),
+      categoryType: categoryType || 'General',
+      description: description || '',
+      icon: icon || 'quiz',
+      color: color || '#E7CF29',
+      badgeColor: 'border-amber-500/30 bg-amber-950/40 text-amber-400',
+      isDefault: false,
+      sections: sections && Array.isArray(sections) && sections.length > 0 ? sections : [
+        { id: 'full', label: 'Full-Length Mocks', icon: 'assignment' },
+        { id: 'pyq', label: 'Previous Year Papers', icon: 'history_edu' },
+        { id: 'chapter', label: 'Subject-wise Tests', icon: 'category' }
+      ]
+    };
+    
+    currentList.push(newSeries);
+    saveStoredSeries(currentList);
+    
+    res.json({ success: true, series: newSeries });
+  } catch (err) {
+    console.error('[POST_SERIES_ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to create exam series' });
+  }
+});
+
+// Update Exam Series
+app.patch('/api/admin/series/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, categoryType, icon, color, sections } = req.body;
+    
+    const currentList = getStoredSeries();
+    const idx = currentList.findIndex(s => s.id === id || s.key === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: 'Exam series not found' });
+    }
+    
+    const existing = currentList[idx];
+    const updated = {
+      ...existing,
+      title: title !== undefined ? title : existing.title,
+      description: description !== undefined ? description : existing.description,
+      categoryType: categoryType !== undefined ? categoryType : existing.categoryType,
+      icon: icon !== undefined ? icon : existing.icon,
+      color: color !== undefined ? color : existing.color,
+      sections: sections !== undefined ? sections : existing.sections
+    };
+    
+    currentList[idx] = updated;
+    saveStoredSeries(currentList);
+    
+    res.json({ success: true, series: updated });
+  } catch (err) {
+    console.error('[PATCH_SERIES_ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to update exam series' });
+  }
+});
+
+// Delete Exam Series
+app.delete('/api/admin/series/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const currentList = getStoredSeries();
+    const target = currentList.find(s => s.id === id || s.key === id);
+    if (!target) {
+      return res.status(404).json({ error: 'Exam series not found' });
+    }
+    if (target.isDefault) {
+      return res.status(400).json({ error: 'Default core series (IIT JEE / NEET UG) cannot be deleted.' });
+    }
+    
+    const filtered = currentList.filter(s => s.id !== id && s.key !== id);
+    saveStoredSeries(filtered);
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[DELETE_SERIES_ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to delete exam series' });
+  }
+});
+
+// 7.15 Fetch Full Test with all questions & solutions for Test Paper PDF & Quick Question View
+app.get('/api/admin/tests/:id/full', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: test, error: testError } = await supabaseAdmin
+      .from('tests')
+      .select('*')
+      .or(`id.eq.${id},title.eq.${id}`)
+      .single();
+      
+    if (testError || !test) {
+      return res.status(404).json({ error: 'Test not found' });
+    }
+    
+    const { data: questions, error: qError } = await supabaseAdmin
+      .from('questions')
+      .select('*')
+      .eq('test_id', test.id)
+      .order('created_at', { ascending: true });
+      
+    if (qError) throw qError;
+    
+    res.json({
+      test,
+      questions: questions || []
+    });
+  } catch (err) {
+    console.error('[GET_TEST_FULL_ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to fetch full test blueprint' });
+  }
+});
+
 // 7.12 Fetch User Submissions History
 app.get('/api/submissions/user/:userId', async (req, res) => {
   try {
