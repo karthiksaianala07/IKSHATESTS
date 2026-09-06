@@ -988,8 +988,8 @@ export default function AdminPortal() {
                           </div>
                           <div className="md:col-span-2">
                             <div className="flex items-center gap-6">
-                              <div className="w-16 h-16 rounded-xl bg-slate-950 border border-slate-900 flex items-center justify-center overflow-hidden">
-                                <span className="material-symbols-outlined text-2xl text-slate-500">school</span>
+                              <div className="w-16 h-16 rounded-xl bg-slate-950 border border-slate-900 flex items-center justify-center overflow-hidden p-1.5">
+                                <Logo className="w-full h-full" showText={false} />
                               </div>
                               <label className="flex-1 border border-dashed border-slate-900 bg-slate-950 hover:bg-slate-950/80 rounded-xl p-4 text-center cursor-pointer transition-colors">
                                 <span className="material-symbols-outlined text-slate-500 text-xl mb-1">cloud_upload</span>

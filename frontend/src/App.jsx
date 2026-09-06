@@ -230,19 +230,19 @@ function AppContent() {
             : "opacity-0 -translate-y-4 scale-90 pointer-events-none"
         }`}
       >
-        <div className="flex items-center gap-4 bg-slate-950/70 border border-slate-900/60 backdrop-blur-2xl shadow-2xl rounded-2xl px-5 py-2.5">
-          <Link to="/" className="flex items-center gap-2 px-1 py-1 rounded-xl">
-            <Logo className="h-6 w-auto" />
+        <div className="flex items-center gap-4 bg-slate-950/70 border border-slate-900/60 backdrop-blur-2xl shadow-2xl rounded-2xl px-5 py-2.5 whitespace-nowrap">
+          <Link to="/" className="flex items-center gap-2 px-1 py-1 rounded-xl shrink-0 mr-1">
+            <Logo className="h-8 w-auto" />
           </Link>
 
-          <div className="w-[1px] h-6 bg-slate-800/80"></div>
+          <div className="w-[1px] h-6 bg-slate-800/80 shrink-0"></div>
 
-          <nav className="flex items-center gap-1">
-            <Link to="/plans" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900/30 transition-all">Plans</Link>
+          <nav className="flex items-center gap-1 shrink-0">
+            <Link to="/plans" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900/30 transition-all whitespace-nowrap">Plans</Link>
             
             {/* Exam Series Hover Dropdown */}
-            <div className="relative group py-1.5">
-              <Link to="/exams" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900/30 transition-all flex items-center gap-1 cursor-pointer">
+            <div className="relative group py-1.5 shrink-0">
+              <Link to="/exams" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900/30 transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap">
                 Exam Series
                 <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300" />
               </Link>
@@ -259,27 +259,27 @@ function AppContent() {
             </div>
 
             {user?.role === 'admin' ? (
-              <Link to="/admin" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-red-900/50 transition-all flex items-center gap-1.5">
+              <Link to="/admin" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-red-900/50 transition-all flex items-center gap-1.5 whitespace-nowrap">
                 <Shield className="w-3.5 h-3.5" /> Admin Panel
               </Link>
             ) : (
-              <Link to="/dashboard" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900/30 transition-all">Dashboard</Link>
+              <Link to="/dashboard" className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900/30 transition-all whitespace-nowrap">Dashboard</Link>
             )}
           </nav>
 
-          <div className="w-[1px] h-6 bg-slate-800/80"></div>
+          <div className="w-[1px] h-6 bg-slate-800/80 shrink-0"></div>
 
           {user ? (
             <button 
               onClick={handleLogout} 
-              className="bg-slate-900 hover:bg-slate-800 text-slate-200 px-4 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all border border-slate-800 cursor-pointer"
+              className="bg-slate-900 hover:bg-slate-800 text-slate-200 px-4 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all border border-slate-800 cursor-pointer whitespace-nowrap shrink-0"
             >
               Logout
             </button>
           ) : (
             <Link 
               to="/login" 
-              className="bg-slate-900 hover:bg-slate-800 text-slate-200 px-4 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all border border-slate-800"
+              className="bg-slate-900 hover:bg-slate-800 text-slate-200 px-4 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all border border-slate-800 whitespace-nowrap shrink-0"
             >
               Sign In
             </Link>
@@ -288,10 +288,10 @@ function AppContent() {
           {/* Close button shown only when menu is expanded via collapsed button trigger */}
           {isScrolled && (
             <>
-              <div className="w-[1px] h-6 bg-slate-800/80"></div>
+              <div className="w-[1px] h-6 bg-slate-800/80 shrink-0"></div>
               <button 
                 onClick={() => setIsMenuExpanded(false)}
-                className="p-1.5 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+                className="p-1.5 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -312,7 +312,7 @@ function AppContent() {
             : "opacity-0 -translate-y-4 scale-90 pointer-events-none"
         }`}
       >
-        <Logo className="h-5 w-auto" />
+        <Logo className="h-6 w-auto" showText={false} />
         <span className="w-[1px] h-4 bg-slate-800/80"></span>
         <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
           <Menu className="h-3 w-3" /> Menu
@@ -342,7 +342,7 @@ function AppContent() {
               
               <div className="flex flex-col items-center md:items-start gap-3">
                 <div className="flex items-center gap-3">
-                  <Logo className="h-8 w-auto" />
+                  <Logo className="h-10 w-auto" />
                 </div>
                 <p className="text-xs text-slate-500 font-medium max-w-sm">
                   High-accuracy educational mock consoles and diagnostic behavioral reporting for all exams.
