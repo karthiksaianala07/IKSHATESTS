@@ -1,25 +1,23 @@
 import React from 'react';
-import officialLogo from '../assets/official-logo.png';
+import finalLogo from '../assets/Final_Logo.png';
 
-export function Logo({ className = "h-10 w-auto", showText = true }) {
+export function Logo({ className = "h-9 w-auto", imgClassName = "", showText = true, textClassName = "" }) {
   return (
-    <div className={`inline-flex items-center gap-3 cursor-pointer select-none group ${className}`}>
-      {/* Official Transparent PNG Logo Icon */}
-      <div className="relative flex items-center justify-center w-10 h-10 transition-transform duration-300 group-hover:scale-105 shrink-0">
-        <img 
-          src={officialLogo} 
-          alt="IKSHATESTS Pariksha Shikshak" 
-          className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(231,207,41,0.3)] group-hover:drop-shadow-[0_0_12px_rgba(78,198,215,0.5)] transition-all duration-300"
-        />
-      </div>
+    <div className={`inline-flex items-center gap-2.5 cursor-pointer select-none shrink-0 group ${className}`}>
+      {/* Platform Logo Badge - Rounded square with subtle curvature */}
+      <img 
+        src={finalLogo} 
+        alt="IKSHATESTS" 
+        className={`h-full w-auto max-h-full aspect-square object-cover rounded-[4px] shadow-sm shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_0_12px_rgba(246,195,67,0.35)] ${imgClassName}`}
+      />
 
-      {/* Center-Aligned Brand Typography */}
+      {/* Two-Line Brand Typography (Center-Aligned to each other, protected from shrinking/wrapping) */}
       {showText && (
-        <div className="flex flex-col justify-center items-center text-center leading-none">
-          <span className="text-lg font-black tracking-wider text-white font-headline group-hover:text-[#4EC6D7] transition-colors">
-            IKSHA<span className="text-[#E7CF29]">TESTS</span>
+        <div className={`flex flex-col items-center justify-center text-center leading-none select-none whitespace-nowrap shrink-0 ${textClassName}`}>
+          <span className="text-[13px] font-black tracking-wider text-white uppercase whitespace-nowrap group-hover:text-[#E7CF29] transition-colors">
+            IKSHATESTS
           </span>
-          <span className="text-[9px] font-bold tracking-[0.22em] text-slate-400 uppercase mt-0.5 group-hover:text-slate-300 transition-colors text-center w-full">
+          <span className="text-[9.5px] font-medium tracking-normal text-slate-300 whitespace-nowrap group-hover:text-white transition-colors mt-0.5">
             Pariksha Shikshak
           </span>
         </div>

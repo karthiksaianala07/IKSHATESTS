@@ -205,7 +205,7 @@ export default function Home() {
           
           <div className="flex flex-col items-center md:items-start gap-3">
             <div className="flex items-center gap-3">
-              <Logo className="h-8 w-auto" />
+              <Logo className="h-10 w-auto" />
             </div>
             <p className="text-xs text-slate-500 font-medium max-w-sm">
               High-accuracy educational mock consoles and diagnostic behavioral reporting for all exams.

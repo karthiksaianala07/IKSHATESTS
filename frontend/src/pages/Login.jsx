@@ -211,7 +211,7 @@ export default function Login() {
 
         <div className="text-center mb-10">
           <div className="flex justify-center mb-8 hover:scale-105 transition-transform duration-500">
-            <Logo className="h-12 w-auto" />
+            <Logo className="h-16 w-auto" showText={false} />
           </div>
           <h2 className="text-2xl font-black text-white mb-2 tracking-tight">
             {step === 'register' ? 'Create Account' : 'Welcome Back'}
