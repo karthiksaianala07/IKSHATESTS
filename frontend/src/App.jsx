@@ -10,6 +10,7 @@ import TestConsole from './pages/TestConsole';
 import AdminPortal from './pages/AdminPortal';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';
+import TestPaperPdfView from './pages/TestPaperPdfView';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Logo } from './components/Logo';
 import SparkleOrbs from './components/SparkleOrbs';
@@ -154,9 +155,10 @@ function AppContent() {
     return () => clearInterval(interval);
   }, []);
 
-  const isTestConsole = location.pathname.includes('/test/');
+  const isTestPaperPdf = location.pathname.startsWith('/admin/test-paper/');
+  const isTestConsole = location.pathname.includes('/test/') && !isTestPaperPdf;
   const isLoginPage = location.pathname === '/login';
-  const isAdminPortal = location.pathname.startsWith('/admin');
+  const isAdminPortal = location.pathname.startsWith('/admin') && !isTestPaperPdf;
 
   // If user is admin and on /login or /, immediately redirect to /admin without rendering Home
   if (user?.role === 'admin' && (isLoginPage || location.pathname === '/')) {
@@ -165,6 +167,14 @@ function AppContent() {
 
   if (isLoginPage) return <Login />;
   
+  if (isTestPaperPdf) {
+    return (
+      <Routes>
+        <Route path="/admin/test-paper/:id" element={<ProtectedRoute requireAdmin={true}><TestPaperPdfView /></ProtectedRoute>} />
+      </Routes>
+    );
+  }
+
   if (isTestConsole) {
     return (
       <div className="min-h-screen bg-[#0f172a] text-white">
