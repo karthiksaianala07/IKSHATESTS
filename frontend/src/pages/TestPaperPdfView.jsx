@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../config/api';
+import { supabase } from '../config/supabase';
 import LatexRenderer from '../components/LatexRenderer';
 import finalLogo from '../assets/Final_Logo.png';
 
@@ -21,17 +22,77 @@ export default function TestPaperPdfView() {
   const fetchTestDetails = async () => {
     setLoading(true);
     setError(null);
+
+    // 1. First Attempt: Dedicated Admin Full Test Endpoint
     try {
       const res = await axios.get(`${API_URL}/api/admin/tests/${id}/full`);
       if (res.data && res.data.test) {
         setTest(res.data.test);
         setQuestions(res.data.questions || []);
-      } else {
-        setError('Test details not found.');
+        setLoading(false);
+        return;
       }
     } catch (err) {
+      console.warn('Endpoint /api/admin/tests/:id/full unavailable, trying standard endpoint or Supabase fallback...', err.message);
+    }
+
+    // 2. Second Attempt: Standard Test Fetch Endpoint
+    try {
+      const res = await axios.get(`${API_URL}/api/tests/${id}`);
+      if (res.data && (res.data.questions || res.data.title)) {
+        setTest({
+          id: res.data.testId || id,
+          title: res.data.title || 'Mock Examination Paper',
+          category: res.data.category || 'MOCK EXAM',
+          duration_minutes: res.data.duration_minutes || 180,
+          scheduled_at: res.data.scheduled_at || null
+        });
+        setQuestions(res.data.questions || []);
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('Endpoint /api/tests/:id failed, attempting direct Supabase query...', err.message);
+    }
+
+    // 3. Third Attempt: Direct Supabase Database Query (100% Resilient)
+    try {
+      let testRecord = null;
+
+      const { data: t1 } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (t1) {
+        testRecord = t1;
+      } else {
+        const { data: t2 } = await supabase
+          .from('tests')
+          .select('*')
+          .eq('title', id)
+          .maybeSingle();
+        testRecord = t2;
+      }
+
+      if (!testRecord) {
+        throw new Error('Test blueprint not found in repository.');
+      }
+
+      const { data: qData, error: qErr } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('test_id', testRecord.id)
+        .order('created_at', { ascending: true });
+
+      if (qErr) throw qErr;
+
+      setTest(testRecord);
+      setQuestions(qData || []);
+    } catch (err) {
       console.error('Fetch test details error:', err);
-      setError(err.response?.data?.error || err.message || 'Failed to load test paper.');
+      setError(err.message || 'Failed to load test paper.');
     } finally {
       setLoading(false);
     }
