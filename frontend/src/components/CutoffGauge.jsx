@@ -8,17 +8,17 @@ export function CutoffGauge({ score = 0, maxScore = 300, cutoff = 92, category =
   const margin = score - cutoff;
 
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant/30 p-6 rounded-2xl shadow-sm relative overflow-hidden">
+    <div className="bg-[#001f54] border border-[#034078]/30 p-6 rounded-2xl shadow-sm relative overflow-hidden">
       <div className="flex justify-between items-start flex-wrap gap-3 mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="material-symbols-outlined text-primary text-xl">speed</span>
-            <h4 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant">Cut-off Indicator</h4>
+            <span className="material-symbols-outlined text-[#1282a2] text-xl">speed</span>
+            <h4 className="text-sm font-bold uppercase tracking-widest text-[#fefcfb]">Cut-off Indicator</h4>
           </div>
-          <p className="text-xs text-[#64748b]">Target benchmark evaluation for {category}</p>
+          <p className="text-xs text-[#fefcfb]/70">Target benchmark evaluation for {category}</p>
         </div>
         <div className={`px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm border ${
-          isCleared ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+          isCleared ? 'bg-[#034078]/20 text-[#fefcfb] border-[#034078]/50' : 'bg-[#1282a2]/20 text-[#1282a2] border-[#1282a2]/50'
         }`}>
           <span className="material-symbols-outlined text-base">
             {isCleared ? 'verified' : 'warning'}
@@ -34,17 +34,17 @@ export function CutoffGauge({ score = 0, maxScore = 300, cutoff = 92, category =
           className="absolute top-0 transform -translate-x-1/2 flex flex-col items-center pointer-events-none transition-all duration-500"
           style={{ left: `${cutoffPercentage}%` }}
         >
-          <span className="bg-zinc-800 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
+          <span className="bg-[#0a1128] text-[#fefcfb] border border-[#034078]/40 text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
             Cutoff: {cutoff}
           </span>
-          <div className="w-1.5 h-1.5 bg-zinc-800 rotate-45 -mt-1" />
+          <div className="w-1.5 h-1.5 bg-[#0a1128] rotate-45 -mt-1 border-r border-b border-[#034078]/40" />
         </div>
 
         {/* Bar */}
-        <div className="h-4 bg-zinc-100 rounded-full overflow-hidden relative border border-zinc-200">
+        <div className="h-4 bg-[#0a1128] rounded-full overflow-hidden relative border border-[#034078]/30">
           {/* Target Cutoff Zone fill */}
           <div 
-            className="absolute top-0 bottom-0 bg-emerald-500/10 border-r-2 border-emerald-600 border-dashed z-10"
+            className="absolute top-0 bottom-0 bg-[#034078]/20 border-r-2 border-[#034078] border-dashed z-10"
             style={{ width: `${cutoffPercentage}%` }}
           />
 
@@ -52,8 +52,8 @@ export function CutoffGauge({ score = 0, maxScore = 300, cutoff = 92, category =
           <div 
             className={`h-full transition-all duration-1000 ease-out rounded-full shadow-inner ${
               isCleared 
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-400' 
-                : 'bg-gradient-to-r from-amber-500 to-orange-400'
+                ? 'bg-gradient-to-r from-[#034078] to-[#1282a2]' 
+                : 'bg-gradient-to-r from-[#1282a2] to-[#fefcfb]'
             }`}
             style={{ width: `${scorePercentage}%` }}
           />
@@ -64,14 +64,14 @@ export function CutoffGauge({ score = 0, maxScore = 300, cutoff = 92, category =
           className="absolute -bottom-2 transform -translate-x-1/2 flex flex-col items-center transition-all duration-700"
           style={{ left: `${scorePercentage}%` }}
         >
-          <div className="w-3 h-3 bg-primary rounded-full ring-4 ring-white shadow-md" />
+          <div className="w-3 h-3 bg-[#1282a2] rounded-full ring-4 ring-[#0a1128] shadow-md" />
         </div>
       </div>
 
       {/* Footer statistics */}
-      <div className="flex justify-between items-center text-xs text-[#64748b] mt-4 pt-3 border-t border-outline-variant/20 font-medium">
+      <div className="flex justify-between items-center text-xs text-[#fefcfb]/70 mt-4 pt-3 border-t border-[#034078]/20 font-medium">
         <span>Min: 0 pts</span>
-        <span className="font-bold text-on-surface">Your Score: <span className="text-primary font-black">{score}</span> / {maxScore}</span>
+        <span className="font-bold text-white">Your Score: <span className="text-[#1282a2] font-black">{score}</span> / {maxScore}</span>
         <span>Max: {maxScore} pts</span>
       </div>
     </div>

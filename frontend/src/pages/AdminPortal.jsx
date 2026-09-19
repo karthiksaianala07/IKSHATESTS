@@ -6,7 +6,9 @@ import { supabase } from '../config/supabase';
 import { NCERT_CHAPTERS } from '../config/ncertChapters';
 import MathKeypad from '../components/MathKeypad';
 import AdminAnalytics from '../components/AdminAnalytics';
+import StudentAnalyticsWorkspace from '../components/StudentAnalyticsWorkspace';
 import AddTestPage from './AddTestPage';
+import QuestionBankDocumentUpload from '../components/QuestionBankDocumentUpload';
 import { Logo } from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
 
@@ -18,8 +20,8 @@ const DEFAULT_SERIES = [
     categoryType: 'Engineering',
     description: 'Premier mock exams for JEE Main and JEE Advanced engineering aspirants.',
     icon: 'architecture',
-    color: '#882D2D',
-    badgeColor: 'border-red-500/30 bg-red-950/40 text-red-400',
+    color: '#81c3d7',
+    badgeColor: 'border-[#81c3d7]/40 bg-[#81c3d7]/15 text-[#81c3d7]',
     isDefault: true,
     sections: [
       { id: 'full', label: 'Full-Length Mocks', icon: 'assignment' },
@@ -34,8 +36,8 @@ const DEFAULT_SERIES = [
     categoryType: 'Medical',
     description: 'Comprehensive testing and diagnostic blueprints for medical aspirants.',
     icon: 'biotech',
-    color: '#4EC6D7',
-    badgeColor: 'border-cyan-500/30 bg-cyan-950/40 text-cyan-400',
+    color: '#3a7ca5',
+    badgeColor: 'border-[#3a7ca5]/40 bg-[#3a7ca5]/20 text-[#d9dcd6]',
     isDefault: true,
     sections: [
       { id: 'full', label: 'Full-Length Mocks', icon: 'assignment' },
@@ -63,6 +65,7 @@ export default function AdminPortal() {
   const [adminTests, setAdminTests] = useState([]);
   const [loadingAdminTests, setLoadingAdminTests] = useState(false);
   const [showAddForm, setShowAddForm] = useState(true);
+  const [qbImportMode, setQbImportMode] = useState('document'); // 'document' | 'manual' | 'json'
 
   // Exam Series management state (initialized with existing platform series)
   const [examSeriesList, setExamSeriesList] = useState(DEFAULT_SERIES);
@@ -79,7 +82,7 @@ export default function AdminPortal() {
     categoryType: 'Engineering',
     description: '',
     icon: 'quiz',
-    color: '#882D2D'
+    color: '#81c3d7'
   });
   const [editingSeries, setEditingSeries] = useState(null);
 
@@ -121,8 +124,8 @@ export default function AdminPortal() {
   // Settings states
   const [brandName, setBrandName] = useState('IkshaTests Student Portal');
   const [supportEmail, setSupportEmail] = useState('support@ikshatests.edu');
-  const [primaryColor, setPrimaryColor] = useState('#882D2D');
-  const [secondaryColor, setSecondaryColor] = useState('#E7CF29');
+  const [primaryColor, setPrimaryColor] = useState('#81c3d7');
+  const [secondaryColor, setSecondaryColor] = useState('#3a7ca5');
 
   // Discover and combine series from state, default series, and any active tests in database
   const getDiscoveredSeriesList = () => {
@@ -147,8 +150,8 @@ export default function AdminPortal() {
           categoryType: 'General',
           description: `Allotted test blueprints and examinations under the ${cleanCat.toUpperCase()} track.`,
           icon: 'quiz',
-          color: '#E7CF29',
-          badgeColor: 'border-amber-500/30 bg-amber-950/40 text-amber-400',
+          color: '#81c3d7',
+          badgeColor: 'border-[#81c3d7]/30 bg-[#81c3d7]/15 text-[#81c3d7]',
           isDefault: false,
           sections: [
             { id: 'full', label: 'Full-Length Mocks', icon: 'assignment' },
@@ -223,7 +226,7 @@ export default function AdminPortal() {
         categoryType: 'Engineering',
         description: '',
         icon: 'quiz',
-        color: '#882D2D'
+        color: '#81c3d7'
       });
       fetchExamSeries();
       alert('Exam series created successfully!');
@@ -522,7 +525,7 @@ export default function AdminPortal() {
         <div className="p-4 border-t border-slate-900/60">
           <button
             onClick={() => navigate('/admin/add-test')}
-            className="w-full bg-[#882D2D] hover:bg-[#a33939] text-white font-black text-[10px] uppercase tracking-wider py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(136,45,45,0.2)] border-none"
+            className="w-full bg-[#81c3d7] hover:bg-[#9ad4e4] text-[#0e2a3b] font-black text-[10px] uppercase tracking-wider py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(129,195,215,0.2)] border-none"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
             Create New Exam
@@ -555,7 +558,7 @@ export default function AdminPortal() {
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <span className="text-[10px] font-black uppercase text-[#E7CF29] tracking-widest font-mono">Faculty Console</span>
+            <span className="text-[10px] font-black uppercase text-[#81c3d7] tracking-widest font-mono">Faculty Console</span>
             <div className="flex items-center gap-2">
               <button className="p-2 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-200 transition-colors border-none bg-transparent cursor-pointer">
                 <span className="material-symbols-outlined">notifications</span>
@@ -590,37 +593,37 @@ export default function AdminPortal() {
 
                   {/* Metrics Bento Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="bg-[#060913]/60 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden group hover:border-[#882D2D]/30 transition-colors">
+                    <div className="bg-[#060913]/60 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden group hover:border-[#81c3d7]/30 transition-colors">
                       <div className="absolute -right-4 -top-4 w-20 h-20 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
                       <div className="flex justify-between items-start mb-4">
                         <span className="font-mono text-[10px] text-slate-400 uppercase tracking-widest font-bold">Total Exams</span>
                         <span className="material-symbols-outlined text-primary text-xl">description</span>
                       </div>
                       <div className="font-headline font-black text-3xl mb-1 text-slate-100">2,400+</div>
-                      <div className="font-mono text-[10px] font-bold text-[#E7CF29] flex items-center">
+                      <div className="font-mono text-[10px] font-bold text-[#81c3d7] flex items-center">
                         <span className="material-symbols-outlined text-[14px]">trending_up</span>
                         <span className="ml-1">+12% this month</span>
                       </div>
                     </div>
 
-                    <div className="bg-[#060913]/60 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden group hover:border-[#4EC6D7]/30 transition-colors">
+                    <div className="bg-[#060913]/60 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden group hover:border-[#3a7ca5]/30 transition-colors">
                       <div className="absolute -right-4 -top-4 w-20 h-20 bg-cyan-400/5 rounded-full blur-2xl group-hover:bg-cyan-400/10 transition-colors"></div>
                       <div className="flex justify-between items-start mb-4">
                         <span className="font-mono text-[10px] text-slate-400 uppercase tracking-widest font-bold">Active Students</span>
                         <span className="material-symbols-outlined text-cyan-400 text-xl">group</span>
                       </div>
                       <div className="font-headline font-black text-3xl mb-1 text-slate-100">{formatNumber(stats.activeStudents || 50000)}</div>
-                      <div className="font-mono text-[10px] font-bold text-[#E7CF29] flex items-center">
+                      <div className="font-mono text-[10px] font-bold text-[#81c3d7] flex items-center">
                         <span className="material-symbols-outlined text-[14px]">trending_up</span>
                         <span className="ml-1">+8% this week</span>
                       </div>
                     </div>
 
-                    <div className="bg-[#060913]/60 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden group hover:border-[#E7CF29]/30 transition-colors">
+                    <div className="bg-[#060913]/60 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden group hover:border-[#81c3d7]/30 transition-colors">
                       <div className="absolute -right-4 -top-4 w-20 h-20 bg-amber-400/5 rounded-full blur-2xl group-hover:bg-amber-400/10 transition-colors"></div>
                       <div className="flex justify-between items-start mb-4">
                         <span className="font-mono text-[10px] text-slate-400 uppercase tracking-widest font-bold">Avg. Accuracy</span>
-                        <span className="material-symbols-outlined text-[#E7CF29] text-xl">track_changes</span>
+                        <span className="material-symbols-outlined text-[#81c3d7] text-xl">track_changes</span>
                       </div>
                       <div className="font-headline font-black text-3xl mb-1 text-slate-100">98.6%</div>
                       <div className="font-mono text-[10px] font-bold text-red-500 flex items-center">
@@ -629,14 +632,14 @@ export default function AdminPortal() {
                       </div>
                     </div>
 
-                    <div className="bg-[#060913]/60 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden group hover:border-[#882D2D]/30 transition-colors">
+                    <div className="bg-[#060913]/60 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden group hover:border-[#81c3d7]/30 transition-colors">
                       <div className="absolute -right-4 -top-4 w-20 h-20 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
                       <div className="flex justify-between items-start mb-4">
                         <span className="font-mono text-[10px] text-slate-400 uppercase tracking-widest font-bold">Time Saved</span>
                         <span className="material-symbols-outlined text-primary text-xl">speed</span>
                       </div>
                       <div className="font-headline font-black text-3xl mb-1 text-slate-100">32%</div>
-                      <div className="font-mono text-[10px] font-bold text-[#E7CF29] flex items-center">
+                      <div className="font-mono text-[10px] font-bold text-[#81c3d7] flex items-center">
                         <span className="material-symbols-outlined text-[14px]">trending_up</span>
                         <span className="ml-1">+5% from last cohort</span>
                       </div>
@@ -659,8 +662,8 @@ export default function AdminPortal() {
                         <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-50 pointer-events-none"></div>
                         <div className="w-full h-full border-l border-b border-slate-900/80 relative">
                           <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-                            <path className="opacity-80" d="M0,80 Q25,60 50,75 T100,25" fill="none" stroke="#882D2D" strokeWidth="2.5"></path>
-                            <path className="opacity-45" d="M0,90 Q30,75 60,88 T100,45" fill="none" stroke="#E7CF29" strokeDasharray="4" strokeWidth="1.5"></path>
+                            <path className="opacity-80" d="M0,80 Q25,60 50,75 T100,25" fill="none" stroke="#81c3d7" strokeWidth="2.5"></path>
+                            <path className="opacity-45" d="M0,90 Q30,75 60,88 T100,45" fill="none" stroke="#d9dcd6" strokeDasharray="4" strokeWidth="1.5"></path>
                           </svg>
                           <div className="absolute bottom-2 left-3 text-[10px] font-mono text-slate-500 uppercase tracking-wider">Cohort Accuracy Analysis</div>
                         </div>
@@ -763,7 +766,7 @@ export default function AdminPortal() {
                                 >
                                   <div
                                     className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-10 pointer-events-none"
-                                    style={{ backgroundColor: series.color || '#882D2D' }}
+                                    style={{ backgroundColor: series.color || '#81c3d7' }}
                                   />
                                   <div>
                                     {/* Header Badge Row */}
@@ -772,9 +775,9 @@ export default function AdminPortal() {
                                         <div
                                           className="w-11 h-11 rounded-xl flex items-center justify-center border shadow-inner"
                                           style={{
-                                            backgroundColor: `${series.color || '#882D2D'}20`,
-                                            borderColor: `${series.color || '#882D2D'}50`,
-                                            color: series.color || '#882D2D'
+                                            backgroundColor: `${series.color || '#81c3d7'}20`,
+                                            borderColor: `${series.color || '#81c3d7'}50`,
+                                            color: series.color || '#81c3d7'
                                           }}
                                         >
                                           <span className="material-symbols-outlined text-2xl">
@@ -889,16 +892,16 @@ export default function AdminPortal() {
                       <div className="bg-[#060913]/80 border border-slate-900/80 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
                         <div
                           className="absolute -top-12 -right-12 w-64 h-64 rounded-full blur-3xl opacity-15 pointer-events-none"
-                          style={{ backgroundColor: selectedSeries.color || '#882D2D' }}
+                          style={{ backgroundColor: selectedSeries.color || '#81c3d7' }}
                         />
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                           <div className="flex items-start gap-4">
                             <div
                               className="w-14 h-14 rounded-2xl flex items-center justify-center border shadow-lg flex-shrink-0"
                               style={{
-                                backgroundColor: `${selectedSeries.color || '#882D2D'}25`,
-                                borderColor: `${selectedSeries.color || '#882D2D'}60`,
-                                color: selectedSeries.color || '#882D2D'
+                                backgroundColor: `${selectedSeries.color || '#81c3d7'}25`,
+                                borderColor: `${selectedSeries.color || '#81c3d7'}60`,
+                                color: selectedSeries.color || '#81c3d7'
                               }}
                             >
                               <span className="material-symbols-outlined text-3xl">
@@ -1045,7 +1048,7 @@ export default function AdminPortal() {
                                   <div className="flex items-center gap-4">
                                     <div
                                       className="w-3 h-3 rounded-full flex-shrink-0"
-                                      style={{ backgroundColor: selectedSeries.color || '#882D2D' }}
+                                      style={{ backgroundColor: selectedSeries.color || '#81c3d7' }}
                                     />
                                     <div>
                                       <h4 className="font-bold text-slate-200 text-base group-hover:text-primary transition-colors">
@@ -1109,24 +1112,67 @@ export default function AdminPortal() {
               {activeTab === 'question-bank' && (
                 <div className="space-y-8 animate-in fade-in duration-300">
                   {/* Question Bank Header */}
-                  <div className="flex justify-between items-end">
+                  <div className="flex justify-between items-end flex-wrap gap-4">
                     <div>
                       <h2 className="font-headline font-black text-3xl text-slate-100">Question Repository</h2>
-                      <p className="text-sm text-slate-400 mt-1">Manually insert questions with KaTeX LaTeX notation or upload bulk data.</p>
+                      <p className="text-sm text-slate-400 mt-1">Add questions to the repository via PDF & Word document scan, manual entry, or bulk JSON.</p>
                     </div>
+                    <div className="flex items-center gap-3">
+                      <span className="px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs font-bold">
+                        Repository Count: {questions.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Import Mode Selector Tabs */}
+                  <div className="flex bg-[#060913]/80 p-1.5 rounded-xl border border-slate-900 flex-wrap gap-2 w-fit">
                     <button
-                      onClick={() => setShowAddForm(!showAddForm)}
-                      className="px-5 py-2.5 bg-primary hover:brightness-110 text-white rounded-xl text-xs uppercase tracking-wider font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-2 border-none"
+                      type="button"
+                      onClick={() => setQbImportMode('document')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        qbImportMode === 'document'
+                          ? 'bg-primary text-white shadow-md'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                      }`}
                     >
-                      <span className="material-symbols-outlined text-sm">{showAddForm ? 'close' : 'add'}</span>
-                      {showAddForm ? 'Hide Form' : 'Insert Question'}
+                      <span className="material-symbols-outlined text-base">document_scanner</span>
+                      <span>PDF & Word Upload</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setQbImportMode('manual')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        qbImportMode === 'manual'
+                          ? 'bg-primary text-white shadow-md'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">edit_note</span>
+                      <span>Manual Question Form</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setQbImportMode('json')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        qbImportMode === 'json'
+                          ? 'bg-primary text-white shadow-md'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">code</span>
+                      <span>Bulk JSON Import</span>
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Add Form / Bulk Import */}
-                    <div className="lg:col-span-8 space-y-8">
-                      {showAddForm && (
+                  <div className="space-y-8">
+                    {/* Active Import Mode Content */}
+                    {qbImportMode === 'document' && (
+                      <QuestionBankDocumentUpload onQuestionsSaved={fetchQuestions} />
+                    )}
+
+                    {qbImportMode === 'manual' && (
                         <form onSubmit={handleAddQuestion} className="bg-[#060913]/60 border border-slate-900/60 p-6 md:p-8 rounded-2xl space-y-6 shadow-xl animate-in slide-in-from-top-4 duration-300">
                           <div className="border-b border-slate-900/60 pb-4 mb-4">
                             <h3 className="font-headline font-bold text-lg text-slate-200">Manual Question Form</h3>
@@ -1281,213 +1327,41 @@ export default function AdminPortal() {
                         </form>
                       )}
 
-                      <div className="bg-[#060913]/60 border border-slate-900/60 p-6 md:p-8 rounded-2xl shadow-xl">
-                        <h3 className="font-headline font-bold text-lg mb-2 flex items-center gap-2">
-                          <span className="material-symbols-outlined text-cyan-400">cloud_upload</span>
-                          Bulk Import JSON
-                        </h3>
-                        <p className="text-xs text-slate-400 mb-4">Paste an array of question JSON objects below to bulk-upload to the database.</p>
-                        <textarea
-                          className="w-full p-3 rounded-xl border border-slate-900 bg-slate-950 text-[10px] font-mono min-h-[160px] text-slate-300 focus:outline-none focus:border-primary"
-                          placeholder='[{"subject": "Physics", "chapter": "Physical World", "type": "MCQ", "text": "What is...", "correct_answer": "0", "options": [{"text": "A"}, {"text": "B"}]}]'
-                          onChange={async (e) => {
-                            try {
-                              const data = JSON.parse(e.target.value);
-                              if (Array.isArray(data)) {
-                                axios.post(`${API_URL}/api/admin/questions`, data)
-                                  .then(() => {
-                                    alert("Bulk upload success!");
-                                    fetchQuestions();
-                                  })
-                                  .catch(err => {
-                                    const msg = err.response?.data?.error || err.message || "Failed to bulk upload";
-                                    alert("Error: " + msg);
-                                  });
-                              }
-                            } catch (err) { /* quiet during typing */ }
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Questions Registry */}
-                    <div className="lg:col-span-4 bg-[#060913]/60 border border-slate-900/60 rounded-2xl overflow-hidden shadow-xl h-[700px] flex flex-col">
-                      <div className="p-6 border-b border-slate-900/60 bg-slate-950/20">
-                        <h3 className="font-headline font-bold text-lg">Question Index</h3>
-                        <p className="text-[10px] font-mono text-slate-500 mt-1 uppercase">Repository count: {questions.length}</p>
-                      </div>
-                      <div className="flex-grow overflow-y-auto divide-y divide-slate-900/60 p-4 space-y-4">
-                        {questions && questions.length > 0 ? (
-                          questions.map((q, i) => (
-                            <div key={i} className="pt-4 first:pt-0 pb-1 flex flex-col gap-2">
-                              <div className="flex justify-between items-center">
-                                <span className={`px-2 py-0.5 rounded text-[8px] uppercase font-black border font-mono ${
-                                  q.subject === 'Physics' ? 'bg-blue-950/40 text-blue-400 border-blue-900/40' :
-                                  q.subject === 'Chemistry' ? 'bg-amber-950/40 text-amber-400 border-amber-900/40' :
-                                  q.subject === 'Mathematics' ? 'bg-red-950/40 text-red-400 border-red-900/40' :
-                                  'bg-green-950/40 text-green-400 border-green-900/40'
-                                }`}>
-                                  {q.subject}
-                                </span>
-                                <span className="text-[9px] uppercase font-black text-slate-500 border border-slate-900 px-1.5 py-0.5 rounded bg-slate-950/30 font-mono">{q.type}</span>
-                              </div>
-                              <p className="text-xs text-slate-300 font-medium line-clamp-2" title={q.text}>{q.text}</p>
-                              {q.chapter && <p className="text-[9px] font-mono text-slate-500 truncate uppercase tracking-wider">{q.chapter}</p>}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-slate-500">
-                            <span className="material-symbols-outlined text-3xl mb-2 text-slate-600">inventory_2</span>
-                            <p className="text-xs font-bold uppercase tracking-wider">Empty Repository</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                      {qbImportMode === 'json' && (
+                        <div className="bg-[#060913]/60 border border-slate-900/60 p-6 md:p-8 rounded-2xl shadow-xl animate-in slide-in-from-top-4 duration-300">
+                          <h3 className="font-headline font-bold text-lg mb-2 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-cyan-400">cloud_upload</span>
+                            Bulk Import JSON
+                          </h3>
+                          <p className="text-xs text-slate-400 mb-4">Paste an array of question JSON objects below to bulk-upload to the database.</p>
+                          <textarea
+                            className="w-full p-3 rounded-xl border border-slate-900 bg-slate-950 text-[10px] font-mono min-h-[160px] text-slate-300 focus:outline-none focus:border-primary"
+                            placeholder='[{"subject": "Physics", "chapter": "Physical World", "type": "MCQ", "text": "What is...", "correct_answer": "0", "options": [{"text": "A"}, {"text": "B"}]}]'
+                            onChange={async (e) => {
+                              try {
+                                const data = JSON.parse(e.target.value);
+                                if (Array.isArray(data)) {
+                                  axios.post(`${API_URL}/api/admin/questions`, data)
+                                    .then(() => {
+                                      alert("Bulk upload success!");
+                                      fetchQuestions();
+                                    })
+                                    .catch(err => {
+                                      const msg = err.response?.data?.error || err.message || "Failed to bulk upload";
+                                      alert("Error: " + msg);
+                                    });
+                                }
+                              } catch (err) { /* quiet during typing */ }
+                            }}
+                          />
+                        </div>
+                      )}
                   </div>
                 </div>
               )}
 
               {activeTab === 'students' && (
-                <div className="space-y-8 animate-in fade-in duration-300">
-                  {/* Students Header */}
-                  <div>
-                    <h2 className="font-headline font-black text-3xl text-slate-100">Student Analytics Overview</h2>
-                    <p className="text-sm text-slate-400 mt-1">Comprehensive performance metrics across active exam cohorts.</p>
-                  </div>
-
-                  {/* Bento Performance Row */}
-                  <div className="grid grid-cols-12 gap-6">
-                    {/* Performance Distribution */}
-                    <div className="col-span-12 lg:col-span-8 bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-800 transition-colors">
-                      <div className="absolute -top-20 -right-20 w-52 h-52 bg-primary/5 rounded-full blur-[60px] group-hover:bg-primary/10 transition-colors"></div>
-                      <div className="flex justify-between items-center mb-8 relative z-10">
-                        <h3 className="font-headline font-bold text-lg">Performance Distribution</h3>
-                        <div className="font-mono text-[9px] text-slate-500 flex items-center gap-2 uppercase font-bold">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#E7CF29]"></span> Top 10%
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary ml-3"></span> Avg Baseline
-                        </div>
-                      </div>
-                      
-                      {/* Bar columns */}
-                      <div className="h-60 w-full flex items-end gap-3 relative z-10">
-                        <div className="w-full h-full border-b border-l border-slate-900 absolute left-0 bottom-0 pointer-events-none">
-                          <div className="w-full h-[1px] bg-slate-900/50 absolute bottom-1/4"></div>
-                          <div className="w-full h-[1px] bg-slate-900/50 absolute bottom-2/4"></div>
-                          <div className="w-full h-[1px] bg-slate-900/50 absolute bottom-3/4"></div>
-                        </div>
-                        <div className="flex-1 flex justify-center items-end group/bar cursor-pointer h-full pb-0 relative z-20">
-                          <div className="w-12 bg-primary/20 hover:bg-primary/30 rounded-t border border-primary/20 h-[30%] transition-all duration-300"></div>
-                        </div>
-                        <div className="flex-1 flex justify-center items-end group/bar cursor-pointer h-full pb-0 relative z-20">
-                          <div className="w-12 bg-primary/40 hover:bg-primary/50 rounded-t border border-primary/30 h-[45%] transition-all duration-300"></div>
-                        </div>
-                        <div className="flex-1 flex justify-center items-end group/bar cursor-pointer h-full pb-0 relative z-20">
-                          <div className="w-12 bg-primary/60 hover:bg-primary/70 rounded-t border border-primary/50 h-[65%] transition-all duration-300 shadow-[0_0_15px_rgba(136,45,45,0.15)]"></div>
-                        </div>
-                        <div className="flex-1 flex justify-center items-end group/bar cursor-pointer h-full pb-0 relative z-20">
-                          <div className="w-12 bg-[#E7CF29]/30 hover:bg-[#E7CF29]/40 rounded-t border border-[#E7CF29]/40 h-[85%] transition-all duration-300 shadow-[0_0_15px_rgba(231,207,41,0.15)]"></div>
-                        </div>
-                        <div className="flex-1 flex justify-center items-end group/bar cursor-pointer h-full pb-0 relative z-20">
-                          <div className="w-12 bg-primary/50 hover:bg-primary/60 rounded-t border border-primary/35 h-[55%] transition-all duration-300"></div>
-                        </div>
-                        <div className="flex-1 flex justify-center items-end group/bar cursor-pointer h-full pb-0 relative z-20">
-                          <div className="w-12 bg-primary/10 hover:bg-primary/20 rounded-t border border-primary/10 h-[25%] transition-all duration-300"></div>
-                        </div>
-                      </div>
-                      <div className="flex justify-between mt-4 font-mono text-[9px] text-slate-500 uppercase tracking-widest">
-                        <span>&lt; 40% Accuracy</span>
-                        <span>50%</span>
-                        <span>60%</span>
-                        <span>70%</span>
-                        <span>80%</span>
-                        <span>&gt; 90%</span>
-                      </div>
-                    </div>
-
-                    {/* Quick Stats sidepanel */}
-                    <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                      <div className="bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-6 flex-1 flex flex-col justify-center hover:border-slate-800 transition-colors">
-                        <div className="flex justify-between items-start mb-2">
-                          <p className="font-mono text-[10px] text-slate-400 uppercase tracking-wider font-bold">Average Score Accuracy</p>
-                          <span className="material-symbols-outlined text-[#E7CF29]">track_changes</span>
-                        </div>
-                        <h4 className="font-headline font-black text-3xl mb-1 text-slate-100">74.2%</h4>
-                        <p className="font-mono text-[10px] font-bold text-primary flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">trending_up</span>
-                          +2.4% vs last cohort
-                        </p>
-                      </div>
-
-                      <div className="bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-6 flex-1 flex flex-col justify-center hover:border-slate-800 transition-colors">
-                        <div className="flex justify-between items-start mb-2">
-                          <p className="font-mono text-[10px] text-slate-400 uppercase tracking-wider font-bold">Avg. Speed / Question</p>
-                          <span className="material-symbols-outlined text-cyan-400">timer</span>
-                        </div>
-                        <h4 className="font-headline font-black text-3xl mb-1 text-slate-100">42s</h4>
-                        <p className="font-mono text-[10px] font-bold text-[#E7CF29] flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">bolt</span>
-                          Optimal testing pace
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Student Registry / Reports */}
-                  <div className="grid grid-cols-12 gap-6">
-                    {/* Top Performers */}
-                    <div className="col-span-12 lg:col-span-4 bg-[#060913]/60 border border-slate-900/60 rounded-2xl flex flex-col">
-                      <div className="p-6 border-b border-slate-900/60 bg-slate-950/20 rounded-t-2xl">
-                        <h3 className="font-headline font-bold text-lg">Top Performers</h3>
-                      </div>
-                      <div className="flex-grow p-4 space-y-4">
-                        <div className="flex items-center gap-3.5 p-3 rounded-xl hover:bg-slate-950/40 border border-transparent hover:border-slate-900/60 transition-colors group cursor-pointer">
-                          <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-bold text-xs text-primary font-mono">AS</div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-xs text-slate-200 group-hover:text-primary transition-colors truncate">Aryan Sharma</h4>
-                            <p className="font-mono text-[9px] text-slate-500 uppercase mt-0.5">ID: IK-9042</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-xs text-slate-200">98%</div>
-                            <div className="font-mono text-[9px] text-primary font-bold uppercase mt-0.5">Rank #1</div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3.5 p-3 rounded-xl hover:bg-slate-950/40 border border-transparent hover:border-slate-900/60 transition-colors group cursor-pointer">
-                          <div className="w-9 h-9 rounded-full bg-cyan-950/60 border border-cyan-900/40 flex items-center justify-center font-bold text-xs text-cyan-400 font-mono">PP</div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-xs text-slate-200 group-hover:text-cyan-400 transition-colors truncate">Priya Patel</h4>
-                            <p className="font-mono text-[9px] text-slate-500 uppercase mt-0.5">ID: IK-8831</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-xs text-slate-200">96.5%</div>
-                            <div className="font-mono text-[9px] text-slate-500 uppercase mt-0.5">Rank #2</div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3.5 p-3 rounded-xl hover:bg-slate-950/40 border border-transparent hover:border-slate-900/60 transition-colors group cursor-pointer">
-                          <div className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center font-bold text-xs text-slate-400 font-mono">RD</div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-xs text-slate-200 group-hover:text-primary transition-colors truncate">Rohan Desai</h4>
-                            <p className="font-mono text-[9px] text-slate-500 uppercase mt-0.5">ID: IK-7729</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-xs text-slate-200">95.2%</div>
-                            <div className="font-mono text-[9px] text-slate-500 uppercase mt-0.5">Rank #3</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Integrated Analytics Component */}
-                    <div className="col-span-12 lg:col-span-8 bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-6 md:p-8 shadow-xl">
-                      <div className="border-b border-slate-900/60 pb-4 mb-6">
-                        <h3 className="font-headline font-bold text-lg text-slate-200">Real-time Diagnostic Monitoring</h3>
-                      </div>
-                      {/* Embed the rich Analytics insights */}
-                      <AdminAnalytics />
-                    </div>
-                  </div>
-                </div>
+                <StudentAnalyticsWorkspace adminTests={adminTests} />
               )}
 
               {activeTab === 'settings' && (
@@ -1565,7 +1439,7 @@ export default function AdminPortal() {
                           </div>
                           <div className="md:col-span-2 space-y-4 font-mono text-[10px]">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded bg-[#882D2D] border border-slate-900"></div>
+                              <div className="w-8 h-8 rounded bg-[#81c3d7] border border-slate-900"></div>
                               <input
                                 className="bg-slate-950 border border-slate-900 rounded-lg px-3 py-2 text-slate-100 font-bold w-28 focus:outline-none focus:border-primary"
                                 type="text"
@@ -1575,7 +1449,7 @@ export default function AdminPortal() {
                               <span className="text-slate-500 uppercase tracking-widest font-bold">Primary Color</span>
                             </div>
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded bg-[#E7CF29] border border-slate-900"></div>
+                              <div className="w-8 h-8 rounded bg-[#3a7ca5] border border-slate-900"></div>
                               <input
                                 className="bg-slate-950 border border-slate-900 rounded-lg px-3 py-2 text-slate-100 font-bold w-28 focus:outline-none focus:border-primary"
                                 type="text"
@@ -1869,13 +1743,13 @@ export default function AdminPortal() {
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
-                      value={editingSeries.color || '#882D2D'}
+                      value={editingSeries.color || '#81c3d7'}
                       onChange={(e) => setEditingSeries({ ...editingSeries, color: e.target.value })}
                       className="w-10 h-10 rounded-lg bg-transparent border border-slate-800 cursor-pointer p-0.5"
                     />
                     <input
                       type="text"
-                      value={editingSeries.color || '#882D2D'}
+                      value={editingSeries.color || '#81c3d7'}
                       onChange={(e) => setEditingSeries({ ...editingSeries, color: e.target.value })}
                       className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-primary"
                     />

@@ -56,12 +56,12 @@ export default function AdminAnalytics() {
     { day: 'Sun', registrations: 38, submissions: 98, avgScore: 219, activeTime: 195 }
   ];
 
-  // Brand Subject breakdown data with #882D2D, #E7CF29, #4EC6D7
+  // Brand Subject breakdown data with #0a1128, #001f54, #034078, #1282a2, #fefcfb
   const subjectPerformance = [
-    { name: 'Physics', avgScore: 68, accuracy: 74, color: 'bg-[#4EC6D7]', stroke: '#4EC6D7' },
-    { name: 'Chemistry', avgScore: 78, accuracy: 82, color: 'bg-[#E7CF29]', stroke: '#E7CF29' },
-    { name: 'Mathematics', avgScore: 54, accuracy: 64, color: 'bg-[#882D2D]', stroke: '#882D2D' },
-    { name: 'Biology', avgScore: 82, accuracy: 86, color: 'bg-emerald-500', stroke: '#10b981' }
+    { name: 'Physics', avgScore: 68, accuracy: 74, color: 'bg-[#034078]', stroke: '#034078' },
+    { name: 'Chemistry', avgScore: 78, accuracy: 82, color: 'bg-[#1282a2]', stroke: '#1282a2' },
+    { name: 'Mathematics', avgScore: 54, accuracy: 64, color: 'bg-[#fefcfb]', stroke: '#fefcfb' },
+    { name: 'Biology', avgScore: 82, accuracy: 86, color: 'bg-[#001f54]', stroke: '#001f54' }
   ];
 
   // Mock Recent Student Submissions Table Data
@@ -305,12 +305,12 @@ export default function AdminAnalytics() {
       {/* ── 3. KPI Metric Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Card 1: Active Students */}
-        <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-slate-800 transition-all duration-300 flex flex-col justify-between">
+        <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-[#3a7ca5]/40 transition-all duration-300 flex flex-col justify-between">
           <div className="flex justify-between items-start z-10">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-[#4EC6D7]" /> Active Students
+              <Users className="w-3.5 h-3.5 text-[#3a7ca5]" /> Active Students
             </span>
-            <span className="p-2 bg-[#4EC6D7]/10 text-[#4EC6D7] rounded-xl">
+            <span className="p-2 bg-[#3a7ca5]/10 text-[#3a7ca5] rounded-xl">
               <Users className="w-4 h-4" />
             </span>
           </div>
@@ -326,12 +326,12 @@ export default function AdminAnalytics() {
         </div>
 
         {/* Card 2: Tests Submitted */}
-        <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-slate-800 transition-all duration-300 flex flex-col justify-between">
+        <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-[#81c3d7]/40 transition-all duration-300 flex flex-col justify-between">
           <div className="flex justify-between items-start z-10">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5 text-[#E7CF29]" /> Tests Conducted
+              <BookOpen className="w-3.5 h-3.5 text-[#81c3d7]" /> Tests Conducted
             </span>
-            <span className="p-2 bg-[#E7CF29]/10 text-[#E7CF29] rounded-xl">
+            <span className="p-2 bg-[#81c3d7]/10 text-[#81c3d7] rounded-xl">
               <BookOpen className="w-4 h-4" />
             </span>
           </div>
@@ -346,13 +346,13 @@ export default function AdminAnalytics() {
           </div>
         </div>
 
-        {/* Card 3: Avg Score Rate */}
-        <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-slate-800 transition-all duration-300 flex flex-col justify-between">
+        {/* Card 3: Platform Accuracy */}
+        <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-[#d9dcd6]/40 transition-all duration-300 flex flex-col justify-between">
           <div className="flex justify-between items-start z-10">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-1.5">
-              <Percent className="w-3.5 h-3.5 text-blue-500" /> Avg Accuracy
+              <Percent className="w-3.5 h-3.5 text-[#d9dcd6]" /> Avg Accuracy
             </span>
-            <span className="p-2 bg-blue-500/10 text-blue-500 rounded-xl">
+            <span className="p-2 bg-[#d9dcd6]/10 text-[#d9dcd6] rounded-xl">
               <Percent className="w-4 h-4" />
             </span>
           </div>
@@ -367,17 +367,17 @@ export default function AdminAnalytics() {
           </div>
           {/* Progress bar inside card */}
           <div className="w-full h-1 bg-slate-900 rounded-full mt-4 overflow-hidden">
-            <div className="h-full bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.5)]" style={{ width: `${metrics.avgAccuracy}%` }}></div>
+            <div className="h-full bg-[#d9dcd6] shadow-[0_0_5px_rgba(217,220,214,0.5)]" style={{ width: `${metrics.avgAccuracy}%` }}></div>
           </div>
         </div>
 
         {/* Card 4: Platform Subscriptions / Revenue */}
-        <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-slate-800 transition-all duration-300 flex flex-col justify-between">
+        <div className="bg-slate-950/40 border border-slate-900/60 p-6 rounded-2xl relative overflow-hidden shadow-sm hover:translate-y-[-4px] hover:border-[#81c3d7]/40 transition-all duration-300 flex flex-col justify-between">
           <div className="flex justify-between items-start z-10">
             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-1.5">
-              <CreditCard className="w-3.5 h-3.5 text-[#882D2D]" /> Projected Revenue
+              <CreditCard className="w-3.5 h-3.5 text-[#81c3d7]" /> Projected Revenue
             </span>
-            <span className="p-2 bg-[#882D2D]/10 text-[#882D2D] rounded-xl">
+            <span className="p-2 bg-[#81c3d7]/10 text-[#81c3d7] rounded-xl">
               <CreditCard className="w-4 h-4" />
             </span>
           </div>
@@ -408,19 +408,19 @@ export default function AdminAnalytics() {
             <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1 text-[10px] font-black tracking-widest uppercase">
               <button 
                 onClick={() => setChartMetric('both')}
-                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${chartMetric === 'both' ? 'bg-primary text-slate-950' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${chartMetric === 'both' ? 'bg-primary text-slate-950 font-bold' : 'text-slate-400 hover:text-white'}`}
               >
                 Both
               </button>
               <button 
                 onClick={() => setChartMetric('registrations')}
-                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${chartMetric === 'registrations' ? 'bg-primary text-slate-950' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${chartMetric === 'registrations' ? 'bg-primary text-slate-950 font-bold' : 'text-slate-400 hover:text-white'}`}
               >
                 Users
               </button>
               <button 
                 onClick={() => setChartMetric('submissions')}
-                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${chartMetric === 'submissions' ? 'bg-primary text-slate-950' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${chartMetric === 'submissions' ? 'bg-primary text-slate-950 font-bold' : 'text-slate-400 hover:text-white'}`}
               >
                 Mocks
               </button>
@@ -435,15 +435,15 @@ export default function AdminAnalytics() {
               onMouseLeave={() => setHoveredPoint(null)}
             >
               <defs>
-                {/* Registration Gradient (#4EC6D7) */}
+                {/* Registration Gradient (#81c3d7) */}
                 <linearGradient id="regGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4EC6D7" stopOpacity={0.35}/>
-                  <stop offset="95%" stopColor="#4EC6D7" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#81c3d7" stopOpacity={0.35}/>
+                  <stop offset="95%" stopColor="#81c3d7" stopOpacity={0}/>
                 </linearGradient>
-                {/* Submission Gradient (#E7CF29) */}
+                {/* Submission Gradient (#3a7ca5) */}
                 <linearGradient id="subGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#E7CF29" stopOpacity={0.35}/>
-                  <stop offset="95%" stopColor="#E7CF29" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#3a7ca5" stopOpacity={0.35}/>
+                  <stop offset="95%" stopColor="#3a7ca5" stopOpacity={0}/>
                 </linearGradient>
               </defs>
 
@@ -462,10 +462,10 @@ export default function AdminAnalytics() {
 
               {/* LINE PATHS */}
               {(chartMetric === 'both' || chartMetric === 'registrations') && (
-                <path d={makeSvgPath(regPoints)} fill="none" stroke="#00f2fe" strokeWidth="2.5" />
+                <path d={makeSvgPath(regPoints)} fill="none" stroke="#81c3d7" strokeWidth="2.5" />
               )}
               {(chartMetric === 'both' || chartMetric === 'submissions') && (
-                <path d={makeSvgPath(subPoints)} fill="none" stroke="#f97316" strokeWidth="2.5" />
+                <path d={makeSvgPath(subPoints)} fill="none" stroke="#3a7ca5" strokeWidth="2.5" />
               )}
 
               {/* Interactive grid hit rectangles for hover triggers */}
@@ -517,7 +517,7 @@ export default function AdminAnalytics() {
                       cx={hoveredPoint.x} 
                       cy={regPoints[hoveredPoint.idx].y} 
                       r="4.5" 
-                      fill="#00f2fe" 
+                      fill="#81c3d7" 
                       stroke="#05060b" 
                       strokeWidth="1.5"
                     />
@@ -529,7 +529,7 @@ export default function AdminAnalytics() {
                       cx={hoveredPoint.x} 
                       cy={subPoints[hoveredPoint.idx].y} 
                       r="4.5" 
-                      fill="#f97316" 
+                      fill="#3a7ca5" 
                       stroke="#05060b" 
                       strokeWidth="1.5"
                     />
@@ -554,7 +554,7 @@ export default function AdminAnalytics() {
                 </div>
                 <div className="flex justify-between mb-1 text-slate-400">
                   <span>Registrations:</span>
-                  <span className="text-[#00f2fe] font-bold">+{hoveredPoint.reg}</span>
+                  <span className="text-[#81c3d7] font-bold">+{hoveredPoint.reg}</span>
                 </div>
                 <div className="flex justify-between mb-1 text-slate-400">
                   <span>Mocks Taken:</span>

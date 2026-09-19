@@ -56,16 +56,16 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-300">
-      <div className="bg-[#0f172a] text-white border border-[#334155] rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-300">
+      <div className="bg-[#0a1128] text-[#fefcfb] border border-[#034078]/40 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="bg-[#1e293b] p-6 border-b border-[#334155] flex justify-between items-center flex-wrap gap-4 shrink-0">
+        <div className="bg-[#001f54] p-6 border-b border-[#034078]/30 flex justify-between items-center flex-wrap gap-4 shrink-0">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded bg-[#8b5cf6]/20 text-[#c084fc] border border-[#8b5cf6]/40 text-[10px] font-black uppercase tracking-widest">
+              <span className="px-2.5 py-0.5 rounded bg-[#1282a2]/20 text-[#1282a2] border border-[#1282a2]/40 text-[10px] font-black uppercase tracking-widest">
                 Re-attempt Inverted Mode
               </span>
-              <span className="text-[#94a3b8] text-xs font-semibold">| {testTitle || 'Mock Exam'}</span>
+              <span className="text-[#fefcfb]/70 text-xs font-semibold">| {testTitle || 'Mock Exam'}</span>
             </div>
             <h3 className="text-xl font-black text-white font-headline">
               Retrying {missedQuestions.length} Missed Questions
@@ -73,7 +73,7 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
           </div>
           <button 
             onClick={onClose} 
-            className="p-2 rounded-xl bg-slate-800 text-gray-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-[#001f54] text-[#fefcfb] hover:text-white hover:bg-[#034078] transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -81,14 +81,14 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
 
         {missedQuestions.length === 0 ? (
           <div className="p-12 text-center flex-1 flex flex-col items-center justify-center">
-            <span className="material-symbols-outlined text-6xl text-emerald-400 mb-4">stars</span>
+            <span className="material-symbols-outlined text-6xl text-[#1282a2] mb-4">stars</span>
             <h4 className="text-2xl font-bold text-white mb-2">Flawless Attempt!</h4>
-            <p className="text-slate-400 max-w-md text-sm">
+            <p className="text-[#fefcfb] max-w-md text-sm">
               You scored 100% accuracy on all questions in this test. There are no missed or incorrect questions to retry!
             </p>
             <button 
               onClick={onClose}
-              className="mt-6 px-6 py-3 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-bold rounded-xl shadow-lg transition-colors cursor-pointer"
+              className="mt-6 px-6 py-3 bg-[#1282a2] hover:bg-[#159cc2] text-[#0a1128] font-bold rounded-xl shadow-lg transition-colors cursor-pointer"
             >
               Back to Dashboard
             </button>
@@ -97,24 +97,24 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Results Banner if submitted */}
             {isSubmitted && (
-              <div className="bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border-b border-emerald-500/30 p-5 flex flex-wrap justify-between items-center gap-4 shrink-0 animate-in slide-in-from-top-4">
+              <div className="bg-gradient-to-r from-[#001f54] to-[#034078] border-b border-[#034078]/40 p-5 flex flex-wrap justify-between items-center gap-4 shrink-0 animate-in slide-in-from-top-4">
                 <div>
-                  <h4 className="text-lg font-black text-emerald-400 flex items-center gap-2">
+                  <h4 className="text-lg font-black text-[#1282a2] flex items-center gap-2">
                     <span className="material-symbols-outlined text-xl">workspace_premium</span>
                     Re-attempt Completed!
                   </h4>
-                  <p className="text-xs text-emerald-200/80 mt-0.5">
+                  <p className="text-xs text-[#fefcfb] mt-0.5">
                     You rectified <span className="font-bold text-white">{reattemptCorrect}</span> out of {missedQuestions.length} missed questions.
                   </p>
                 </div>
                 <div className="flex gap-4 items-center">
                   <div className="text-right">
-                    <p className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">Re-attempt Score</p>
+                    <p className="text-[10px] text-[#1282a2] font-bold uppercase tracking-wider">Re-attempt Score</p>
                     <p className="text-2xl font-black text-white">{reattemptScore > 0 ? `+${reattemptScore}` : reattemptScore} pts</p>
                   </div>
                   <button 
                     onClick={() => setIsSubmitted(false)} 
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+                    className="px-4 py-2 bg-[#034078] hover:bg-[#04569e] text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
                   >
                     Try Again
                   </button>
@@ -125,41 +125,41 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
             {/* Question Body */}
             <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
               {/* Question Navigation Bar */}
-              <div className="flex justify-between items-center text-xs text-slate-400 font-medium">
+              <div className="flex justify-between items-center text-xs text-[#fefcfb]/70 font-medium">
                 <span>Question <strong className="text-white text-sm">{currentIndex + 1}</strong> of {missedQuestions.length}</span>
-                <span className="px-2.5 py-1 rounded-md bg-slate-800 text-purple-300 font-bold border border-slate-700">
+                <span className="px-2.5 py-1 rounded-md bg-[#001f54] text-[#fefcfb] font-bold border border-[#034078]/30">
                   {currentQ.subject} {currentQ.chapter ? `• ${currentQ.chapter}` : ''}
                 </span>
               </div>
 
               {/* Question Text */}
-              <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-4">
-                <p className="text-lg font-medium text-slate-100 leading-relaxed font-headline">
+              <div className="bg-[#001f54]/80 p-6 rounded-2xl border border-[#034078]/30 space-y-4">
+                <p className="text-lg font-medium text-white leading-relaxed font-headline">
                   {currentQ.text}
                 </p>
                 {currentQ.image_url && (
                   <img 
                     src={currentQ.image_url} 
                     alt="Question Diagram" 
-                    className="max-h-64 rounded-xl border border-slate-700 object-contain my-4" 
+                    className="max-h-64 rounded-xl border border-[#034078]/30 object-contain my-4" 
                   />
                 )}
                 {currentQ.sub_text && (
-                  <p className="text-sm text-slate-300">{currentQ.sub_text}</p>
+                  <p className="text-sm text-[#fefcfb]">{currentQ.sub_text}</p>
                 )}
               </div>
 
               {/* Options or Input */}
               {currentQ.type?.toUpperCase() === 'NUMERICAL' ? (
                 <div className="space-y-2">
-                  <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Your Numerical Answer:</label>
+                  <label className="text-xs text-[#fefcfb] font-bold uppercase tracking-wider">Your Numerical Answer:</label>
                   <input 
                     type="text" 
                     disabled={isSubmitted}
                     value={reattemptAnswers[currentIndex] || ''}
                     onChange={(e) => handleNumericalInput(e.target.value)}
                     placeholder="Enter value..."
-                    className="w-full max-w-xs px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white font-bold text-lg outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full max-w-xs px-4 py-3 bg-[#0a1128] border border-[#034078]/40 rounded-xl text-white font-bold text-lg outline-none focus:ring-2 focus:ring-[#1282a2]"
                   />
                 </div>
               ) : (
@@ -169,10 +169,10 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
                     const isCorrect = isSubmitted && String(optIdx) === String(currentQ.correct_answer);
                     const isWrong = isSubmitted && isSelected && !isCorrect;
 
-                    let bgClass = "bg-slate-900/80 border-slate-800 hover:border-purple-500/60";
-                    if (isSelected) bgClass = "bg-purple-900/30 border-purple-500 text-purple-200 shadow-md ring-1 ring-purple-500";
+                    let bgClass = "bg-[#001f54]/70 border-[#034078]/30 hover:border-[#1282a2]/60 text-[#fefcfb]";
+                    if (isSelected) bgClass = "bg-[#1282a2]/20 border-[#1282a2] text-white shadow-md ring-1 ring-[#1282a2]";
                     if (isSubmitted) {
-                      if (isCorrect) bgClass = "bg-emerald-950/80 border-emerald-500 text-emerald-200 ring-2 ring-emerald-500";
+                      if (isCorrect) bgClass = "bg-[#034078]/30 border-[#034078] text-white ring-2 ring-[#034078]";
                       else if (isWrong) bgClass = "bg-red-950/80 border-red-500 text-red-200 ring-2 ring-red-500";
                     }
 
@@ -183,7 +183,7 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
                         onClick={() => handleOptionSelect(optIdx)}
                         className={`p-4 rounded-xl border text-left transition-all flex items-start gap-3 cursor-pointer ${bgClass}`}
                       >
-                        <span className="w-6 h-6 rounded-full bg-slate-800 text-xs font-bold flex items-center justify-center shrink-0 border border-slate-700">
+                        <span className="w-6 h-6 rounded-full bg-[#001f54] text-xs font-bold flex items-center justify-center shrink-0 border border-[#034078]/40 text-white">
                           {String.fromCharCode(65 + optIdx)}
                         </span>
                         <span className="text-sm font-medium pt-0.5">{opt}</span>
@@ -195,8 +195,8 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
 
               {/* Solution breakdown if submitted */}
               {isSubmitted && (
-                <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-2 animate-in fade-in">
-                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                <div className="bg-[#001f54] p-5 rounded-2xl border border-[#034078]/40 space-y-2 animate-in fade-in">
+                  <div className="flex items-center gap-2 text-[#1282a2] font-bold text-sm">
                     <span className="material-symbols-outlined text-base">check_circle</span>
                     Correct Answer: {
                       currentQ.type?.toUpperCase() === 'NUMERICAL'
@@ -209,11 +209,11 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
             </div>
 
             {/* Footer Navigation Buttons */}
-            <div className="bg-[#1e293b] p-5 border-t border-[#334155] flex justify-between items-center gap-4 shrink-0">
+            <div className="bg-[#001f54] p-5 border-t border-[#034078]/30 flex justify-between items-center gap-4 shrink-0">
               <button 
                 disabled={currentIndex === 0}
                 onClick={() => setCurrentIndex(prev => prev - 1)}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-[#001f54] hover:bg-[#034078] disabled:opacity-30 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer border border-[#034078]/30"
               >
                 <span className="material-symbols-outlined text-sm">chevron_left</span> Previous
               </button>
@@ -221,7 +221,7 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
               {!isSubmitted ? (
                 <button 
                   onClick={() => setIsSubmitted(true)}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:brightness-110 text-white font-black text-xs uppercase tracking-wider shadow-lg transition-all cursor-pointer active:scale-95 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-xl bg-[#1282a2] hover:bg-[#159cc2] text-[#0a1128] font-black text-xs uppercase tracking-wider shadow-lg transition-all cursor-pointer active:scale-95 flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-base">task_alt</span>
                   Submit Re-attempt
@@ -229,7 +229,7 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
               ) : (
                 <button 
                   onClick={onClose}
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-[#034078] hover:bg-[#04569e] text-white font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   Finish Review
                 </button>
@@ -238,7 +238,7 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
               <button 
                 disabled={currentIndex === missedQuestions.length - 1}
                 onClick={() => setCurrentIndex(prev => prev + 1)}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-[#001f54] hover:bg-[#034078] disabled:opacity-30 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer border border-[#034078]/30"
               >
                 Next <span className="material-symbols-outlined text-sm">chevron_right</span>
               </button>

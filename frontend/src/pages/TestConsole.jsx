@@ -455,7 +455,7 @@ export default function TestConsole() {
               Exam Security Check
             </h2>
             <p className="text-xs text-slate-400 mb-6 font-semibold">
-              Exambot Pro secure proctoring is enabled for this assessment. Please review guidelines below:
+              IkshaTests secure proctoring is enabled for this assessment. Please review guidelines below:
             </p>
 
             <div className="space-y-4 text-xs">
@@ -477,7 +477,7 @@ export default function TestConsole() {
                 <span className="material-symbols-outlined text-indigo-400 text-sm mt-0.5 font-bold">gavel</span>
                 <div>
                   <p className="font-bold text-slate-200">3 Strike Rule</p>
-                  <p className="text-slate-400 text-[10px] text-red-400 font-bold">Triggering 3 security violations will immediately auto-submit your exam.</p>
+                  <p className="text-red-400 text-[10px] font-bold">Triggering 3 security violations will immediately auto-submit your exam.</p>
                 </div>
               </div>
             </div>
@@ -508,7 +508,7 @@ export default function TestConsole() {
               className={`w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg ${
                 isLocked
                   ? 'bg-slate-700/60 text-slate-400 cursor-not-allowed border border-slate-600/40'
-                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:brightness-110 text-white shadow-indigo-500/20 cursor-pointer'
+                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:brightness-110 text-white shadow-indigo-500/20 cursor-pointer active:scale-95'
               }`}
             >
               {isLocked ? (
@@ -541,7 +541,7 @@ export default function TestConsole() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#0f172a] text-white text-center p-6">
         <h2 className="text-4xl font-black mb-4">Exam Completed</h2>
-        <div className="bg-[#1e293b] p-8 rounded-3xl border border-[#334155] mb-8 w-full max-w-lg">
+        <div className="bg-[#1e293b] p-8 rounded-3xl border border-[#334155] mb-8 w-full max-w-lg shadow-2xl">
            <h3 className="text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8b5cf6] to-[#ec4899] mb-8">{score}</h3>
            <div className="grid grid-cols-3 gap-4 border-t border-[#334155] pt-6 uppercase tracking-widest text-[10px] font-black">
              <div><p className="text-[#22c55e] text-2xl font-bold">{correct}</p>Correct</div>
