@@ -1,0 +1,16 @@
+{
+  "name": "ikshatests-project",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "saivikash_ikshatests",
+    "backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:saivikash": "npm run dev --workspace=saivikash_ikshatests",
+    "dev:backend": "npm run dev --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:saivikash": "npm run build --workspace=saivikash_ikshatests"
+  }
+}
