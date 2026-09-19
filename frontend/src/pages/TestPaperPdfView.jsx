@@ -162,14 +162,14 @@ export default function TestPaperPdfView() {
               type="checkbox"
               checked={showSolutions}
               onChange={e => setShowSolutions(e.target.checked)}
-              className="rounded accent-[#4EC6D7]"
+              className="rounded accent-[#1282a2]"
             />
             Include Solutions & Explanations
           </label>
 
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#E7CF29] hover:bg-[#edd850] text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer border-none"
+            className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#1282a2] hover:bg-[#034078] text-[#fefcfb] font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer border-none"
           >
             <span className="material-symbols-outlined text-base">print</span>
             Print / Save as PDF
@@ -190,18 +190,18 @@ export default function TestPaperPdfView() {
                 alt="IKSHATESTS" 
                 className="w-10 h-10 aspect-square object-cover rounded-[4px] shadow-sm"
               />
-              <div className="flex flex-col items-start leading-none select-none">
-                <span className="text-[14px] font-black tracking-wider uppercase text-[#162839]">
+              <div className="h-10 flex flex-col justify-between items-center text-center leading-none select-none py-[1px]">
+                <span className="text-[17px] font-black tracking-wider uppercase text-[#0a1128] leading-none">
                   IKSHATESTS
                 </span>
-                <span className="text-[10px] font-semibold tracking-normal text-[#1e3a5f] mt-0.5">
+                <span className="text-[11.5px] font-semibold tracking-normal text-[#034078] leading-none">
                   Pariksha Shikshak
                 </span>
               </div>
             </div>
 
             <div className="text-right">
-              <span className="inline-block px-3 py-1 bg-slate-100 text-[#162839] border border-slate-300 rounded-md text-[11px] font-black tracking-widest uppercase">
+              <span className="inline-block px-3 py-1 bg-slate-100 text-[#0a1128] border border-slate-300 rounded-md text-[11px] font-black tracking-widest uppercase">
                 {test.category?.toUpperCase() || 'MOCK ASSESSMENT'}
               </span>
               <p className="text-[10px] text-slate-500 font-mono mt-1">Official Mock Examination Paper</p>
@@ -209,7 +209,7 @@ export default function TestPaperPdfView() {
           </div>
 
           {/* Test Main Title */}
-          <h1 className="text-2xl sm:text-3xl font-black text-[#162839] tracking-tight uppercase mb-3">
+          <h1 className="text-2xl sm:text-3xl font-black text-[#0a1128] tracking-tight uppercase mb-3">
             {test.title}
           </h1>
 
@@ -247,7 +247,7 @@ export default function TestPaperPdfView() {
             return (
               <section key={subIdx} className="space-y-6">
                 {/* Subject Section Divider */}
-                <div className="bg-[#162839] text-white px-4 py-2 rounded-lg flex items-center justify-between shadow-sm">
+                <div className="bg-[#001f54] text-white px-4 py-2 rounded-lg flex items-center justify-between shadow-sm">
                   <h2 className="text-sm font-black uppercase tracking-wider">
                     Section {subIdx + 1}: {subjectName}
                   </h2>
@@ -273,10 +273,10 @@ export default function TestPaperPdfView() {
                         {/* Question Header & Badge */}
                         <div className="flex items-start justify-between gap-3 mb-2.5">
                           <div className="flex items-center gap-2">
-                            <span className="w-7 h-7 rounded-lg bg-[#162839] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
+                            <span className="w-7 h-7 rounded-lg bg-[#16425b] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
                               {globalIndex}
                             </span>
-                            <span className="text-xs font-black uppercase text-[#162839] tracking-wider">
+                            <span className="text-xs font-black uppercase text-[#16425b] tracking-wider">
                               Question {globalIndex}
                             </span>
                           </div>
@@ -329,7 +329,7 @@ export default function TestPaperPdfView() {
                                   key={optIdx} 
                                   className="flex items-start gap-2.5 p-2.5 rounded-lg border border-slate-200 bg-slate-50/60 text-xs text-slate-800"
                                 >
-                                  <span className="w-5 h-5 rounded-full bg-[#162839]/10 text-[#162839] font-black flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                                  <span className="w-5 h-5 rounded-full bg-[#16425b]/10 text-[#16425b] font-black flex items-center justify-center text-[10px] shrink-0 mt-0.5">
                                     {optLabel}
                                   </span>
                                   <div className="flex-1 font-medium leading-relaxed">
@@ -364,12 +364,12 @@ export default function TestPaperPdfView() {
 
         {/* ── Answer Key Section ── */}
         <section className="mt-12 pt-8 border-t-2 border-slate-900 break-inside-avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-          <div className="bg-[#162839] text-white px-4 py-2.5 rounded-lg flex items-center justify-between mb-4 shadow-sm">
+          <div className="bg-[#001f54] text-white px-4 py-2.5 rounded-lg flex items-center justify-between mb-4 shadow-sm">
             <h2 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
-              <span className="material-symbols-outlined text-base text-[#E7CF29]">key</span>
+              <span className="material-symbols-outlined text-base text-[#1282a2]">key</span>
               Official Answer Key
             </h2>
-            <span className="text-xs text-slate-200 font-mono">Master Evaluation Matrix</span>
+            <span className="text-xs text-[#fefcfb] font-mono">Master Evaluation Matrix</span>
           </div>
 
           <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -379,7 +379,7 @@ export default function TestPaperPdfView() {
                 return (
                   <div key={idx} className="bg-white p-2 flex flex-col items-center justify-center">
                     <span className="text-[10px] text-slate-500 font-mono font-bold">Q{idx + 1}</span>
-                    <span className="font-black text-[#162839] text-xs mt-0.5">
+                    <span className="font-black text-[#001f54] text-xs mt-0.5">
                       {ans}
                     </span>
                   </div>
@@ -392,12 +392,12 @@ export default function TestPaperPdfView() {
         {/* ── Solutions & Explanations Section ── */}
         {showSolutions && (
           <section className="mt-12 pt-8 border-t-2 border-slate-900 space-y-6">
-            <div className="bg-[#162839] text-white px-4 py-2.5 rounded-lg flex items-center justify-between shadow-sm">
+            <div className="bg-[#001f54] text-white px-4 py-2.5 rounded-lg flex items-center justify-between shadow-sm">
               <h2 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
-                <span className="material-symbols-outlined text-base text-[#4EC6D7]">psychology</span>
+                <span className="material-symbols-outlined text-base text-[#1282a2]">psychology</span>
                 Detailed Solutions & Step-by-Step Explanations
               </h2>
-              <span className="text-xs text-slate-200 font-mono">{questions.length} Explanations</span>
+              <span className="text-xs text-[#fefcfb] font-mono">{questions.length} Explanations</span>
             </div>
 
             <div className="space-y-4">
@@ -411,10 +411,10 @@ export default function TestPaperPdfView() {
                   >
                     <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 mb-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-md bg-[#162839] text-white flex items-center justify-center font-black text-xs">
+                        <span className="w-6 h-6 rounded-md bg-[#001f54] text-white flex items-center justify-center font-black text-xs">
                           {idx + 1}
                         </span>
-                        <h4 className="text-xs font-black text-[#162839] uppercase">
+                        <h4 className="text-xs font-black text-[#001f54] uppercase">
                           Question {idx + 1} Solution
                         </h4>
                       </div>
@@ -454,11 +454,11 @@ export default function TestPaperPdfView() {
               alt="IKSHATESTS" 
               className="w-8 h-8 aspect-square object-cover rounded-[4px] shadow-sm"
             />
-            <div className="flex flex-col items-center justify-center text-center leading-none select-none">
-              <span className="text-[13px] font-black tracking-wider uppercase text-[#162839]">
+            <div className="h-8 flex flex-col justify-between items-center text-center leading-none select-none py-[0.5px]">
+              <span className="text-[14px] font-black tracking-wider uppercase text-[#0a1128] leading-none">
                 IKSHATESTS
               </span>
-              <span className="text-[9.5px] font-medium tracking-normal text-[#1e3a5f] mt-0.5">
+              <span className="text-[9.5px] font-medium tracking-normal text-[#034078] leading-none">
                 Pariksha Shikshak
               </span>
             </div>

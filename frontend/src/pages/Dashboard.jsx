@@ -457,7 +457,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-        /* ── STUDENT ANALYTICS DASHBOARD ── */
+        {/* ── STUDENT ANALYTICS DASHBOARD ── */}
         <div className="space-y-10">
           {selectedSubId === null ? (
             /* VIEW 1: TESTS ATTEMPTED REGISTRY ONLY */
@@ -602,13 +602,13 @@ export default function Dashboard() {
                 {/* 1. Total Score */}
                 <div className="bg-surface-container-lowest border border-outline-variant/30 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Score</span>
-                    <span className="p-2.5 rounded-xl bg-purple-50 text-purple-600 material-symbols-outlined">score</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Score</span>
+                    <span className="p-2.5 rounded-xl bg-purple-950/40 text-purple-400 border border-purple-800/30 material-symbols-outlined">score</span>
                   </div>
                   <h4 className="text-3xl font-black text-on-surface">
                     {currentSub.score} <span className="text-sm text-slate-400 font-medium">/ {currentSub.max_score}</span>
                   </h4>
-                  <p className="text-xs text-emerald-600 font-bold mt-2 flex items-center gap-1">
+                  <p className="text-xs text-emerald-400 font-bold mt-2 flex items-center gap-1">
                     <span className="material-symbols-outlined text-sm">trending_up</span>
                     {((currentSub.score / currentSub.max_score) * 100).toFixed(1)}% Total Marks
                   </p>
@@ -617,21 +617,21 @@ export default function Dashboard() {
                 {/* 2. Percentile */}
                 <div className="bg-surface-container-lowest border border-outline-variant/30 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Percentile Rank</span>
-                    <span className="p-2.5 rounded-xl bg-blue-50 text-blue-600 material-symbols-outlined">social_leaderboard</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Percentile Rank</span>
+                    <span className="p-2.5 rounded-xl bg-blue-950/40 text-blue-400 border border-blue-800/30 material-symbols-outlined">social_leaderboard</span>
                   </div>
                   <h4 className="text-3xl font-black text-on-surface">{currentSub.percentile}</h4>
-                  <p className="text-xs text-slate-500 font-medium mt-2">Estimated Rank: Top 1.6%</p>
+                  <p className="text-xs text-slate-400 font-medium mt-2">Estimated Rank: Top 1.6%</p>
                 </div>
 
                 {/* 3. Overall Accuracy */}
                 <div className="bg-surface-container-lowest border border-outline-variant/30 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Overall Accuracy</span>
-                    <span className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 material-symbols-outlined">target</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Overall Accuracy</span>
+                    <span className="p-2.5 rounded-xl bg-emerald-950/40 text-emerald-400 border border-emerald-800/30 material-symbols-outlined">target</span>
                   </div>
                   <h4 className="text-3xl font-black text-on-surface">{currentSub.accuracy}%</h4>
-                  <p className="text-xs text-slate-500 font-medium mt-2">
+                  <p className="text-xs text-slate-400 font-medium mt-2">
                     {currentSub.correct_count} Correct • {currentSub.wrong_count} Wrong
                   </p>
                 </div>
@@ -639,13 +639,13 @@ export default function Dashboard() {
                 {/* 4. Total Time Spent */}
                 <div className="bg-surface-container-lowest border border-outline-variant/30 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Time Spent</span>
-                    <span className="p-2.5 rounded-xl bg-amber-50 text-amber-600 material-symbols-outlined">timer</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Time Spent</span>
+                    <span className="p-2.5 rounded-xl bg-amber-950/40 text-amber-400 border border-amber-800/30 material-symbols-outlined">timer</span>
                   </div>
                   <h4 className="text-3xl font-black text-on-surface">
                     {currentSub.time_spent_mins}m <span className="text-sm text-slate-400 font-medium">/ {currentSub.total_duration_mins}m</span>
                   </h4>
-                  <p className="text-xs text-slate-500 font-medium mt-2">Pacing: 1.4 mins per question</p>
+                  <p className="text-xs text-slate-400 font-medium mt-2">Pacing: 1.4 mins per question</p>
                 </div>
               </div>
 
@@ -677,11 +677,11 @@ export default function Dashboard() {
                     </div>
 
                     <div className="space-y-2">
-                      <div className="flex justify-between text-xs font-bold text-slate-600">
+                      <div className="flex justify-between text-xs font-bold text-slate-400">
                         <span>Accuracy: {sub.accuracy}%</span>
                         <span>Avg Time: {sub.avgTimePerQ}</span>
                       </div>
-                      <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-2 bg-slate-800/80 rounded-full overflow-hidden border border-outline-variant/20">
                         <div 
                           className="h-full bg-primary rounded-full transition-all duration-700" 
                           style={{ width: `${sub.accuracy}%` }} 
@@ -690,17 +690,17 @@ export default function Dashboard() {
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 text-center text-xs pt-2 border-t border-outline-variant/10">
-                      <div className="bg-emerald-50 text-emerald-700 p-2 rounded-xl">
+                      <div className="bg-emerald-950/30 border border-emerald-800/30 text-emerald-400 p-2 rounded-xl">
                         <span className="block font-black text-sm">{sub.correct}</span>
-                        <span className="text-[10px] font-bold uppercase">Correct</span>
+                        <span className="text-[10px] font-bold uppercase opacity-80">Correct</span>
                       </div>
-                      <div className="bg-red-50 text-red-700 p-2 rounded-xl">
+                      <div className="bg-rose-950/30 border border-rose-800/30 text-rose-400 p-2 rounded-xl">
                         <span className="block font-black text-sm">{sub.wrong}</span>
-                        <span className="text-[10px] font-bold uppercase">Wrong</span>
+                        <span className="text-[10px] font-bold uppercase opacity-80">Wrong</span>
                       </div>
-                      <div className="bg-slate-100 text-slate-600 p-2 rounded-xl">
+                      <div className="bg-slate-800/40 border border-slate-700/30 text-slate-400 p-2 rounded-xl">
                         <span className="block font-black text-sm">{sub.skipped}</span>
-                        <span className="text-[10px] font-bold uppercase">Skipped</span>
+                        <span className="text-[10px] font-bold uppercase opacity-80">Skipped</span>
                       </div>
                     </div>
                   </div>
@@ -714,26 +714,26 @@ export default function Dashboard() {
                     <span className="material-symbols-outlined text-amber-500">grid_view</span>
                     Topic-Wise Performance Heatmap
                   </h5>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-400 mt-1">
                     Categorized by speed, accuracy, and negative marking penalty to guide targeted revision.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* 🟢 Bucket 1: Strong Areas */}
-                  <div className="bg-emerald-50/50 border border-emerald-200/80 p-5 rounded-2xl space-y-4">
-                    <div className="flex items-center gap-2 text-emerald-800 font-black text-sm uppercase tracking-wider border-b border-emerald-200 pb-2">
-                      <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm"></span>
-                      🟢 Strong Areas
+                  <div className="bg-emerald-950/20 border border-emerald-800/30 p-5 rounded-2xl space-y-4">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider border-b border-emerald-800/20 pb-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm"></span>
+                      Strong Areas
                     </div>
                     <div className="space-y-2.5">
                       {currentSub.heatmap.strong.map((item, idx) => (
-                        <div key={idx} className="bg-white p-3.5 rounded-xl border border-emerald-100 shadow-sm flex justify-between items-center">
+                        <div key={idx} className="bg-surface-container/60 p-3.5 rounded-xl border border-outline-variant/30 shadow-sm flex justify-between items-center">
                           <div>
-                            <p className="text-xs font-bold text-slate-800">{item.topic}</p>
-                            <p className="text-[10px] text-slate-400 font-semibold">{item.subject}</p>
+                            <p className="text-xs font-bold text-on-surface">{item.topic}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">{item.subject}</p>
                           </div>
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                          <span className="px-2 py-0.5 bg-emerald-950/60 border border-emerald-700/40 text-emerald-300 text-[10px] font-bold rounded">
                             {item.accuracy} • {item.speed}
                           </span>
                         </div>
@@ -742,19 +742,19 @@ export default function Dashboard() {
                   </div>
 
                   {/* 🟡 Bucket 2: Careless Errors */}
-                  <div className="bg-amber-50/50 border border-amber-200/80 p-5 rounded-2xl space-y-4">
-                    <div className="flex items-center gap-2 text-amber-800 font-black text-sm uppercase tracking-wider border-b border-amber-200 pb-2">
-                      <span className="w-3 h-3 rounded-full bg-amber-500 shadow-sm"></span>
-                      🟡 Careless Errors (Negative Leaks)
+                  <div className="bg-amber-950/20 border border-amber-800/30 p-5 rounded-2xl space-y-4">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider border-b border-amber-800/20 pb-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 shadow-sm"></span>
+                      Careless Errors (Negative Leaks)
                     </div>
                     <div className="space-y-2.5">
                       {currentSub.heatmap.careless.map((item, idx) => (
-                        <div key={idx} className="bg-white p-3.5 rounded-xl border border-amber-100 shadow-sm flex justify-between items-center">
+                        <div key={idx} className="bg-surface-container/60 p-3.5 rounded-xl border border-outline-variant/30 shadow-sm flex justify-between items-center">
                           <div>
-                            <p className="text-xs font-bold text-slate-800">{item.topic}</p>
-                            <p className="text-[10px] text-slate-400 font-semibold">{item.subject}</p>
+                            <p className="text-xs font-bold text-on-surface">{item.topic}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">{item.subject}</p>
                           </div>
-                          <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded">
+                          <span className="px-2 py-0.5 bg-amber-950/60 border border-amber-700/40 text-amber-300 text-[10px] font-bold rounded">
                             {item.impact}
                           </span>
                         </div>
@@ -763,19 +763,19 @@ export default function Dashboard() {
                   </div>
 
                   {/* 🔴 Bucket 3: Weak Topics */}
-                  <div className="bg-red-50/50 border border-red-200/80 p-5 rounded-2xl space-y-4">
-                    <div className="flex items-center gap-2 text-red-800 font-black text-sm uppercase tracking-wider border-b border-red-200 pb-2">
-                      <span className="w-3 h-3 rounded-full bg-red-500 shadow-sm"></span>
-                      🔴 Weak Topics
+                  <div className="bg-rose-950/20 border border-rose-800/30 p-5 rounded-2xl space-y-4">
+                    <div className="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase tracking-wider border-b border-rose-800/20 pb-2">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 shadow-sm"></span>
+                      Weak Topics
                     </div>
                     <div className="space-y-2.5">
                       {currentSub.heatmap.weak.map((item, idx) => (
-                        <div key={idx} className="bg-white p-3.5 rounded-xl border border-red-100 shadow-sm flex justify-between items-center">
+                        <div key={idx} className="bg-surface-container/60 p-3.5 rounded-xl border border-outline-variant/30 shadow-sm flex justify-between items-center">
                           <div>
-                            <p className="text-xs font-bold text-slate-800">{item.topic}</p>
-                            <p className="text-[10px] text-slate-400 font-semibold">{item.subject}</p>
+                            <p className="text-xs font-bold text-on-surface">{item.topic}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">{item.subject}</p>
                           </div>
-                          <span className="px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-bold rounded">
+                          <span className="px-2 py-0.5 bg-rose-950/60 border border-rose-700/40 text-rose-300 text-[10px] font-bold rounded">
                             {item.status}
                           </span>
                         </div>
@@ -793,22 +793,6 @@ export default function Dashboard() {
                 C. Time & Behavioral Analytics (The Secret Sauce)
               </h4>
 
-              {/* Time Wastage Highlight Card */}
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 p-6 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-md shrink-0">
-                    <span className="material-symbols-outlined text-2xl">hourglass_disabled</span>
-                  </div>
-                  <div>
-                    <h5 className="font-black text-lg text-amber-900 font-headline">
-                      Time Leak Detected: {currentSub.time_wastage_mins}
-                    </h5>
-                    <p className="text-xs text-amber-800/90 mt-1 max-w-2xl leading-relaxed">
-                      You spent <strong className="text-amber-950">{currentSub.time_wastage_mins}</strong> on incorrect or unattempted questions during this exam. Eliminating these time leaks could yield up to <strong className="text-amber-950">+35 extra marks</strong> by reallocating time to high-confidence questions.
-                    </p>
-                  </div>
-                </div>
-              </div>
 
               {/* Question-by-Question Matrix Grid */}
               <div className="bg-surface-container-lowest border border-outline-variant/30 p-6 md:p-8 rounded-3xl shadow-sm space-y-6">

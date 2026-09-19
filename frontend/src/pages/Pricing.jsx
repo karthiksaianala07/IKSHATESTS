@@ -162,26 +162,26 @@ export default function Pricing() {
       
       {/* ── Header Section ── */}
       <div className="text-center max-w-2xl mx-auto mb-12">
-        <div className="inline-flex items-center gap-2 border border-slate-800/80 px-3 py-1 rounded-full bg-slate-950/40 text-xs font-mono tracking-widest text-primary mb-4">
+        <div className="inline-flex items-center gap-2 border border-[#034078]/40 px-3 py-1 rounded-full bg-[#001f54] text-xs font-mono tracking-widest text-[#1282a2] mb-4">
           <Sparkles className="w-3.5 h-3.5" /> PRICING STRUCTURE
         </div>
         <h1 className="text-3xl md:text-5xl font-black font-headline tracking-tight text-white mb-4">
           Choose Your Plan
         </h1>
-        <p className="text-sm md:text-base text-slate-400 font-medium">
+        <p className="text-sm md:text-base text-[#fefcfb] font-medium">
           Invest in precision preparation. Get access to detailed analytics, proctor dashboards, and state-of-the-art CBT simulator tests.
         </p>
       </div>
 
       {/* ── Billing Toggle Switch ── */}
       <div className="flex justify-center mb-16">
-        <div className="bg-slate-950/80 border border-slate-900/60 p-1.5 rounded-2xl flex items-center shadow-lg relative z-20">
+        <div className="bg-[#0a1128] border border-[#034078]/40 p-1.5 rounded-2xl flex items-center shadow-lg relative z-20">
           <button
             onClick={() => setBillingPeriod('individual')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer ${
               billingPeriod === 'individual'
-                ? 'bg-primary text-slate-950 shadow-md'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#1282a2] text-[#0a1128] shadow-md'
+                : 'text-[#fefcfb] hover:text-white'
             }`}
             aria-label="Switch to Individual billing"
             aria-pressed={billingPeriod === 'individual'}
@@ -194,8 +194,8 @@ export default function Pricing() {
             onClick={() => setBillingPeriod('enterprise')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer ${
               billingPeriod === 'enterprise'
-                ? 'bg-primary text-slate-950 shadow-md'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#1282a2] text-[#0a1128] shadow-md'
+                : 'text-[#fefcfb] hover:text-white'
             }`}
             aria-label="Switch to Enterprise billing"
             aria-pressed={billingPeriod === 'enterprise'}
@@ -217,13 +217,13 @@ export default function Pricing() {
           
           if (isPro) {
             // Elevated active card
-            cardClasses += "bg-[#0b0f20]/95 border-2 border-[#E7CF29] shadow-[0_15px_40px_rgba(231,207,41,0.15)] scale-105 z-10 md:-translate-y-2 hover:scale-[1.07] hover:shadow-[0_20px_50px_rgba(231,207,41,0.25)]";
+            cardClasses += "bg-[#001f54] border-2 border-[#1282a2] shadow-[0_15px_40px_rgba(18,130,162,0.2)] scale-105 z-10 md:-translate-y-2 hover:scale-[1.07] hover:shadow-[0_20px_50px_rgba(18,130,162,0.3)]";
           } else if (isDark) {
             // Darker premium theme
-            cardClasses += "bg-[#05060b]/90 border border-[#4EC6D7]/40 shadow-2xl hover:-translate-y-1.5 hover:border-[#4EC6D7] hover:shadow-[#4EC6D7]/10";
+            cardClasses += "bg-[#001f54]/90 border border-[#034078]/50 shadow-2xl hover:-translate-y-1.5 hover:border-[#034078]";
           } else {
             // Standard outline card
-            cardClasses += "bg-[#070912]/80 border border-slate-900/60 shadow-lg hover:-translate-y-1.5 hover:border-slate-800/80";
+            cardClasses += "bg-[#001f54]/70 border border-[#034078]/30 shadow-lg hover:-translate-y-1.5 hover:border-[#034078]/60";
           }
 
           return (
@@ -234,17 +234,17 @@ export default function Pricing() {
             >
               {/* Popular Badge */}
               {isPro && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#882D2D] text-white text-[10px] font-black uppercase tracking-widest px-4.5 py-1 rounded-full shadow-md">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#1282a2] text-[#0a1128] text-[10px] font-black uppercase tracking-widest px-4.5 py-1 rounded-full shadow-md">
                   Most Popular
                 </div>
               )}
 
               {/* Top Card Info */}
               <div>
-                <h3 className={`text-base font-bold font-headline uppercase tracking-wider mb-2 ${isPro ? 'text-[#E7CF29]' : 'text-slate-200'}`}>
+                <h3 className={`text-base font-bold font-headline uppercase tracking-wider mb-2 ${isPro ? 'text-[#1282a2]' : 'text-white'}`}>
                   {plan.name}
                 </h3>
-                <p className="text-xs text-slate-500 font-medium mb-6 min-h-[32px]">
+                <p className="text-xs text-[#fefcfb]/70 font-medium mb-6 min-h-[32px]">
                   {plan.description}
                 </p>
                 
@@ -254,20 +254,20 @@ export default function Pricing() {
                     {plan.price}
                   </span>
                   {plan.period && plan.period !== 'forever' && (
-                    <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                    <span className="text-xs text-[#fefcfb]/70 font-bold uppercase tracking-wider">
                       / {plan.period}
                     </span>
                   )}
                 </div>
 
                 {/* Divider */}
-                <div className={`h-[1px] w-full mb-8 ${isPro ? 'bg-[#E7CF29]/30' : 'bg-slate-900/60'}`}></div>
+                <div className={`h-[1px] w-full mb-8 ${isPro ? 'bg-[#1282a2]/30' : 'bg-[#034078]/30'}`}></div>
 
                 {/* Features List */}
                 <ul className="space-y-4 mb-8" aria-label={`Features list for ${plan.name} plan`}>
                   {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-xs text-slate-300 font-medium leading-relaxed">
-                      <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5 ${isPro ? 'bg-[#E7CF29]/15 text-[#E7CF29]' : 'bg-slate-900 text-[#4EC6D7]'}`}>
+                    <li key={idx} className="flex items-start gap-3 text-xs text-[#fefcfb] font-medium leading-relaxed">
+                      <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5 ${isPro ? 'bg-[#1282a2]/20 text-[#1282a2]' : 'bg-[#0a1128] text-[#034078] border border-[#034078]/40'}`}>
                         <Check className="w-3 h-3 stroke-[3]" />
                       </div>
                       <span>{feature}</span>
@@ -282,10 +282,10 @@ export default function Pricing() {
                   href={plan.link}
                   className={`w-full text-center block py-3.5 px-6 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all cursor-pointer ${
                     isPro 
-                      ? 'bg-primary hover:bg-[#ff8533] text-slate-950 shadow-md hover:shadow-lg' 
+                      ? 'bg-[#1282a2] hover:bg-[#159cc2] text-[#0a1128] shadow-md hover:shadow-lg font-black' 
                       : isDark
-                        ? 'bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700'
-                        : 'bg-transparent hover:bg-slate-900/60 text-slate-300 hover:text-white border border-slate-900 hover:border-slate-800'
+                        ? 'bg-[#001f54] hover:bg-[#034078] text-white border border-[#034078]/50 hover:border-[#034078]'
+                        : 'bg-transparent hover:bg-[#001f54] text-[#fefcfb] hover:text-white border border-[#034078]/40 hover:border-[#034078]'
                   }`}
                   aria-label={`${plan.cta} - ${plan.name} Plan`}
                 >
@@ -298,7 +298,7 @@ export default function Pricing() {
       </div>
 
       {/* ── FAQ Accordeon Section ── */}
-      <div className="max-w-3xl mx-auto border-t border-slate-900/60 pt-16">
+      <div className="max-w-3xl mx-auto border-t border-[#034078]/30 pt-16">
         <h2 className="text-2xl md:text-3xl font-black font-headline text-center text-white mb-10 tracking-tight">
           Frequently Asked Questions
         </h2>
@@ -309,33 +309,33 @@ export default function Pricing() {
             return (
               <div 
                 key={index} 
-                className="bg-[#060913]/60 border border-slate-900/60 rounded-2xl overflow-hidden transition-all duration-300"
+                className="bg-[#001f54]/70 border border-[#034078]/30 rounded-2xl overflow-hidden transition-all duration-300"
               >
                 <button
                   onClick={() => toggleFaq(index)}
-                  className="w-full flex items-center justify-between text-left p-6 font-bold font-headline text-xs md:text-sm text-slate-200 hover:text-white transition-colors cursor-pointer outline-none"
+                  className="w-full flex items-center justify-between text-left p-6 font-bold font-headline text-xs md:text-sm text-white hover:text-[#1282a2] transition-colors cursor-pointer outline-none"
                   aria-expanded={isOpen}
                   aria-controls={`faq-answer-${index}`}
                 >
                   <span className="flex items-center gap-3">
-                    <HelpCircle className="w-4 h-4 text-primary flex-shrink-0" />
+                    <HelpCircle className="w-4 h-4 text-[#1282a2] flex-shrink-0" />
                     {faq.question}
                   </span>
                   {isOpen ? (
-                    <ChevronUp className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                    <ChevronUp className="w-4 h-4 text-[#fefcfb] flex-shrink-0" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                    <ChevronDown className="w-4 h-4 text-[#fefcfb] flex-shrink-0" />
                   )}
                 </button>
                 
                 <div
                   id={`faq-answer-${index}`}
                   className={`transition-all duration-300 ease-in-out ${
-                    isOpen ? 'max-h-[300px] border-t border-slate-900/30 opacity-100 p-6 pt-5' : 'max-h-0 opacity-0 pointer-events-none'
+                    isOpen ? 'max-h-[300px] border-t border-[#034078]/20 opacity-100 p-6 pt-5' : 'max-h-0 opacity-0 pointer-events-none'
                   } overflow-hidden`}
                   aria-hidden={!isOpen}
                 >
-                  <p className="text-xs md:text-sm text-slate-400 leading-relaxed font-medium">
+                  <p className="text-xs md:text-sm text-[#fefcfb] leading-relaxed font-medium">
                     {faq.answer}
                   </p>
                 </div>

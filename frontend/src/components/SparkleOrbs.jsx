@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 
 const COLOR_PRESETS = [
-  { primary: '#f97316', shadow: 'rgba(249, 115, 22, 0.25)' }, // Orange
-  { primary: '#ef4444', shadow: 'rgba(239, 68, 68, 0.25)' }, // Red
-  { primary: '#94a3b8', shadow: 'rgba(148, 163, 184, 0.25)' }  // Silver
+  { primary: '#1282a2', shadow: 'rgba(18, 130, 162, 0.3)' }, // Vibrant Cyan
+  { primary: '#fefcfb', shadow: 'rgba(254, 252, 251, 0.3)' }, // Off White
+  { primary: '#034078', shadow: 'rgba(3, 64, 120, 0.3)' }, // Ocean Blue
+  { primary: '#001f54', shadow: 'rgba(0, 31, 84, 0.3)' } // Deep Navy
 ];
 
 export default function SparkleOrbs() {
