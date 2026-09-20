@@ -88,6 +88,7 @@ function AppContent() {
   const [blob2Pos, setBlob2Pos] = useState({ bottom: '0%', left: '0%' });
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuExpanded, setIsMenuExpanded] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -111,9 +112,10 @@ function AppContent() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [location.pathname]);
 
-  // Collapse menu on route change
+  // Collapse menus on route change
   useEffect(() => {
     setIsMenuExpanded(false);
+    setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
   // Collapse menu on clicking outside when expanded on scroll
@@ -230,10 +232,10 @@ function AppContent() {
         />
       </div>
 
-      {/* Universal Floating Glassmorphic Tab Navigation */}
+      {/* Universal Floating Glassmorphic Tab Navigation (Desktop: md and up) */}
       <div 
         id="floating-navigation-bar"
-        className={`fixed top-6 left-6 md:left-12 z-[60] select-none transition-all duration-300 ${
+        className={`hidden md:block fixed top-6 left-6 md:left-12 z-[60] select-none transition-all duration-300 ${
           (!isScrolled || isMenuExpanded)
             ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
             : "opacity-0 -translate-y-4 scale-90 pointer-events-none"
@@ -313,13 +315,13 @@ function AppContent() {
         </div>
       </div>
 
-      {/* Compact Floating Menu Button */}
+      {/* Compact Floating Menu Button (Desktop: md and up) */}
       <button
         onClick={(e) => {
           e.stopPropagation(); // Prevent immediate trigger of click outside handler
           setIsMenuExpanded(true);
         }}
-        className={`fixed top-6 left-6 md:left-12 z-[60] flex items-center gap-2.5 bg-[#001f54]/90 border border-[#034078]/40 backdrop-blur-2xl shadow-2xl rounded-2xl px-4 py-2.5 text-[#fefcfb] hover:text-white hover:bg-[#034078] transition-all duration-300 cursor-pointer ${
+        className={`hidden md:flex fixed top-6 left-6 md:left-12 z-[60] items-center gap-2.5 bg-[#001f54]/90 border border-[#034078]/40 backdrop-blur-2xl shadow-2xl rounded-2xl px-4 py-2.5 text-[#fefcfb] hover:text-white hover:bg-[#034078] transition-all duration-300 cursor-pointer ${
           (isScrolled && !isMenuExpanded)
             ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
             : "opacity-0 -translate-y-4 scale-90 pointer-events-none"
@@ -335,6 +337,114 @@ function AppContent() {
           <Menu className="h-3 w-3" /> Menu
         </span>
       </button>
+
+      {/* Mobile Glassmorphic Navigation Bar & Slide-down Drawer (< md) */}
+      <header className="md:hidden fixed top-3 left-3 right-3 z-[60] select-none">
+        <div className="flex items-center justify-between bg-[#001f54]/95 border border-[#034078]/50 backdrop-blur-2xl shadow-2xl rounded-2xl px-4 py-2.5">
+          <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2">
+            <img 
+              src={saiVikashLogo} 
+              alt="Sai Vikash" 
+              className="h-7 w-auto max-h-7 object-contain shrink-0" 
+            />
+          </Link>
+          
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            className="p-2 rounded-xl text-[#fefcfb] hover:text-white hover:bg-[#034078]/60 transition-all cursor-pointer flex items-center justify-center"
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5 text-[#1282a2]" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {/* Mobile Dropdown Card */}
+        {isMobileMenuOpen && (
+          <div className="mt-2 w-full bg-[#001f54]/98 border border-[#034078]/60 backdrop-blur-2xl rounded-2xl shadow-2xl p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            <nav className="flex flex-col gap-2">
+              <Link 
+                to="/plans" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-[#fefcfb] hover:text-white bg-[#034078]/30 hover:bg-[#034078]/60 border border-[#034078]/30 transition-all"
+              >
+                <span>Plans & Pricing</span>
+                <span className="text-[#1282a2] text-sm">→</span>
+              </Link>
+
+              {/* Exam Series Section */}
+              <div className="bg-[#034078]/20 border border-[#034078]/30 rounded-xl p-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-[#1282a2] uppercase tracking-wider px-1">
+                  <span>Exam Series</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  <Link 
+                    to="/jee-library" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="px-3 py-2 rounded-lg text-xs font-bold text-center bg-[#034078]/50 hover:bg-[#034078] text-[#fefcfb] border border-[#034078]/40 transition-all uppercase tracking-wider"
+                  >
+                    IIT JEE
+                  </Link>
+                  <Link 
+                    to="/neet-library" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="px-3 py-2 rounded-lg text-xs font-bold text-center bg-[#034078]/50 hover:bg-[#034078] text-[#fefcfb] border border-[#034078]/40 transition-all uppercase tracking-wider"
+                  >
+                    NEET (UG)
+                  </Link>
+                </div>
+              </div>
+
+              {user?.role === 'admin' ? (
+                <Link 
+                  to="/admin" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-[#1282a2] hover:text-white bg-[#1282a2]/15 hover:bg-[#1282a2]/30 border border-[#1282a2]/40 transition-all"
+                >
+                  <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Admin Panel</span>
+                  <span className="text-sm">→</span>
+                </Link>
+              ) : (
+                <Link 
+                  to="/dashboard" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-[#fefcfb] hover:text-white bg-[#034078]/30 hover:bg-[#034078]/60 border border-[#034078]/30 transition-all"
+                >
+                  <span>Student Dashboard</span>
+                  <span className="text-[#1282a2] text-sm">→</span>
+                </Link>
+              )}
+            </nav>
+
+            <div className="w-full h-[1px] bg-[#034078]/40 my-0.5"></div>
+
+            {user ? (
+              <button 
+                onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }} 
+                className="w-full bg-[#034078] hover:bg-[#1282a2] text-[#fefcfb] hover:text-white py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border border-[#034078]/50 cursor-pointer text-center"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link 
+                to="/login" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full bg-[#1282a2] hover:bg-[#159cc2] text-[#0a1128] py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(18,130,162,0.4)] text-center block"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+        )}
+      </header>
+
+      {/* Backdrop for Mobile Drawer */}
+      {isMobileMenuOpen && (
+        <div 
+          onClick={() => setIsMobileMenuOpen(false)} 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] md:hidden transition-opacity" 
+        />
+      )}
 
       {/* Main Routing Content */}
       <main className={`${location.pathname === '/' ? 'pt-0' : 'pt-28 md:pt-32'} flex-1 flex flex-col min-h-screen bg-transparent relative z-10`}>
