@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config/api';
 
-// Sample Mock Students Database categorized by Class (Used as offline fallback)
+// Sample Mock Students Database categorized by Class (Used for Demo & Offline Fallback)
 const MOCK_STUDENTS = [
   {
     id: 'std-1',
@@ -127,7 +127,7 @@ const MOCK_STUDENTS = [
     accuracy: 88.5,
     pacingSec: 42,
     cutoffClearedRate: '100%',
-    status: 'High Performer',
+    status: 'Top Ranker',
     streak: '14 Days',
     subjects: [
       { name: 'Biology', score: 324, maxScore: 360, accuracy: 93.5, avgTimePerQ: '0.8m' },
@@ -136,7 +136,7 @@ const MOCK_STUDENTS = [
     ],
     topicDiagnostics: {
       strong: [
-        { topic: 'Cell Biology', subject: 'Biology', accuracy: '98%', speed: 'Fast' },
+        { topic: 'Cell Biology & Genetics', subject: 'Biology', accuracy: '98%', speed: 'Fast' },
         { topic: 'Structure of Atom', subject: 'Chemistry', accuracy: '92%', speed: 'Optimal' }
       ],
       careless: [
@@ -144,7 +144,7 @@ const MOCK_STUDENTS = [
       ],
       weak: [
         { topic: 'Plant Physiology', subject: 'Biology', accuracy: '58%', status: 'Revision Needed' },
-        { topic: 'Oscillations', subject: 'Physics', accuracy: '50%', status: 'Low Accuracy' }
+        { topic: 'Oscillations & Waves', subject: 'Physics', accuracy: '50%', status: 'Low Accuracy' }
       ]
     },
     testHistory: [
@@ -313,6 +313,147 @@ const MOCK_STUDENTS = [
     ]
   },
   {
+    id: 'std-7',
+    rollNo: 'IK-1105',
+    name: 'Kavya Nair',
+    email: 'kavya.nair@example.com',
+    classCohort: 'Class 11',
+    stream: 'JEE',
+    classRank: 3,
+    testsAttempted: 11,
+    avgScore: 232,
+    maxScore: 300,
+    accuracy: 86.4,
+    pacingSec: 47,
+    cutoffClearedRate: '100%',
+    status: 'Rising Star',
+    streak: '12 Days',
+    subjects: [
+      { name: 'Physics', score: 82, maxScore: 100, accuracy: 89.0, avgTimePerQ: '1.5m' },
+      { name: 'Chemistry', score: 84, maxScore: 100, accuracy: 91.5, avgTimePerQ: '1.2m' },
+      { name: 'Mathematics', score: 66, maxScore: 100, accuracy: 78.8, avgTimePerQ: '2.2m' }
+    ],
+    topicDiagnostics: {
+      strong: [
+        { topic: 'Vectors & Kinematics', subject: 'Physics', accuracy: '94%', speed: 'Optimal' },
+        { topic: 'Gaseous State', subject: 'Chemistry', accuracy: '90%', speed: 'Fast' }
+      ],
+      careless: [
+        { topic: 'Quadratic Equations', subject: 'Mathematics', accuracy: '72%', impact: '-4 pts leak' }
+      ],
+      weak: [
+        { topic: 'Circular Motion', subject: 'Physics', accuracy: '54%', status: 'Practice Needed' }
+      ]
+    },
+    testHistory: [
+      {
+        title: 'Class 11 JEE Milestone Mock #5',
+        date: '2026-09-16',
+        score: 242,
+        max: 300,
+        accuracy: '88%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Physics', score: 84, maxScore: 100 },
+          { subject: 'Chemistry', score: 88, maxScore: 100 },
+          { subject: 'Mathematics', score: 70, maxScore: 100 }
+        ]
+      },
+      {
+        title: 'PCM Combined Sprint Test #4',
+        date: '2026-09-08',
+        score: 236,
+        max: 300,
+        accuracy: '87%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Physics', score: 82, maxScore: 100 },
+          { subject: 'Chemistry', score: 85, maxScore: 100 },
+          { subject: 'Mathematics', score: 69, maxScore: 100 }
+        ]
+      },
+      {
+        title: 'Class 11 JEE Milestone Mock #4',
+        date: '2026-08-30',
+        score: 228,
+        max: 300,
+        accuracy: '85%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Physics', score: 80, maxScore: 100 },
+          { subject: 'Chemistry', score: 82, maxScore: 100 },
+          { subject: 'Mathematics', score: 66, maxScore: 100 }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'std-8',
+    rollNo: 'IK-1104',
+    name: 'Aditya Verma',
+    email: 'aditya.verma@example.com',
+    classCohort: 'Class 11',
+    stream: 'NEET',
+    classRank: 5,
+    testsAttempted: 10,
+    avgScore: 562,
+    maxScore: 720,
+    accuracy: 82.0,
+    pacingSec: 49,
+    cutoffClearedRate: '90%',
+    status: 'Active Performer',
+    streak: '8 Days',
+    subjects: [
+      { name: 'Biology', score: 298, maxScore: 360, accuracy: 88.0, avgTimePerQ: '0.9m' },
+      { name: 'Chemistry', score: 142, maxScore: 180, accuracy: 80.5, avgTimePerQ: '1.4m' },
+      { name: 'Physics', score: 122, maxScore: 180, accuracy: 76.0, avgTimePerQ: '1.8m' }
+    ],
+    topicDiagnostics: {
+      strong: [
+        { topic: 'Biological Classification', subject: 'Biology', accuracy: '92%', speed: 'Fast' }
+      ],
+      careless: [
+        { topic: 'Chemical Bonding', subject: 'Chemistry', accuracy: '68%', impact: '-5 pts leak' }
+      ],
+      weak: [
+        { topic: 'Units and Measurements', subject: 'Physics', accuracy: '52%', status: 'Review Needed' }
+      ]
+    },
+    testHistory: [
+      {
+        title: 'NEET Grand National Mock #4',
+        date: '2026-09-17',
+        score: 580,
+        max: 720,
+        accuracy: '84%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Biology', score: 310, maxScore: 360 },
+          { subject: 'Chemistry', score: 145, maxScore: 180 },
+          { subject: 'Physics', score: 125, maxScore: 180 }
+        ]
+      },
+      {
+        title: 'NEET Class 11 Diagnostic Mock #3',
+        date: '2026-09-10',
+        score: 565,
+        max: 720,
+        accuracy: '82%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Biology', score: 300, maxScore: 360 },
+          { subject: 'Chemistry', score: 142, maxScore: 180 },
+          { subject: 'Physics', score: 123, maxScore: 180 }
+        ]
+      }
+    ]
+  },
+  {
     id: 'std-4',
     rollNo: '128003120',
     name: 'Tanvi Kulkarni',
@@ -449,7 +590,7 @@ const MOCK_STUDENTS = [
         { topic: 'Magnetism & Matter', subject: 'Physics', accuracy: '65%', impact: '-4 pts leak' }
       ],
       weak: [
-        { topic: 'Differential Equations', subject: 'Mathematics', accuracy: '48%', status: 'Low Accuracy' }
+        { topic: 'Differential Equations', subject: 'Mathematics', accuracy: '48%', status: 'Review Needed' }
       ]
     },
     testHistory: [
@@ -458,7 +599,7 @@ const MOCK_STUDENTS = [
         date: '2026-09-16',
         score: 226,
         max: 300,
-        accuracy: '86%',
+        accuracy: '85%',
         cutoffCleared: true,
         status: 'Cleared',
         subjectScores: [
@@ -483,7 +624,7 @@ const MOCK_STUDENTS = [
       },
       {
         title: 'Class 12 Physics & Maths Sprint',
-        date: '2026-08-27',
+        date: '2026-08-24',
         score: 210,
         max: 300,
         accuracy: '81%',
@@ -498,25 +639,168 @@ const MOCK_STUDENTS = [
     ]
   },
   {
+    id: 'std-9',
+    rollNo: 'IK-1208',
+    name: 'Siddharth Rao',
+    email: 'siddharth.rao@example.com',
+    classCohort: 'Class 12',
+    stream: 'JEE',
+    classRank: 2,
+    testsAttempted: 19,
+    avgScore: 248,
+    maxScore: 300,
+    accuracy: 90.5,
+    pacingSec: 43,
+    cutoffClearedRate: '100%',
+    status: 'Speed Specialist',
+    streak: '24 Days',
+    subjects: [
+      { name: 'Physics', score: 88, maxScore: 100, accuracy: 93.0, avgTimePerQ: '1.2m' },
+      { name: 'Chemistry', score: 86, maxScore: 100, accuracy: 92.0, avgTimePerQ: '1.1m' },
+      { name: 'Mathematics', score: 74, maxScore: 100, accuracy: 86.5, avgTimePerQ: '1.8m' }
+    ],
+    topicDiagnostics: {
+      strong: [
+        { topic: 'Ray Optics', subject: 'Physics', accuracy: '96%', speed: 'Fast' },
+        { topic: 'Probability', subject: 'Mathematics', accuracy: '92%', speed: 'Optimal' }
+      ],
+      careless: [
+        { topic: 'Aldehydes & Ketones', subject: 'Chemistry', accuracy: '70%', impact: '-3 pts leak' }
+      ],
+      weak: [
+        { topic: 'Vector 3D', subject: 'Mathematics', accuracy: '56%', status: 'Practice Needed' }
+      ]
+    },
+    testHistory: [
+      {
+        title: 'JEE Main Ultimate Full Mock #2',
+        date: '2026-09-16',
+        score: 256,
+        max: 300,
+        accuracy: '92%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Physics', score: 92, maxScore: 100 },
+          { subject: 'Chemistry', score: 88, maxScore: 100 },
+          { subject: 'Mathematics', score: 76, maxScore: 100 }
+        ]
+      },
+      {
+        title: 'JEE Main Ultimate Full Mock #1',
+        date: '2026-09-09',
+        score: 248,
+        max: 300,
+        accuracy: '90%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Physics', score: 89, maxScore: 100 },
+          { subject: 'Chemistry', score: 86, maxScore: 100 },
+          { subject: 'Mathematics', score: 73, maxScore: 100 }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'std-10',
+    rollNo: 'IK-1202',
+    name: 'Meera Sundaram',
+    email: 'meera.sundaram@example.com',
+    classCohort: 'Class 12',
+    stream: 'NEET',
+    classRank: 1,
+    testsAttempted: 24,
+    avgScore: 668,
+    maxScore: 720,
+    accuracy: 94.5,
+    pacingSec: 39,
+    cutoffClearedRate: '100%',
+    status: 'Top Ranker',
+    streak: '38 Days',
+    subjects: [
+      { name: 'Biology', score: 348, maxScore: 360, accuracy: 97.0, avgTimePerQ: '0.7m' },
+      { name: 'Chemistry', score: 168, maxScore: 180, accuracy: 93.5, avgTimePerQ: '1.1m' },
+      { name: 'Physics', score: 152, maxScore: 180, accuracy: 91.0, avgTimePerQ: '1.4m' }
+    ],
+    topicDiagnostics: {
+      strong: [
+        { topic: 'Human Physiology', subject: 'Biology', accuracy: '99%', speed: 'Fast' },
+        { topic: 'Biomolecules & Polymers', subject: 'Chemistry', accuracy: '96%', speed: 'Fast' },
+        { topic: 'Semiconductor Electronics', subject: 'Physics', accuracy: '94%', speed: 'Optimal' }
+      ],
+      careless: [
+        { topic: 'Optics & Wave Motion', subject: 'Physics', accuracy: '78%', impact: '-4 pts leak' }
+      ],
+      weak: [
+        { topic: 'Coordination Compounds', subject: 'Chemistry', accuracy: '66%', status: 'Review Needed' }
+      ]
+    },
+    testHistory: [
+      {
+        title: 'NEET Grand National Mock #4',
+        date: '2026-09-17',
+        score: 680,
+        max: 720,
+        accuracy: '96%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Biology', score: 352, maxScore: 360 },
+          { subject: 'Chemistry', score: 172, maxScore: 180 },
+          { subject: 'Physics', score: 156, maxScore: 180 }
+        ]
+      },
+      {
+        title: 'NEET Class 12 All-India Mock #2',
+        date: '2026-09-08',
+        score: 668,
+        max: 720,
+        accuracy: '94%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Biology', score: 348, maxScore: 360 },
+          { subject: 'Chemistry', score: 168, maxScore: 180 },
+          { subject: 'Physics', score: 152, maxScore: 180 }
+        ]
+      },
+      {
+        title: 'PCB Full Length Grand Test #1',
+        date: '2026-08-26',
+        score: 656,
+        max: 720,
+        accuracy: '93%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Biology', score: 344, maxScore: 360 },
+          { subject: 'Chemistry', score: 164, maxScore: 180 },
+          { subject: 'Physics', score: 148, maxScore: 180 }
+        ]
+      }
+    ]
+  },
+  {
     id: 'std-6',
     rollNo: 'IK-1301',
     name: 'Vikram Singh',
     email: 'vikram.singh@example.com',
     classCohort: 'Dropper / Repeaters',
     stream: 'JEE',
-    classRank: 2,
+    classRank: 1,
     testsAttempted: 28,
-    avgScore: 236,
+    avgScore: 242,
     maxScore: 300,
-    accuracy: 86.8,
+    accuracy: 88.0,
     pacingSec: 44,
     cutoffClearedRate: '100%',
     status: 'High Performer',
     streak: '40 Days',
     subjects: [
-      { name: 'Physics', score: 80, maxScore: 100, accuracy: 88.0, avgTimePerQ: '1.5m' },
-      { name: 'Chemistry', score: 85, maxScore: 100, accuracy: 91.0, avgTimePerQ: '1.1m' },
-      { name: 'Mathematics', score: 71, maxScore: 100, accuracy: 81.4, avgTimePerQ: '2.0m' }
+      { name: 'Physics', score: 82, maxScore: 100, accuracy: 89.0, avgTimePerQ: '1.5m' },
+      { name: 'Chemistry', score: 88, maxScore: 100, accuracy: 92.0, avgTimePerQ: '1.1m' },
+      { name: 'Mathematics', score: 72, maxScore: 100, accuracy: 83.0, avgTimePerQ: '2.0m' }
     ],
     topicDiagnostics: {
       strong: [
@@ -555,8 +839,8 @@ const MOCK_STUDENTS = [
         status: 'Cleared',
         subjectScores: [
           { subject: 'Physics', score: 82, maxScore: 100 },
-          { subject: 'Chemistry', score: 87, maxScore: 100 },
-          { subject: 'Mathematics', score: 73, maxScore: 100 }
+          { subject: 'Chemistry', score: 88, maxScore: 100 },
+          { subject: 'Mathematics', score: 72, maxScore: 100 }
         ]
       },
       {
@@ -585,6 +869,148 @@ const MOCK_STUDENTS = [
           { subject: 'Physics', score: 75, maxScore: 100 },
           { subject: 'Chemistry', score: 81, maxScore: 100 },
           { subject: 'Mathematics', score: 68, maxScore: 100 }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'std-12',
+    rollNo: 'IK-1302',
+    name: 'Sneha Reddy',
+    email: 'sneha.reddy@example.com',
+    classCohort: 'Dropper / Repeaters',
+    stream: 'NEET',
+    classRank: 2,
+    testsAttempted: 26,
+    avgScore: 648,
+    maxScore: 720,
+    accuracy: 92.5,
+    pacingSec: 41,
+    cutoffClearedRate: '100%',
+    status: 'Top Ranker',
+    streak: '35 Days',
+    subjects: [
+      { name: 'Biology', score: 342, maxScore: 360, accuracy: 95.5, avgTimePerQ: '0.8m' },
+      { name: 'Chemistry', score: 162, maxScore: 180, accuracy: 91.0, avgTimePerQ: '1.2m' },
+      { name: 'Physics', score: 144, maxScore: 180, accuracy: 88.0, avgTimePerQ: '1.5m' }
+    ],
+    topicDiagnostics: {
+      strong: [
+        { topic: 'Genetics & Evolution', subject: 'Biology', accuracy: '97%', speed: 'Fast' },
+        { topic: 'Equilibrium & Thermodynamics', subject: 'Chemistry', accuracy: '94%', speed: 'Optimal' }
+      ],
+      careless: [
+        { topic: 'Current Electricity', subject: 'Physics', accuracy: '74%', impact: '-3 pts leak' }
+      ],
+      weak: [
+        { topic: 'Magnetism in Matter', subject: 'Physics', accuracy: '58%', status: 'Revision Needed' }
+      ]
+    },
+    testHistory: [
+      {
+        title: 'NEET Grand National Mock #4',
+        date: '2026-09-17',
+        score: 660,
+        max: 720,
+        accuracy: '94%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Biology', score: 348, maxScore: 360 },
+          { subject: 'Chemistry', score: 166, maxScore: 180 },
+          { subject: 'Physics', score: 146, maxScore: 180 }
+        ]
+      },
+      {
+        title: 'NEET Dropper Special Grand Mock #2',
+        date: '2026-09-07',
+        score: 648,
+        max: 720,
+        accuracy: '92%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Biology', score: 342, maxScore: 360 },
+          { subject: 'Chemistry', score: 162, maxScore: 180 },
+          { subject: 'Physics', score: 144, maxScore: 180 }
+        ]
+      },
+      {
+        title: 'NEET Repeater Full Sprint #1',
+        date: '2026-08-25',
+        score: 636,
+        max: 720,
+        accuracy: '91%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Biology', score: 336, maxScore: 360 },
+          { subject: 'Chemistry', score: 158, maxScore: 180 },
+          { subject: 'Physics', score: 142, maxScore: 180 }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'std-13',
+    rollNo: 'IK-1305',
+    name: 'Abhishek Joshi',
+    email: 'abhishek.joshi@example.com',
+    classCohort: 'Dropper / Repeaters',
+    stream: 'JEE',
+    classRank: 3,
+    testsAttempted: 21,
+    avgScore: 228,
+    maxScore: 300,
+    accuracy: 84.5,
+    pacingSec: 46,
+    cutoffClearedRate: '95%',
+    status: 'High Improver',
+    streak: '22 Days',
+    subjects: [
+      { name: 'Physics', score: 78, maxScore: 100, accuracy: 86.0, avgTimePerQ: '1.6m' },
+      { name: 'Chemistry', score: 82, maxScore: 100, accuracy: 88.5, avgTimePerQ: '1.2m' },
+      { name: 'Mathematics', score: 68, maxScore: 100, accuracy: 79.0, avgTimePerQ: '2.1m' }
+    ],
+    topicDiagnostics: {
+      strong: [
+        { topic: 'Thermodynamics', subject: 'Physics', accuracy: '92%', speed: 'Optimal' },
+        { topic: 'Hydrocarbons', subject: 'Chemistry', accuracy: '90%', speed: 'Fast' }
+      ],
+      careless: [
+        { topic: 'Complex Numbers', subject: 'Mathematics', accuracy: '66%', impact: '-4 pts leak' }
+      ],
+      weak: [
+        { topic: 'Electromagnetic Induction', subject: 'Physics', accuracy: '52%', status: 'Needs Practice' }
+      ]
+    },
+    testHistory: [
+      {
+        title: 'JEE Main Ultimate Full Mock #2',
+        date: '2026-09-16',
+        score: 236,
+        max: 300,
+        accuracy: '87%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Physics', score: 80, maxScore: 100 },
+          { subject: 'Chemistry', score: 85, maxScore: 100 },
+          { subject: 'Mathematics', score: 71, maxScore: 100 }
+        ]
+      },
+      {
+        title: 'Dropper Booster All India Test',
+        date: '2026-08-28',
+        score: 220,
+        max: 300,
+        accuracy: '82%',
+        cutoffCleared: true,
+        status: 'Cleared',
+        subjectScores: [
+          { subject: 'Physics', score: 75, maxScore: 100 },
+          { subject: 'Chemistry', score: 80, maxScore: 100 },
+          { subject: 'Mathematics', score: 65, maxScore: 100 }
         ]
       }
     ]
@@ -1502,20 +1928,20 @@ export default function StudentAnalyticsWorkspace({ adminTests = [] }) {
     fetchLiveAnalytics();
   }, []);
 
-  // ── Resolve All Students (Live DB data prioritized over fallback) ──
+  // ── Resolve All Students: Merges Live DB accounts with rich demo students for comprehensive evaluation ──
   const allStudents = useMemo(() => {
-    if (liveStudents && liveStudents.length > 0) {
-      return liveStudents;
-    }
-    return MOCK_STUDENTS;
+    const liveList = liveStudents || [];
+    const liveIds = new Set(liveList.map(s => s.id));
+    const demoList = MOCK_STUDENTS.filter(m => !liveIds.has(m.id));
+    return [...liveList, ...demoList];
   }, [liveStudents]);
 
-  // ── Resolve All Exams (Live DB data prioritized over fallback) ──
+  // ── Resolve All Exams: Merges Live DB tests with rich demo exams ──
   const allExams = useMemo(() => {
-    if (liveExams && liveExams.length > 0) {
-      return liveExams;
-    }
-    return MOCK_EXAMS;
+    const liveList = liveExams || [];
+    const liveIds = new Set(liveList.map(e => e.id));
+    const demoList = MOCK_EXAMS.filter(m => !liveIds.has(m.id));
+    return [...liveList, ...demoList];
   }, [liveExams]);
 
   // Active Exam Object
