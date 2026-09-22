@@ -30,7 +30,7 @@ export default function TestLibrary({ pathway = 'jee' }) {
         <p className="text-[#fefcfb] max-w-2xl text-lg">Choose from full mock blueprints, target tests, or PYQs to improve your {isJee ? 'engineering' : 'medical'} rank.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         {categories.map((cat, i) => (
           <div key={i} className="flex flex-col bg-[#001f54]/90 border border-[#034078]/30 shadow-2xl p-6 md:p-8 rounded-2xl hover:-translate-y-2 transition-all duration-300 hover:border-[#1282a2]/50 group cursor-pointer" onClick={() => viewSection(cat.type)}>
             <div className="p-4 bg-[#0a1128] border border-[#034078]/40 text-[#1282a2] w-fit rounded-xl mb-6 group-hover:bg-[#1282a2] group-hover:text-[#0a1128] transition-colors duration-300">

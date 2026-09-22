@@ -174,11 +174,11 @@ export default function Pricing() {
       </div>
 
       {/* ── Billing Toggle Switch ── */}
-      <div className="flex justify-center mb-16">
-        <div className="bg-[#0a1128] border border-[#034078]/40 p-1.5 rounded-2xl flex items-center shadow-lg relative z-20">
+      <div className="flex justify-center mb-12 sm:mb-16">
+        <div className="bg-[#0a1128] border border-[#034078]/40 p-1 sm:p-1.5 rounded-2xl flex items-center shadow-lg relative z-20 max-w-full">
           <button
             onClick={() => setBillingPeriod('individual')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs uppercase tracking-wider transition-all cursor-pointer ${
               billingPeriod === 'individual'
                 ? 'bg-[#1282a2] text-[#0a1128] shadow-md'
                 : 'text-[#fefcfb] hover:text-white'
@@ -192,7 +192,7 @@ export default function Pricing() {
           
           <button
             onClick={() => setBillingPeriod('enterprise')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs uppercase tracking-wider transition-all cursor-pointer ${
               billingPeriod === 'enterprise'
                 ? 'bg-[#1282a2] text-[#0a1128] shadow-md'
                 : 'text-[#fefcfb] hover:text-white'
@@ -207,17 +207,17 @@ export default function Pricing() {
       </div>
 
       {/* ── Pricing Grid ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch mb-24">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch mb-24">
         {currentPlans.map((plan) => {
           // Conditional Styling Logic
           const isPro = plan.popular;
           const isDark = plan.dark;
 
-          let cardClasses = "relative flex flex-col justify-between p-8 rounded-3xl transition-all duration-300 ";
+          let cardClasses = "relative flex flex-col justify-between p-6 sm:p-8 rounded-3xl transition-all duration-300 ";
           
           if (isPro) {
-            // Elevated active card
-            cardClasses += "bg-[#001f54] border-2 border-[#1282a2] shadow-[0_15px_40px_rgba(18,130,162,0.2)] scale-105 z-10 md:-translate-y-2 hover:scale-[1.07] hover:shadow-[0_20px_50px_rgba(18,130,162,0.3)]";
+            // Elevated active card on desktop only, flat scale on mobile to prevent overflow
+            cardClasses += "bg-[#001f54] border-2 border-[#1282a2] shadow-[0_15px_40px_rgba(18,130,162,0.2)] md:scale-105 z-10 md:-translate-y-2 md:hover:scale-[1.07] hover:shadow-[0_20px_50px_rgba(18,130,162,0.3)]";
           } else if (isDark) {
             // Darker premium theme
             cardClasses += "bg-[#001f54]/90 border border-[#034078]/50 shadow-2xl hover:-translate-y-1.5 hover:border-[#034078]";

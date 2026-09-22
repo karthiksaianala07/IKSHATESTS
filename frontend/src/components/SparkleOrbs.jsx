@@ -124,7 +124,7 @@ export default function SparkleOrbs() {
   };
 
   return (
-    <>
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
       {/* Dynamic Sparkles (Rendered globally on contact) */}
       {particles.map(p => (
         <div
@@ -164,6 +164,6 @@ export default function SparkleOrbs() {
           }}
         />
       ))}
-    </>
+    </div>
   );
 }
