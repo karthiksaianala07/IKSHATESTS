@@ -198,7 +198,7 @@ function AppContent() {
   }
 
   return (
-    <div className="bg-[#0a1128] text-[#fefcfb] font-body min-h-screen flex flex-col selection:bg-[#1282a2]/30 selection:text-white relative">
+    <div className="bg-[#0a1128] text-[#fefcfb] font-body min-h-screen min-h-[100dvh] w-full max-w-full overflow-x-hidden flex flex-col selection:bg-[#1282a2]/30 selection:text-white relative">
       
       {/* Global Dynamic Pulsating Background Lights */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -434,7 +434,7 @@ function AppContent() {
       )}
 
       {/* Main Routing Content */}
-      <main className={`${location.pathname === '/' ? 'pt-0' : 'pt-28 md:pt-32'} flex-1 flex flex-col min-h-screen bg-transparent relative z-10`}>
+      <main className={`${location.pathname === '/' ? 'pt-0' : 'pt-20 sm:pt-24 md:pt-32'} flex-1 flex flex-col min-h-screen min-h-[100dvh] w-full max-w-full bg-transparent relative z-10`}>
         <div className="flex-1 w-full">
           <Routes>
             <Route path="/" element={<Home />} />

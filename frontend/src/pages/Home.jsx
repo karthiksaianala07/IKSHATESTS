@@ -115,13 +115,13 @@ export default function Home() {
       </div>
 
       {/* ── 2. Hero Content Section ── */}
-      <section className="relative pt-28 md:pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <section className="relative pt-24 sm:pt-28 md:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         
         {/* Left Column (Content) */}
-        <div className="lg:col-span-6 space-y-8 text-left">
+        <div className="lg:col-span-6 space-y-6 sm:space-y-8 text-left">
 
           {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black font-headline tracking-tight leading-[1.06] text-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-headline tracking-tight leading-[1.1] sm:leading-[1.06] text-white">
             High-Precision Mock Exams for{' '}
             <span className={`bg-clip-text text-transparent bg-gradient-to-r ${themeConfig.accent} transition-all duration-1000`}>
               Competitive Success
@@ -129,31 +129,31 @@ export default function Home() {
           </h1>
 
           {/* Subparagraph */}
-          <p className="text-sm md:text-base text-[#fefcfb] leading-relaxed font-medium">
+          <p className="text-sm sm:text-base text-[#fefcfb] leading-relaxed font-medium">
             Accelerate your preparation with real-time testing metrics, instant time-wastage diagnostics, and targeted error correction consoles designed for all competitive examinations.
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-wrap items-center gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-2">
             <Link
               to="/login"
-              className={`px-8 py-4 ${themeConfig.btnStyle} font-black rounded-2xl transition-all duration-1000 hover:-translate-y-0.5 active:scale-95 text-xs uppercase tracking-wider flex items-center gap-2`}
+              className={`w-full sm:w-auto justify-center px-6 sm:px-8 py-3.5 sm:py-4 ${themeConfig.btnStyle} font-black rounded-2xl transition-all duration-1000 hover:-translate-y-0.5 active:scale-95 text-xs uppercase tracking-wider flex items-center gap-2`}
             >
               Start Today
               <span className="material-symbols-outlined text-base font-bold">arrow_forward</span>
             </Link>
             <Link
               to="/exams"
-              className="px-8 py-4 bg-[#001f54] hover:bg-[#034078] text-[#fefcfb] hover:text-white font-bold rounded-2xl border border-[#034078]/40 shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:scale-95 text-xs uppercase tracking-wider flex items-center gap-2"
+              className="w-full sm:w-auto justify-center px-6 sm:px-8 py-3.5 sm:py-4 bg-[#001f54] hover:bg-[#034078] text-[#fefcfb] hover:text-white font-bold rounded-2xl border border-[#034078]/40 shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:scale-95 text-xs uppercase tracking-wider flex items-center gap-2"
             >
               Registration
             </Link>
           </div>
 
           {/* Why Choose Us benefits */}
-          <div className="space-y-6 pt-10 border-t border-[#034078]/30">
-            <h3 className="text-2xl md:text-3xl font-black tracking-tight text-white font-headline">Why Choose Us</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-6 pt-8 sm:pt-10 border-t border-[#034078]/30">
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white font-headline">Why Choose Us</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               
               <WhyChooseUsCard title="Analytics" icon="insights" activeGlow={themeConfig.glowHover}>
                 Optimize your data analytics for training and result.
@@ -178,8 +178,8 @@ export default function Home() {
       </section>
 
       {/* ── 3. Platform Key Metrics Ribbon ── */}
-      <section id="sec-services" className="border-y border-[#034078]/30 bg-[#001f54]/90 backdrop-blur-md py-10 px-6 z-10 relative select-none">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <section id="sec-services" className="border-y border-[#034078]/30 bg-[#001f54]/90 backdrop-blur-md py-8 sm:py-10 px-4 sm:px-6 z-10 relative select-none">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 text-center">
           <div>
             <p className="text-[10px] text-[#fefcfb]/70 font-mono uppercase tracking-widest">Active Test Console</p>
             <p className="text-xl sm:text-2xl font-black font-headline text-white mt-1">2,400+ Mocks</p>
@@ -200,19 +200,19 @@ export default function Home() {
       </section>
 
       {/* ── 4. Footer ── */}
-      <footer className="w-full bg-[#0a1128]/80 backdrop-blur-md border-t border-[#034078]/30 py-12 px-6 md:px-12 z-10 relative">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+      <footer className="w-full bg-[#0a1128]/80 backdrop-blur-md border-t border-[#034078]/30 py-10 sm:py-12 px-4 sm:px-6 md:px-12 z-10 relative">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8 text-center md:text-left">
           
           <div className="flex flex-col items-center md:items-start gap-3">
             <div className="flex items-center gap-3">
-              <Logo className="h-10 w-auto" />
+              <Logo className="h-9 sm:h-10 w-auto" />
             </div>
             <p className="text-xs text-[#fefcfb]/70 font-medium max-w-sm">
               High-accuracy educational mock consoles and diagnostic behavioral reporting for all exams.
             </p>
           </div>
 
-          <div className="flex items-center gap-8 text-xs font-bold text-[#fefcfb] font-mono">
+          <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-8 text-xs font-bold text-[#fefcfb] font-mono">
             <Link to="/exams" className="hover:text-[#1282a2] transition-colors">Exam Series</Link>
             <Link to={user?.role === 'admin' ? "/admin" : "/dashboard"} className="hover:text-[#1282a2] transition-colors">
               {user?.role === 'admin' ? "Admin Panel" : "Dashboard"}
@@ -220,7 +220,7 @@ export default function Home() {
             <Link to="/login" className="hover:text-[#fefcfb] transition-colors font-bold text-[#1282a2]">Student Portal</Link>
           </div>
 
-          <div className="text-[11px] text-[#fefcfb]/50 font-mono tracking-wider uppercase">
+          <div className="text-[10px] sm:text-[11px] text-[#fefcfb]/50 font-mono tracking-wider uppercase">
             © 2026 IKSHATESTS // ALL RIGHTS RESERVED
           </div>
 
