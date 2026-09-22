@@ -6,6 +6,7 @@ import axios from 'axios';
 import { API_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import LatexRenderer from '../components/LatexRenderer';
+import { useIsMobile } from '../utils/device';
 
 // Helper to safely access sessionStorage in strict/lockdown environments
 const getSafeSessionStorage = () => {
@@ -36,6 +37,7 @@ export default function TestConsole() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   const [mockQuestions, setMockQuestions] = useState([]);
   const [dbTestId, setDbTestId] = useState(null);
@@ -423,6 +425,69 @@ export default function TestConsole() {
       default: return 'bg-[#e2e8f0] text-[#475569]';
     }
   };
+
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0a0f1d] text-white p-6 overflow-y-auto">
+        <div className="max-w-lg w-full bg-[#131b2e]/95 border border-indigo-500/30 p-8 sm:p-10 rounded-3xl backdrop-blur-2xl shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
+          {/* Ambient decorative glowing spots */}
+          <div className="absolute -top-16 -right-16 w-44 h-44 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-44 h-44 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Desktop Required Icon */}
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300 shadow-xl mb-6 relative">
+            <span className="material-symbols-outlined text-4xl">laptop_mac</span>
+            <span className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-red-500/90 text-white flex items-center justify-center text-xs font-black shadow-md border-2 border-[#131b2e]">
+              ✕
+            </span>
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400/10 text-amber-300 border border-amber-400/30 mb-3">
+            <span className="material-symbols-outlined text-[14px]">desktop_windows</span>
+            Desktop / Laptop Environment Required
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl font-black text-white font-headline tracking-tight mb-3">
+            Exam Blocked on Mobile
+          </h1>
+
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 font-medium">
+            To strictly maintain national CBT (Computer-Based Test) simulation standards and ensure full proctoring compliance (fullscreen lock, keyboard navigation, focus monitor), taking examinations from mobile devices or tablets is disabled.
+          </p>
+
+          {/* Feature List of what they CAN do on mobile */}
+          <div className="w-full bg-[#0a0f1d]/80 border border-slate-800 rounded-2xl p-4 sm:p-5 mb-6 text-left text-xs space-y-2.5">
+            <p className="font-bold text-[#81c3d7] flex items-center gap-2 uppercase tracking-wider text-[11px]">
+              <span className="material-symbols-outlined text-[16px] text-emerald-400">check_circle</span>
+              Features you can access on this mobile device:
+            </p>
+            <ul className="space-y-2 pl-4 text-slate-300 list-disc">
+              <li>Detailed score diagnostic reports & percentile analytics</li>
+              <li>Browse question papers & solution keys</li>
+              <li>View upcoming mock test schedule and syllabus breakdown</li>
+              <li>Administrative features and student workspaces</li>
+            </ul>
+          </div>
+
+          {/* Action buttons */}
+          <div className="w-full space-y-3">
+            <button
+              onClick={() => navigate('/library')}
+              className="w-full py-3.5 px-6 rounded-xl font-black uppercase tracking-wider text-xs bg-gradient-to-r from-indigo-600 to-purple-600 hover:brightness-110 text-white shadow-lg shadow-indigo-500/25 transition-all cursor-pointer active:scale-95"
+            >
+              Browse Test Library
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full py-3 px-6 rounded-xl font-bold uppercase tracking-wider text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all cursor-pointer active:scale-95"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoadingTest) return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f172a] text-white uppercase tracking-widest font-black animate-pulse">Decrypting Payload...</div>;
 

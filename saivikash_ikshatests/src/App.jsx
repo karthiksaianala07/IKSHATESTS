@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, Shield } from 'lucide-react';
 import Home from './pages/Home';
@@ -6,15 +6,26 @@ import Dashboard from './pages/Dashboard';
 import TestLibrary from './pages/TestLibrary';
 import LibrarySection from './pages/LibrarySection';
 import Exams from './pages/Exams';
-import TestConsole from './pages/TestConsole';
-import AdminPortal from './pages/AdminPortal';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';
-import TestPaperPdfView from './pages/TestPaperPdfView';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Logo } from './components/Logo';
 import saiVikashLogo from './assets/sai-vikash-logo.png';
 import SparkleOrbs from './components/SparkleOrbs';
+
+// Lazy loaded heavy modules to drastically reduce initial bundle size and lighten mobile memory
+const TestConsole = lazy(() => import('./pages/TestConsole'));
+const AdminPortal = lazy(() => import('./pages/AdminPortal'));
+const TestPaperPdfView = lazy(() => import('./pages/TestPaperPdfView'));
+
+const PageLoader = () => (
+  <div className="min-h-screen bg-[#0a1128] flex items-center justify-center p-4">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-[#034078]/20 border-t-[#1282a2] rounded-full animate-spin"></div>
+      <p className="text-[#1282a2] font-black text-xs uppercase tracking-widest animate-pulse">Loading Module...</p>
+    </div>
+  </div>
+);
 
 function ProtectedRoute({ children, requireAdmin = false }) {
   const { user, loading } = useAuth();
@@ -172,18 +183,22 @@ function AppContent() {
   
   if (isTestPaperPdf) {
     return (
-      <Routes>
-        <Route path="/admin/test-paper/:id" element={<ProtectedRoute requireAdmin={true}><TestPaperPdfView /></ProtectedRoute>} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/admin/test-paper/:id" element={<ProtectedRoute requireAdmin={true}><TestPaperPdfView /></ProtectedRoute>} />
+        </Routes>
+      </Suspense>
     );
   }
 
   if (isTestConsole) {
     return (
       <div className="min-h-screen bg-[#16425b] text-white">
-        <Routes>
-          <Route path="/test/:id" element={<ProtectedRoute><TestConsole /></ProtectedRoute>} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/test/:id" element={<ProtectedRoute><TestConsole /></ProtectedRoute>} />
+          </Routes>
+        </Suspense>
       </div>
     );
   }
@@ -191,9 +206,11 @@ function AppContent() {
   if (isAdminPortal) {
     return (
       <div className="bg-[#0a1128] text-[#fefcfb] font-sans min-h-screen flex flex-col selection:bg-[#1282a2]/30 selection:text-white relative antialiased">
-        <Routes>
-          <Route path="/admin/*" element={<ProtectedRoute requireAdmin={true}><AdminPortal /></ProtectedRoute>} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/admin/*" element={<ProtectedRoute requireAdmin={true}><AdminPortal /></ProtectedRoute>} />
+          </Routes>
+        </Suspense>
       </div>
     );
   }

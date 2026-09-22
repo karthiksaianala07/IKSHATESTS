@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../config/api';
+import { useIsMobile } from '../utils/device';
 
 // All 6 unique section slugs fully described in palette themes
 const SECTION_META = {
@@ -16,10 +17,12 @@ const SECTION_META = {
 export default function LibrarySection() {
   const { section } = useParams();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showMobileNoticeModal, setShowMobileNoticeModal] = useState(false);
 
   const meta = SECTION_META[section] || {
     title: 'Tests', description: 'Available assessments.',
@@ -39,6 +42,15 @@ export default function LibrarySection() {
       })
       .finally(() => setLoading(false));
   }, [section]);
+
+  const handleLaunchTest = (e, testId) => {
+    e?.stopPropagation();
+    if (isMobile) {
+      setShowMobileNoticeModal(true);
+      return;
+    }
+    navigate(`/test/${testId}`);
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-[1400px] mx-auto">
@@ -105,7 +117,7 @@ export default function LibrarySection() {
             return (
               <div
                 key={test.id}
-                onClick={() => navigate(`/test/${test.id}`)}
+                onClick={(e) => handleLaunchTest(e, test.id)}
                 className="bg-[#001f54]/90 border border-[#034078]/30 p-6 md:p-8 rounded-2xl shadow-2xl hover:border-[#1282a2]/50 transition-all duration-300 group flex flex-col cursor-pointer hover:-translate-y-2"
               >
                 {/* Icon + badge row */}
@@ -117,6 +129,12 @@ export default function LibrarySection() {
                     <span className={`px-3 py-1.5 rounded text-[10px] tracking-wider font-black uppercase border ${meta.examColor}`}>
                       {meta.examLabel}
                     </span>
+                    {isMobile && (
+                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400/10 text-amber-300 border border-amber-400/30">
+                        <span className="material-symbols-outlined text-[12px]">laptop_mac</span>
+                        Desktop Only
+                      </span>
+                    )}
                     {isScheduled && (
                       <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#0a1128] text-[#1282a2] border border-[#1282a2]/30">
                         <span className="material-symbols-outlined text-[12px]">lock_clock</span>
@@ -151,21 +169,89 @@ export default function LibrarySection() {
                   </div>
                 )}
 
-                <button className={`mt-auto w-full py-4 rounded-xl font-bold transition-all shadow-sm active:scale-95 text-sm uppercase tracking-wider ${
-                  isScheduled
-                    ? 'bg-[#0a1128] border border-[#034078]/20 text-[#fefcfb]/40 cursor-not-allowed'
-                    : 'bg-[#0a1128] border border-[#034078]/40 text-[#fefcfb] hover:bg-[#1282a2] hover:text-[#0a1128] hover:shadow-[0_0_20px_rgba(18,130,162,0.35)] hover:border-[#1282a2]'
-                }`}>
+                <button
+                  onClick={(e) => handleLaunchTest(e, test.id)}
+                  className={`mt-auto w-full py-4 rounded-xl font-bold transition-all shadow-sm active:scale-95 text-sm uppercase tracking-wider ${
+                    isScheduled
+                      ? 'bg-[#0a1128] border border-[#034078]/20 text-[#fefcfb]/40 cursor-not-allowed'
+                      : isMobile
+                      ? 'bg-[#0a1128] border border-amber-400/40 text-amber-200 hover:bg-amber-400/15'
+                      : 'bg-[#0a1128] border border-[#034078]/40 text-[#fefcfb] hover:bg-[#1282a2] hover:text-[#0a1128] hover:shadow-[0_0_20px_rgba(18,130,162,0.35)] hover:border-[#1282a2]'
+                  }`}
+                >
                   {isScheduled ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="material-symbols-outlined text-[16px]">lock</span>
                       Deploy Assessment
+                    </span>
+                  ) : isMobile ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="material-symbols-outlined text-[16px]">laptop_mac</span>
+                      Desktop Required
                     </span>
                   ) : 'Deploy Assessment'}
                 </button>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Mobile Block / Information Modal */}
+      {showMobileNoticeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg bg-[#001f54] border border-[#1282a2]/40 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden">
+            {/* Ambient gradients */}
+            <div className="absolute -top-16 -right-16 w-36 h-36 bg-[#1282a2]/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#034078]/30 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowMobileNoticeModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-xl text-[#fefcfb]/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Close dialog"
+            >
+              <span className="material-symbols-outlined text-2xl">close</span>
+            </button>
+
+            {/* Header info */}
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400/20 to-orange-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shadow-inner shrink-0">
+                <span className="material-symbols-outlined text-3xl">laptop_mac</span>
+              </div>
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400/10 text-amber-300 border border-amber-400/30">
+                  CBT Policy
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black text-white font-headline mt-1">
+                  Desktop or Laptop Required
+                </h3>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-200 leading-relaxed mb-5">
+              To faithfully recreate the official <strong>NTA Computer-Based Test (CBT)</strong> environment and support strict proctoring compliance (fullscreen lock, keyboard controls, focus tracking), taking mock exams is disabled on mobile devices.
+            </p>
+
+            <div className="bg-[#0a1128]/90 border border-[#034078]/50 rounded-2xl p-4 mb-6 text-xs text-slate-300 space-y-2">
+              <p className="font-bold text-[#81c3d7] flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                Features available on your mobile device:
+              </p>
+              <ul className="space-y-1.5 pl-5 list-disc text-slate-300">
+                <li>Review past test scores, diagnostic solutions & analytics</li>
+                <li>Browse upcoming test schedules and syllabus coverage</li>
+                <li>Access the faculty admin portal & question repository</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => setShowMobileNoticeModal(false)}
+              className="w-full py-3.5 px-6 rounded-xl font-black uppercase tracking-wider text-xs bg-[#1282a2] hover:bg-[#1594b8] text-white shadow-lg shadow-[#1282a2]/30 transition-all cursor-pointer active:scale-95"
+            >
+              Understood, Continue Browsing
+            </button>
+          </div>
         </div>
       )}
     </div>
