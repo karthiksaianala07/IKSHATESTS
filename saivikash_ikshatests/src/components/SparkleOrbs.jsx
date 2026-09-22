@@ -33,8 +33,20 @@ export default function SparkleOrbs() {
     })
   );
 
-  // Smooth Water-flow Animation Loop
+  // Smooth Water-flow Animation Loop (Desktop only; static positions on mobile to save battery and GPU)
   useEffect(() => {
+    const isMobile = typeof window !== 'undefined' && (window.innerWidth < 1024 || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent));
+    if (isMobile) {
+      orbs.current.forEach((orb, idx) => {
+        const el = orbsRef.current[idx];
+        if (el) {
+          el.style.left = `${orb.anchorX}%`;
+          el.style.top = `${orb.anchorY}%`;
+        }
+      });
+      return;
+    }
+
     const updatePositions = () => {
       // 1. Move Orbs (direct DOM style manipulation for 0% React overhead)
       orbs.current.forEach((orb, idx) => {

@@ -55,6 +55,9 @@ export default function AdminPortal() {
   // Route state
   const isAddTestView = location.pathname === '/admin/add-test';
 
+  // Mobile sidebar state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   // Tabs: 'dashboard' | 'exams' | 'question-bank' | 'students' | 'settings'
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -439,20 +442,38 @@ export default function AdminPortal() {
 
   const handleNavigation = (tabName) => {
     setActiveTab(tabName);
+    setIsMobileSidebarOpen(false);
     navigate('/admin');
   };
 
   const formatNumber = (val) => (val || 0).toLocaleString();
 
   return (
-    <div className="bg-[#020306] text-slate-100 font-sans min-h-screen flex antialiased">
-      {/* ── Fixed Sidebar Navigation ── */}
-      <aside className="w-72 fixed left-0 top-0 bottom-0 bg-[#060913] border-r border-slate-900/60 flex flex-col z-50">
-        <div className="p-6 border-b border-slate-900/60 flex items-center gap-3">
+    <div className="bg-[#020306] text-slate-100 font-sans min-h-screen min-h-[100dvh] w-full max-w-full flex antialiased relative overflow-x-hidden">
+      {/* ── Mobile Sidebar Backdrop ── */}
+      {isMobileSidebarOpen && (
+        <div
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+        />
+      )}
+
+      {/* ── Sidebar Navigation (Slide-over drawer on mobile, fixed on desktop) ── */}
+      <aside className={`w-72 fixed left-0 top-0 bottom-0 bg-[#060913] border-r border-slate-900/60 flex flex-col z-50 transition-transform duration-300 ease-in-out ${
+        isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
+        <div className="p-6 border-b border-slate-900/60 flex items-center justify-between">
           <Logo className="h-10 w-auto" />
+          <button
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="lg:hidden p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-900 transition-colors cursor-pointer"
+            aria-label="Close sidebar"
+          >
+            <span className="material-symbols-outlined text-[22px]">close</span>
+          </button>
         </div>
 
-        <nav className="flex-grow py-6 px-4">
+        <nav className="flex-grow py-6 px-4 overflow-y-auto">
           <ul className="space-y-1">
             <li>
               <button
@@ -524,7 +545,7 @@ export default function AdminPortal() {
 
         <div className="p-4 border-t border-slate-900/60">
           <button
-            onClick={() => navigate('/admin/add-test')}
+            onClick={() => { setIsMobileSidebarOpen(false); navigate('/admin/add-test'); }}
             className="w-full bg-[#81c3d7] hover:bg-[#9ad4e4] text-[#0e2a3b] font-black text-[10px] uppercase tracking-wider py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(129,195,215,0.2)] border-none"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
@@ -534,7 +555,7 @@ export default function AdminPortal() {
 
         <div className="p-4 border-t border-slate-900/60 flex flex-col gap-1">
           <button
-            onClick={handleSignOut}
+            onClick={() => { setIsMobileSidebarOpen(false); handleSignOut(); }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs uppercase text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors cursor-pointer border-none bg-transparent text-left"
           >
             <span className="material-symbols-outlined text-[20px]">logout</span>
@@ -544,29 +565,36 @@ export default function AdminPortal() {
       </aside>
 
       {/* ── Main Panel Content Wrapper ── */}
-      <div className="ml-72 flex-grow flex flex-col min-h-screen relative overflow-hidden">
+      <div className="ml-0 lg:ml-72 flex-grow flex flex-col min-h-screen min-h-[100dvh] w-full max-w-full relative overflow-x-hidden">
         {/* Top App Bar */}
-        <header className="h-16 border-b border-slate-900/60 bg-[#060913]/80 backdrop-blur-xl flex justify-between items-center px-8 sticky top-0 z-40">
-          <div className="flex items-center gap-4 w-1/3">
+        <header className="h-16 border-b border-slate-900/60 bg-[#060913]/90 backdrop-blur-xl flex justify-between items-center px-4 sm:px-8 sticky top-0 z-30 gap-3">
+          <div className="flex items-center gap-3 flex-1 max-w-md">
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-900 transition-colors shrink-0 flex items-center justify-center border border-slate-800 cursor-pointer"
+              aria-label="Open navigation sidebar"
+            >
+              <span className="material-symbols-outlined text-2xl">menu</span>
+            </button>
             <div className="relative w-full">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">search</span>
               <input
                 className="w-full bg-slate-950/80 border border-slate-900/60 rounded-full pl-10 pr-4 py-2 text-xs font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all font-mono"
-                placeholder="Search exams, students, metrics..."
+                placeholder="Search exams, students..."
                 type="text"
               />
             </div>
           </div>
-          <div className="flex items-center gap-6">
-            <span className="text-[10px] font-black uppercase text-[#81c3d7] tracking-widest font-mono">Faculty Console</span>
-            <div className="flex items-center gap-2">
-              <button className="p-2 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-200 transition-colors border-none bg-transparent cursor-pointer">
+          <div className="flex items-center gap-3 sm:gap-6 shrink-0">
+            <span className="hidden sm:inline-block text-[10px] font-black uppercase text-[#81c3d7] tracking-widest font-mono">Faculty Console</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <button className="hidden sm:flex p-2 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-200 transition-colors border-none bg-transparent cursor-pointer items-center justify-center">
                 <span className="material-symbols-outlined">notifications</span>
               </button>
-              <button className="p-2 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-200 transition-colors border-none bg-transparent cursor-pointer">
+              <button className="hidden sm:flex p-2 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-200 transition-colors border-none bg-transparent cursor-pointer items-center justify-center">
                 <span className="material-symbols-outlined">help_outline</span>
               </button>
-              <div className="h-8 w-8 rounded-full border border-slate-800 bg-slate-900 ml-2 overflow-hidden flex items-center justify-center font-bold text-xs text-primary uppercase font-mono shadow">
+              <div className="h-8 w-8 rounded-full border border-slate-800 bg-slate-900 ml-1 sm:ml-2 overflow-hidden flex items-center justify-center font-bold text-xs text-primary uppercase font-mono shadow">
                 AD
               </div>
             </div>
@@ -574,7 +602,7 @@ export default function AdminPortal() {
         </header>
 
         {/* ── Render Content Areas ── */}
-        <main className="flex-1 p-8 max-w-[1400px] w-full mx-auto space-y-8 pb-16">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1400px] w-full mx-auto space-y-8 pb-16">
           {isAddTestView ? (
             /* ADD TEST SUB-VIEW */
             <div className="animate-in fade-in duration-300">
