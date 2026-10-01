@@ -6,10 +6,10 @@ import { useIsMobile } from '../utils/device';
 
 // All 6 unique section slugs fully described in palette themes
 const SECTION_META = {
-  'jee-full':    { title: 'Full-Length Mocks',    description: 'Complete JEE 2026 pattern structural simulations — 90 Qs, 3 Hours.',  icon: 'assignment',  color: 'from-[#1282a2] to-[#034078]',  examLabel: 'JEE',  examColor: 'bg-[#1282a2]/15 text-[#1282a2] border-[#1282a2]/30' },
+  'jee-full':    { title: 'Full-Length Mocks',    description: 'Complete JEE 2026 pattern structural simulations — 75 Qs, 3 Hours.',  icon: 'assignment',  color: 'from-[#1282a2] to-[#034078]',  examLabel: 'JEE',  examColor: 'bg-[#1282a2]/15 text-[#1282a2] border-[#1282a2]/30' },
   'jee-pyq':     { title: 'Previous Year Papers',  description: 'Actual JEE Mains & Advanced papers from 2015–2025, fully digitized.',  icon: 'history_edu', color: 'from-[#1282a2] to-[#001f54]', examLabel: 'JEE',  examColor: 'bg-[#1282a2]/15 text-[#1282a2] border-[#1282a2]/30' },
   'jee-chapter': { title: 'Subject-wise Tests',   description: 'Target Physics, Chemistry, and Maths chapters by topic precision.',    icon: 'category',    color: 'from-[#034078] to-[#1282a2]',  examLabel: 'JEE',  examColor: 'bg-[#1282a2]/15 text-[#1282a2] border-[#1282a2]/30' },
-  'neet-full':   { title: 'Full-Length Mocks',    description: 'Complete NEET UG pattern simulations — 200 Qs, 3 Hrs 20 Mins.',        icon: 'assignment',  color: 'from-[#034078] to-[#fefcfb]',  examLabel: 'NEET', examColor: 'bg-[#034078]/20 text-[#fefcfb] border-[#034078]/35' },
+  'neet-full':   { title: 'Full-Length Mocks',    description: 'Complete NEET UG pattern simulations — 180 Qs, 3 Hrs 20 Mins.',        icon: 'assignment',  color: 'from-[#034078] to-[#fefcfb]',  examLabel: 'NEET', examColor: 'bg-[#034078]/20 text-[#fefcfb] border-[#034078]/35' },
   'neet-pyq':    { title: 'Previous Year Papers',  description: 'Actual NEET UG papers from 2015–2025 fully digitized and solved.',     icon: 'history_edu', color: 'from-[#0a1128] to-[#034078]', examLabel: 'NEET', examColor: 'bg-[#034078]/20 text-[#fefcfb] border-[#034078]/35' },
   'neet-chapter':{ title: 'Subject-wise Tests',   description: 'Intensive Biology, Chemistry & Physics topic-targeted assessments.',    icon: 'biotech',     color: 'from-[#001f54] to-[#1282a2]',  examLabel: 'NEET', examColor: 'bg-[#034078]/20 text-[#fefcfb] border-[#034078]/35' },
 };

@@ -1,7 +1,14 @@
 import React from 'react';
 import finalLogo from '../assets/Final_Logo.png';
 
-export function Logo({ className = "h-10 w-auto", imgClassName = "", showText = true, textClassName = "" }) {
+export function Logo({ 
+  className = "h-10 w-auto", 
+  imgClassName = "", 
+  showText = true, 
+  textClassName = "",
+  titleClassName = "",
+  subtitleClassName = ""
+}) {
   return (
     <div className={`inline-flex items-center gap-2.5 cursor-pointer select-none shrink-0 group ${className}`}>
       {/* Platform Logo Badge - Rounded square with subtle curvature */}
@@ -14,10 +21,10 @@ export function Logo({ className = "h-10 w-auto", imgClassName = "", showText = 
       {/* Two-Line Brand Typography (Centered to each other and matched to span full height of logo badge) */}
       {showText && (
         <div className={`h-full flex flex-col justify-between items-center text-center leading-none select-none whitespace-nowrap shrink-0 py-[1px] ${textClassName}`}>
-          <span className="text-[17px] font-black tracking-wider text-[#00b4d8] uppercase whitespace-nowrap group-hover:brightness-110 transition-all leading-none">
+          <span className={`text-[17px] font-black tracking-wider text-[#00b4d8] uppercase whitespace-nowrap group-hover:brightness-110 transition-all leading-none ${titleClassName}`}>
             IKSHATESTS
           </span>
-          <span className="text-[11.5px] font-medium tracking-normal text-slate-300 whitespace-nowrap group-hover:text-white transition-colors leading-none">
+          <span className={`text-[11.5px] font-medium tracking-normal text-slate-300 whitespace-nowrap group-hover:text-white transition-colors leading-none ${subtitleClassName}`}>
             Pariksha Shikshak
           </span>
         </div>

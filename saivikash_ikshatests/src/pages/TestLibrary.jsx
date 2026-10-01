@@ -10,13 +10,13 @@ export default function TestLibrary({ pathway = 'jee' }) {
   };
 
   const jeeCategories = [
-    { title: "Full-Length Mocks",     desc: "JEE 2026 Pattern: 90 Questions • 3 Hours",          type: "jee-full",    icon: "assignment" },
+    { title: "Full-Length Mocks",     desc: "JEE 2026 Pattern: 75 Questions • 3 Hours",          type: "jee-full",    icon: "assignment" },
     { title: "Previous Year Papers",  desc: "Actual JEE papers from 2015–2025 digitized",         type: "jee-pyq",     icon: "history_edu" },
     { title: "Subject-wise Tests",    desc: "Focus on specific mathematical & physical weak areas", type: "jee-chapter",  icon: "category" },
   ];
   
   const neetCategories = [
-    { title: "Full-Length Mocks",     desc: "NEET Pattern: 200 Questions • 3 Hours 20 Mins",       type: "neet-full",   icon: "assignment" },
+    { title: "Full-Length Mocks",     desc: "NEET Pattern: 180 Questions • 3 Hours 20 Mins",       type: "neet-full",   icon: "assignment" },
     { title: "Previous Year Papers",  desc: "Actual NEET papers from 2015–2025 digitized",        type: "neet-pyq",    icon: "history_edu" },
     { title: "Subject-wise Tests",    desc: "Intensive focus on Biology, Chemistry, and Physics",  type: "neet-chapter", icon: "biotech" },
   ];
