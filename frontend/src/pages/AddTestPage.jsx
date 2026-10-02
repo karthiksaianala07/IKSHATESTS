@@ -201,47 +201,58 @@ export default function AddTestPage() {
             const q = rawQuestions[qIdx];
             let finalImageUrl = q.image_url || null;
             
-            if (q.diagram_bbox && Array.isArray(q.diagram_bbox) && q.diagram_bbox.length === 4) {
-              const [ymin, xmin, ymax, xmax] = q.diagram_bbox;
-              if (typeof ymin === 'number' && typeof xmin === 'number' &&
-                  typeof ymax === 'number' && typeof xmax === 'number' &&
-                  ymax > ymin && xmax > xmin) {
-                  
-                const pageIdx = q.page_index !== undefined ? q.page_index : 0;
+            // Check for diagram bounding box in any standard key/format
+            let rawBox = q.diagram_bbox || q.bbox || q.diagramBbox || q.diagram_box || q.image_bbox;
+            if (rawBox) {
+              let ymin, xmin, ymax, xmax;
+              if (Array.isArray(rawBox) && rawBox.length === 4) {
+                [ymin, xmin, ymax, xmax] = rawBox.map(Number);
+              } else if (typeof rawBox === 'object') {
+                ymin = Number(rawBox.ymin ?? rawBox.top ?? rawBox.y1 ?? rawBox.y);
+                xmin = Number(rawBox.xmin ?? rawBox.left ?? rawBox.x1 ?? rawBox.x);
+                ymax = Number(rawBox.ymax ?? rawBox.bottom ?? rawBox.y2 ?? (rawBox.y + (rawBox.height || 0)));
+                xmax = Number(rawBox.xmax ?? rawBox.right ?? rawBox.x2 ?? (rawBox.x + (rawBox.width || 0)));
+              }
+
+              if (!isNaN(ymin) && !isNaN(xmin) && !isNaN(ymax) && !isNaN(xmax) && ymax > ymin && xmax > xmin) {
+                // If coordinates were returned on a 0-1 float scale, normalize to 1000
+                const isZeroToOne = ymax <= 1.05 && xmax <= 1.05;
+                const factor = isZeroToOne ? 1.0 : 1000.0;
+
+                const pageIdx = (q.page_index !== undefined && pageCanvases[q.page_index]) ? q.page_index : 0;
                 const srcCanvas = pageCanvases[pageIdx];
                 if (srcCanvas) {
                   try {
-                    const cropCanvas = document.createElement('canvas');
-                    const cropCtx = cropCanvas.getContext('2d');
-                    
-                    // Convert normalized coordinates (0-1000) to actual canvas coordinates
-                    const x = (xmin / 1000) * srcCanvas.width;
-                    const y = (ymin / 1000) * srcCanvas.height;
-                    const w = ((xmax - xmin) / 1000) * srcCanvas.width;
-                    const h = ((ymax - ymin) / 1000) * srcCanvas.height;
-                    
-                    cropCanvas.width = w;
-                    cropCanvas.height = h;
-                    
-                    cropCtx.drawImage(srcCanvas, x, y, w, h, 0, 0, w, h);
-                    
-                    const blob = await new Promise(resolve => cropCanvas.toBlob(resolve, 'image/png'));
-                    if (blob) {
-                      const fileName = `extracted_${Date.now()}_q${qIdx}.png`;
-                      const filePath = `questions/${fileName}`;
+                    const x = Math.max(0, (xmin / factor) * srcCanvas.width);
+                    const y = Math.max(0, (ymin / factor) * srcCanvas.height);
+                    const w = Math.min(srcCanvas.width - x, ((xmax - xmin) / factor) * srcCanvas.width);
+                    const h = Math.min(srcCanvas.height - y, ((ymax - ymin) / factor) * srcCanvas.height);
+
+                    if (w > 10 && h > 10) {
+                      const cropCanvas = document.createElement('canvas');
+                      const cropCtx = cropCanvas.getContext('2d');
                       
-                      let { error: uploadError } = await supabase.storage
-                        .from('question-assets')
-                        .upload(filePath, blob);
-                        
-                      if (!uploadError) {
-                        const { data: { publicUrl } } = supabase.storage
-                          .from('question-assets')
-                          .getPublicUrl(filePath);
-                        finalImageUrl = publicUrl;
-                        console.log(`[AddTestPage] Successfully cropped & uploaded diagram for question ${qIdx + 1}: ${publicUrl}`);
-                      } else {
-                        console.error(`[AddTestPage] Storage upload error:`, uploadError.message);
+                      cropCanvas.width = Math.round(w);
+                      cropCanvas.height = Math.round(h);
+                      
+                      cropCtx.drawImage(srcCanvas, x, y, w, h, 0, 0, cropCanvas.width, cropCanvas.height);
+                      
+                      // Immediately generate data URL as guaranteed fallback
+                      const dataUrl = cropCanvas.toDataURL('image/png');
+                      finalImageUrl = dataUrl;
+
+                      // Upload via backend server with service role
+                      try {
+                        const uploadRes = await axios.post(`${API_URL}/api/admin/upload-image`, {
+                          base64Data: dataUrl,
+                          filename: `extracted_${Date.now()}_q${qIdx}.png`
+                        });
+                        if (uploadRes.data?.publicUrl) {
+                          finalImageUrl = uploadRes.data.publicUrl;
+                          console.log(`[AddTestPage] Successfully uploaded diagram for Q${qIdx + 1}:`, finalImageUrl);
+                        }
+                      } catch (upErr) {
+                        console.warn(`[AddTestPage] Backend upload failed for Q${qIdx + 1}, using dataUrl fallback:`, upErr.message);
                       }
                     }
                   } catch (cropErr) {
@@ -1175,15 +1186,42 @@ export default function AddTestPage() {
                 
                 <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                   {extractedQuestions.map((eq, i) => (
-                    <div key={i} className="bg-[#001f54]/40 border border-[#034078]/50 rounded-xl p-5 shadow-lg relative group">
-                      <button
-                        type="button"
-                        onClick={() => removeExtractedQuestion(i)}
-                        className="absolute top-4 right-4 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        title="Discard Question"
-                      >
-                        <span className="material-symbols-outlined">delete</span>
-                      </button>
+                    <div key={i} className="bg-[#001f54]/40 border border-[#034078]/50 rounded-xl p-5 shadow-lg relative group transition-all hover:border-[#1282a2]/60">
+                      {/* Question Number & Metadata Banner */}
+                      <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#034078]/50">
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1282a2]/20 border border-[#1282a2]/50 text-[#1282a2] font-black text-sm shadow-inner">
+                            #{i + 1}
+                          </span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-bold text-white tracking-wide">
+                                Question {i + 1}
+                              </h4>
+                              {eq.question_number && (
+                                <span className="text-[11px] font-semibold text-[#1282a2] bg-[#001f54] border border-[#034078]/60 px-2 py-0.5 rounded-full">
+                                  Doc Q#{eq.question_number}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-md bg-[#001f54] border border-[#034078]/60 text-cyan-300 font-mono">
+                            {eq.type || 'mcq'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeExtractedQuestion(i)}
+                            className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs"
+                            title="Discard Question"
+                          >
+                            <span className="material-symbols-outlined text-base">delete</span>
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
+                        </div>
+                      </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
@@ -1237,7 +1275,10 @@ export default function AddTestPage() {
                       </div>
                       
                       <div className="mb-4 space-y-2">
-                        <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Question Text</label>
+                        <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#1282a2]"></span>
+                          Question {i + 1} Content (Supports LaTeX)
+                        </label>
                         <textarea 
                           ref={el => {
                             if (el) reviewTextRefs.current.set(i, el);
@@ -1258,9 +1299,22 @@ export default function AddTestPage() {
                           </div>
                         )}
                         {eq.image_url && (
-                          <div className="mt-2 p-2 bg-[#001f54]/60 rounded-lg border border-[#034078]/40 flex flex-col items-center">
-                            <p className="text-[10px] uppercase font-bold text-[#1282a2] mb-1 self-start w-full text-left">Attached Diagram:</p>
-                            <img src={eq.image_url} alt={`Diagram for Question ${i + 1}`} className="max-h-48 object-contain rounded-md" />
+                          <div className="mt-2 p-3 bg-[#001f54]/60 rounded-lg border border-[#034078]/50 flex flex-col items-center">
+                            <div className="flex items-center justify-between w-full mb-2">
+                              <p className="text-[10px] uppercase font-bold text-[#1282a2] flex items-center gap-1">
+                                <span className="material-symbols-outlined text-xs">image</span>
+                                Attached Diagram / Illustration:
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => updateExtractedQuestion(i, 'image_url', null)}
+                                className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-0.5 cursor-pointer bg-red-950/30 px-1.5 py-0.5 rounded border border-red-900/40"
+                                title="Remove Diagram"
+                              >
+                                <span className="material-symbols-outlined text-xs">close</span> Remove
+                              </button>
+                            </div>
+                            <img src={eq.image_url} alt={`Diagram for Question ${i + 1}`} className="max-h-56 object-contain rounded-md border border-[#034078]/40 bg-black/40 p-1" />
                           </div>
                         )}
                       </div>

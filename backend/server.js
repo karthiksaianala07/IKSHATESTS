@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -747,6 +748,25 @@ app.get('/api/admin/student-analytics', async (req, res) => {
   }
 });
 
+// Helper to ensure 'question-assets' storage bucket exists in Supabase
+async function ensureQuestionBucket() {
+  try {
+    const { data: buckets, error } = await supabaseAdmin.storage.listBuckets();
+    if (!error && buckets) {
+      const exists = buckets.some(b => b.name === 'question-assets');
+      if (!exists) {
+        await supabaseAdmin.storage.createBucket('question-assets', {
+          public: true,
+          fileSizeLimit: 10485760
+        });
+        console.log("[STORAGE] Created 'question-assets' public storage bucket.");
+      }
+    }
+  } catch (e) {
+    console.warn("[STORAGE] Bucket check/create warning:", e.message);
+  }
+}
+
 // 7.7 Extract questions from PDF Images (Admin only)
 app.post('/api/admin/extract-pdf', async (req, res) => {
   try {
@@ -793,7 +813,7 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
       "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
       "correct_answer": "", // Leave empty if not explicitly found in the text
       "explanation": "Step-by-step solution, mathematical proof, or rationale if present on page, else null",
-      "diagram_bbox": [ymin, xmin, ymax, xmax] // If this specific question contains or refers to an associated visual diagram, graph, circuit, structure, or illustration on the page image, return its bounding box coordinates normalized to a 0-1000 scale. If no diagram exists for this question, return null.
+      "diagram_bbox": [ymin, xmin, ymax, xmax] // CRITICAL: If this question has ANY associated visual diagram, graph, circuit, pulley, ray diagram, chemical reaction scheme, benzene/organic structure, chart, apparatus, or biological illustration on the page image, return its tight bounding box coordinates as integers normalized to a 0-1000 scale [ymin, xmin, ymax, xmax]. If no diagram exists for this question, return null.
     }
   ],
   "answer_key": {
@@ -802,6 +822,11 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
     // If no answer key or answer grid is present on the page, return an empty object {}.
   }
 }
+
+INSTRUCTIONS FOR DIAGRAM AND IMAGE DETECTION:
+1. Examine each question carefully. If it refers to "figure", "graph", "diagram", "circuit", "chart", "table", "as shown below", or visually contains a diagram/illustration, identify the exact visual diagram area.
+2. Provide the bounding box in "diagram_bbox" as [ymin, xmin, ymax, xmax] where 0 is the top/left edge of the page image, and 1000 is the bottom/right edge.
+3. Keep the bounding box focused on the diagram/illustration and its immediate labels/axes without including the question text or options.
 `;
 
     const allQuestions = [];
@@ -1014,6 +1039,47 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
   }
 });
 
+// 7.7.4 Upload Question Asset Image (Admin only)
+app.post('/api/admin/upload-image', async (req, res) => {
+  try {
+    const { base64Data, filename } = req.body;
+    if (!base64Data) {
+      return res.status(400).json({ error: "No image data provided" });
+    }
+
+    await ensureQuestionBucket();
+
+    const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(cleanBase64, 'base64');
+    const safeName = filename || `extracted_${Date.now()}_${Math.floor(Math.random() * 1000)}.png`;
+    const filePath = `questions/${safeName}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('question-assets')
+      .upload(filePath, buffer, {
+        contentType: 'image/png',
+        upsert: true
+      });
+
+    if (uploadError) {
+      console.warn("[UPLOAD_IMAGE] Storage upload warning:", uploadError.message);
+      // Fallback: return dataUrl so frontend never loses the image
+      const fallbackUrl = base64Data.startsWith('data:') ? base64Data : `data:image/png;base64,${cleanBase64}`;
+      return res.json({ success: true, publicUrl: fallbackUrl });
+    }
+
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from('question-assets')
+      .getPublicUrl(filePath);
+
+    return res.json({ success: true, publicUrl });
+  } catch (err) {
+    console.error("[UPLOAD_IMAGE_ERROR]", err.message);
+    const fallbackUrl = req.body?.base64Data || null;
+    return res.json({ success: true, publicUrl: fallbackUrl });
+  }
+});
+
 // 7.7.5 Extract questions from Word Document (Admin only)
 app.post('/api/admin/extract-docx', async (req, res) => {
   try {
@@ -1025,6 +1091,8 @@ app.post('/api/admin/extract-docx', async (req, res) => {
     if (!ai) {
       return res.status(500).json({ error: "Gemini API key is not configured on the server." });
     }
+
+    await ensureQuestionBucket();
 
     const buffer = Buffer.from(docx, 'base64');
 
