@@ -839,7 +839,14 @@ INSTRUCTIONS FOR DIAGRAM AND IMAGE DETECTION:
         prompt
       ];
 
-      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+      const modelsToTry = [
+        'gemini-3.8-flash',
+        'gemini-3.5-flash',
+        'gemini-flash-latest',
+        'gemini-3.1-flash-lite',
+        'gemini-flash-lite-latest',
+        'gemini-2.5-flash'
+      ];
       let responseText = null;
       let lastError = null;
 
@@ -864,9 +871,12 @@ INSTRUCTIONS FOR DIAGRAM AND IMAGE DETECTION:
             console.warn(`[EXTRACT_PDF] Page ${idx + 1}/${images.length} - Model ${modelName} failed:`, err.message);
             lastError = err;
             
-            if (err.message?.includes('429') || err.message?.includes('503') || err.message?.includes('RESOURCE_EXHAUSTED') || err.message?.includes('quota')) {
-              console.log(`[EXTRACT_PDF] Rate limit or service unavailable detected. Waiting 5s before retry...`);
-              await new Promise(resolve => setTimeout(resolve, 5000));
+            if (err.message?.includes('PerDay') || (err.message?.includes('quota') && err.message?.includes('exceeded'))) {
+              console.log(`[EXTRACT_PDF] Daily quota reached for ${modelName}. Switching immediately to next model...`);
+              break;
+            } else if (err.message?.includes('429') || err.message?.includes('503') || err.message?.includes('RESOURCE_EXHAUSTED')) {
+              console.log(`[EXTRACT_PDF] Rate limit or service busy on ${modelName}. Waiting 3s before retry...`);
+              await new Promise(resolve => setTimeout(resolve, 3000));
               retries--;
             } else {
               break;
@@ -1169,7 +1179,14 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
       prompt
     ];
 
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    const modelsToTry = [
+      'gemini-3.8-flash',
+      'gemini-3.5-flash',
+      'gemini-flash-latest',
+      'gemini-3.1-flash-lite',
+      'gemini-flash-lite-latest',
+      'gemini-2.5-flash'
+    ];
     let responseText = null;
     let lastError = null;
 
@@ -1194,9 +1211,12 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
           console.warn(`[EXTRACT_DOCX] Model ${modelName} failed:`, err.message);
           lastError = err;
           
-          if (err.message?.includes('429') || err.message?.includes('503') || err.message?.includes('RESOURCE_EXHAUSTED') || err.message?.includes('quota')) {
-            console.log(`[EXTRACT_DOCX] Rate limit or service unavailable detected. Waiting 5s before retry...`);
-            await new Promise(resolve => setTimeout(resolve, 5000));
+          if (err.message?.includes('PerDay') || (err.message?.includes('quota') && err.message?.includes('exceeded'))) {
+            console.log(`[EXTRACT_DOCX] Daily quota reached for ${modelName}. Switching immediately to next model...`);
+            break;
+          } else if (err.message?.includes('429') || err.message?.includes('503') || err.message?.includes('RESOURCE_EXHAUSTED')) {
+            console.log(`[EXTRACT_DOCX] Rate limit or service busy on ${modelName}. Waiting 3s before retry...`);
+            await new Promise(resolve => setTimeout(resolve, 3000));
             retries--;
           } else {
             break;
