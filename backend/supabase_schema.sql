@@ -19,7 +19,8 @@ CREATE TABLE tests (
 );
 
 -- MIGRATION NOTE: If the DB already exists, run this in the Supabase SQL Editor:
--- ALTER TABLE tests ADD COLUMN scheduled_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+-- ALTER TABLE tests ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+-- ALTER TABLE questions ADD COLUMN IF NOT EXISTS explanation TEXT;
 
 -- 3. Create QUESTIONS table
 CREATE TABLE questions (

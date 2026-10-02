@@ -19,9 +19,11 @@ export default function AddTestPage() {
 
   const manualTextRef = useRef(null);
   const manualSubTextRef = useRef(null);
+  const manualSolutionRef = useRef(null);
   const manualOptionRefs = useRef([]);
   const reviewTextRefs = useRef(new Map());
   const reviewSubTextRefs = useRef(new Map());
+  const reviewSolutionRefs = useRef(new Map());
 
   const [activeManualField, setActiveManualField] = useState('text');
   const [activeManualOptionIndex, setActiveManualOptionIndex] = useState(0);
@@ -51,7 +53,8 @@ export default function AddTestPage() {
       { text: '', image_url: '' }
     ],
     image_url: '',
-    sub_text: ''
+    sub_text: '',
+    explanation: ''
   });
   const [manualUploading, setManualUploading] = useState(false);
   const [manualOptUploading, setManualOptUploading] = useState(null);
@@ -393,6 +396,7 @@ export default function AddTestPage() {
       correct_answer: manualQuestion.correct_answer,
       image_url: manualQuestion.image_url || null,
       sub_text: manualQuestion.sub_text || null,
+      explanation: manualQuestion.explanation || null,
       options: manualQuestion.type === 'MCQ'
         ? manualQuestion.options.map(opt => {
             if (opt.image_url) {
@@ -419,7 +423,8 @@ export default function AddTestPage() {
         { text: '', image_url: '' }
       ],
       image_url: '',
-      sub_text: ''
+      sub_text: '',
+      explanation: ''
     });
   };
 
@@ -819,6 +824,12 @@ export default function AddTestPage() {
                                 <span className="px-2 py-0.5 bg-[#001f54] rounded text-[9px] uppercase font-black border border-[#034078]/50 text-[#fefcfb]/70">
                                   {q.type}
                                 </span>
+                                {q.explanation && (
+                                  <span className="px-2 py-0.5 bg-emerald-950/60 rounded text-[9px] font-black border border-emerald-800/50 text-emerald-300 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[10px]">lightbulb</span>
+                                    Solution
+                                  </span>
+                                )}
                               </div>
                               <div className="text-sm text-white font-medium line-clamp-2 leading-relaxed">
                                 <LatexRenderer text={q.text} />
@@ -1108,6 +1119,38 @@ export default function AddTestPage() {
                     )}
                   </div>
 
+                  {/* Solution / Explanation Field */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase text-[#1282a2] flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm">lightbulb</span>
+                      Solution / Explanation (Optional, Supports LaTeX)
+                    </label>
+                    <textarea 
+                      ref={manualSolutionRef}
+                      className="w-full p-2.5 rounded-lg border border-[#034078]/60 bg-[#001f54]/70 text-white placeholder-[#fefcfb]/30 text-sm min-h-[75px] focus:border-[#1282a2] focus:outline-none"
+                      placeholder="e.g. By conservation of energy: $\frac{1}{2}mv^2 = mgh \implies v = \sqrt{2gh}$."
+                      value={manualQuestion.explanation || ''}
+                      onChange={e => setManualQuestion({...manualQuestion, explanation: e.target.value})}
+                      onFocus={() => setActiveManualField('explanation')}
+                    />
+                    <MathKeypad 
+                      targetRef={activeManualField === 'text' ? manualTextRef : activeManualField === 'sub_text' ? manualSubTextRef : manualSolutionRef} 
+                      value={activeManualField === 'text' ? manualQuestion.text : activeManualField === 'sub_text' ? (manualQuestion.sub_text || '') : (manualQuestion.explanation || '')} 
+                      setValue={(val) => setManualQuestion(prev => ({ ...prev, [activeManualField]: val }))} 
+                    />
+                    {manualQuestion.explanation && (
+                      <div className="mt-2 p-3 bg-emerald-950/20 rounded-lg border border-emerald-500/30">
+                        <p className="text-[10px] uppercase font-bold text-emerald-400 mb-1 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs">check_circle</span>
+                          Live Solution Preview:
+                        </p>
+                        <div className="text-sm text-white leading-relaxed">
+                          <LatexRenderer text={manualQuestion.explanation} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <button 
                     type="button" 
                     onClick={handleAddManualQuestion}
@@ -1310,6 +1353,37 @@ export default function AddTestPage() {
                                 </div>
                               );
                             })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Solution / Explanation for Staged Question */}
+                      <div className="mb-4 space-y-2">
+                        <label className="text-[10px] font-bold uppercase text-[#1282a2] mb-1 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs">lightbulb</span>
+                          Solution / Explanation (Supports LaTeX)
+                        </label>
+                        <textarea 
+                          ref={el => {
+                            if (el) reviewSolutionRefs.current.set(i, el);
+                            else reviewSolutionRefs.current.delete(i);
+                          }}
+                          value={eq.explanation || ''}
+                          onChange={(e) => updateExtractedQuestion(i, 'explanation', e.target.value)}
+                          rows={2}
+                          placeholder="e.g. Detailed step-by-step solution or formula breakdown"
+                          className="w-full p-2.5 text-xs border border-[#034078]/60 bg-[#001f54]/70 text-white rounded-md font-medium focus:border-[#1282a2] focus:outline-none"
+                        />
+                        <MathKeypad targetRef={{ current: reviewSolutionRefs.current.get(i) }} value={eq.explanation || ''} setValue={(val) => updateExtractedQuestion(i, 'explanation', val)} />
+                        {eq.explanation && (
+                          <div className="mt-2 p-2.5 bg-emerald-950/20 rounded-lg border border-emerald-500/30">
+                            <p className="text-[10px] uppercase font-bold text-emerald-400 mb-1 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-xs">check_circle</span>
+                              Live Solution Preview:
+                            </p>
+                            <div className="text-xs text-white leading-relaxed font-medium">
+                              <LatexRenderer text={eq.explanation} />
+                            </div>
                           </div>
                         )}
                       </div>

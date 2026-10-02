@@ -9,6 +9,7 @@ import Exams from './pages/Exams';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';
 import PlansComingSoon from './pages/PlansComingSoon';
+import SignUpComingSoon from './pages/SignUpComingSoon';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Logo } from './components/Logo';
 import SparkleOrbs from './components/SparkleOrbs';
@@ -88,7 +89,7 @@ function AppContent() {
   // Automatically redirect any authenticated admin user to the admin panel
   useEffect(() => {
     if (!loading && user?.role === 'admin') {
-      if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
+      if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/signup') {
         navigate('/admin', { replace: true });
       }
     }
@@ -171,10 +172,11 @@ function AppContent() {
 
   const isTestPaperPdf = location.pathname.startsWith('/admin/test-paper/');
   const isTestConsole = location.pathname.includes('/test/') && !isTestPaperPdf;
-  const isLoginPage = location.pathname === '/login' || location.pathname === '/register';
+  const isLoginPage = location.pathname === '/login';
+  const isBlockedPage = location.pathname === '/plans' || location.pathname === '/register' || location.pathname === '/signup';
   const isAdminPortal = location.pathname.startsWith('/admin') && !isTestPaperPdf;
 
-  // If user is admin and on /login, /register, or /, immediately redirect to /admin without rendering Home
+  // If user is admin and on /login or /, immediately redirect to /admin without rendering Home
   if (user?.role === 'admin' && (isLoginPage || location.pathname === '/')) {
     return <Navigate to="/admin" replace />;
   }
@@ -216,7 +218,7 @@ function AppContent() {
   }
 
   return (
-    <div className={`bg-[#0a1128] text-[#fefcfb] font-body ${location.pathname === '/plans' ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : 'min-h-screen min-h-[100dvh] overflow-x-hidden'} w-full max-w-full flex flex-col selection:bg-[#1282a2]/30 selection:text-white relative`}>
+    <div className={`bg-[#0a1128] text-[#fefcfb] font-body ${isBlockedPage ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : 'min-h-screen min-h-[100dvh] overflow-x-hidden'} w-full max-w-full flex flex-col selection:bg-[#1282a2]/30 selection:text-white relative`}>
       
       {/* Global Dynamic Pulsating Background Lights */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -441,11 +443,13 @@ function AppContent() {
       )}
 
       {/* Main Routing Content */}
-      <main className={`${location.pathname === '/' ? 'pt-0' : location.pathname === '/plans' ? 'pt-14 sm:pt-16 md:pt-20 pb-0' : 'pt-20 sm:pt-24 md:pt-32'} flex-1 flex flex-col ${location.pathname === '/plans' ? 'h-[100dvh] max-h-[100dvh] overflow-hidden justify-between' : 'min-h-screen min-h-[100dvh]'} w-full max-w-full bg-transparent relative z-10`}>
-        <div className={`flex-1 w-full ${location.pathname === '/plans' ? 'flex flex-col justify-center items-center overflow-hidden' : ''}`}>
+      <main className={`${location.pathname === '/' ? 'pt-0' : isBlockedPage ? 'pt-14 sm:pt-16 md:pt-20 pb-0' : 'pt-20 sm:pt-24 md:pt-32'} flex-1 flex flex-col ${isBlockedPage ? 'h-[100dvh] max-h-[100dvh] overflow-hidden justify-between' : 'min-h-screen min-h-[100dvh]'} w-full max-w-full bg-transparent relative z-10`}>
+        <div className={`flex-1 w-full ${isBlockedPage ? 'flex flex-col justify-center items-center overflow-hidden' : ''}`}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/plans" element={<PlansComingSoon />} />
+            <Route path="/register" element={<SignUpComingSoon />} />
+            <Route path="/signup" element={<SignUpComingSoon />} />
             <Route path="/exams" element={<div className="p-4 md:p-8 min-h-[calc(100vh-4rem)]"><Exams /></div>} />
             <Route path="/dashboard" element={<ProtectedRoute><div className="p-4 md:p-8 min-h-[calc(100vh-4rem)]"><Dashboard /></div></ProtectedRoute>} />
             <Route path="/jee-library" element={<div className="p-4 md:p-8 min-h-[calc(100vh-4rem)]"><TestLibrary pathway="jee" /></div>} />
@@ -456,21 +460,21 @@ function AppContent() {
           </Routes>
         </div>
         
-        {/* Global Footer (shown on inner pages and Plans, hidden on Home which has dedicated dark footer) */}
+        {/* Global Footer (shown on inner pages and Plans/SignUp, hidden on Home which has dedicated dark footer) */}
         {location.pathname !== '/' && (
-          <footer className={`w-full bg-[#001f54]/90 backdrop-blur-md border-t border-[#034078]/30 ${location.pathname === '/plans' ? 'py-2 sm:py-3.5 px-4 sm:px-8' : 'py-12 px-6 md:px-12'} z-10 relative shrink-0`}>
-            <div className={`max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between ${location.pathname === '/plans' ? 'gap-2 sm:gap-4' : 'gap-8'} text-center md:text-left`}>
+          <footer className={`w-full bg-[#001f54]/90 backdrop-blur-md border-t border-[#034078]/30 ${isBlockedPage ? 'py-2 sm:py-3.5 px-4 sm:px-8' : 'py-12 px-6 md:px-12'} z-10 relative shrink-0`}>
+            <div className={`max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between ${isBlockedPage ? 'gap-2 sm:gap-4' : 'gap-8'} text-center md:text-left`}>
               
-              <div className={`flex flex-col items-center md:items-start ${location.pathname === '/plans' ? 'gap-1' : 'gap-3'}`}>
+              <div className={`flex flex-col items-center md:items-start ${isBlockedPage ? 'gap-1' : 'gap-3'}`}>
                 <div className="flex items-center gap-3">
-                  <Logo className={`${location.pathname === '/plans' ? 'h-6 sm:h-8' : 'h-10'} w-auto`} />
+                  <Logo className={`${isBlockedPage ? 'h-6 sm:h-8' : 'h-10'} w-auto`} />
                 </div>
-                <p className={`${location.pathname === '/plans' ? 'hidden sm:block text-[11px]' : 'text-xs'} text-[#fefcfb]/70 font-medium max-w-sm`}>
+                <p className={`${isBlockedPage ? 'hidden sm:block text-[11px]' : 'text-xs'} text-[#fefcfb]/70 font-medium max-w-sm`}>
                   High-accuracy educational mock consoles and diagnostic behavioral reporting for all exams.
                 </p>
               </div>
 
-              <div className={`flex items-center ${location.pathname === '/plans' ? 'gap-4 sm:gap-8 text-[11px] sm:text-xs' : 'gap-8 text-xs'} font-bold text-[#fefcfb] font-mono`}>
+              <div className={`flex items-center ${isBlockedPage ? 'gap-4 sm:gap-8 text-[11px] sm:text-xs' : 'gap-8 text-xs'} font-bold text-[#fefcfb] font-mono`}>
                 <Link to="/exams" className="hover:text-[#1282a2] transition-colors">Exam Series</Link>
                 <Link to={user?.role === 'admin' ? "/admin" : "/dashboard"} className="hover:text-[#1282a2] transition-colors">
                   {user?.role === 'admin' ? "Admin Panel" : "Dashboard"}
@@ -478,7 +482,7 @@ function AppContent() {
                 <Link to="/login" className="hover:text-[#fefcfb] transition-colors font-bold text-[#1282a2]">Student Portal</Link>
               </div>
 
-              <div className={`${location.pathname === '/plans' ? 'text-[9px] sm:text-[11px]' : 'text-[11px]'} text-[#fefcfb]/50 font-mono tracking-wider uppercase`}>
+              <div className={`${isBlockedPage ? 'text-[9px] sm:text-[11px]' : 'text-[11px]'} text-[#fefcfb]/50 font-mono tracking-wider uppercase`}>
                 © 2026 IKSHATESTS // ALL RIGHTS RESERVED
               </div>
 

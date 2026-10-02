@@ -398,13 +398,22 @@ app.post('/api/admin/questions', async (req, res) => {
         correct_answer: String(q.correct_answer),
         image_url: q.image_url || null,
         sub_text: q.sub_text || null,
+        explanation: q.explanation || q.solution || null,
         test_id: test.id
       }));
-      const { data, error } = await supabaseAdmin.from('questions').insert(formatted).select();
+      let { data, error } = await supabaseAdmin.from('questions').insert(formatted).select();
+      if (error && (error.code === '42703' || error.message?.includes('explanation'))) {
+        console.warn("[ADD_QUESTION_WARNING] 'explanation' column not found, saving without explanation column.");
+        const fallback = formatted.map(({ explanation, ...rest }) => rest);
+        const { data: fbData, error: fbError } = await supabaseAdmin.from('questions').insert(fallback).select();
+        if (fbError) throw fbError;
+        data = fbData;
+        error = null;
+      }
       if (error) throw error;
       result = data;
     } else {
-      const { data, error } = await supabaseAdmin.from('questions').insert({
+      const singleQ = {
         subject: payload.subject,
         chapter: payload.chapter || null,
         type: payload.type || 'MCQ',
@@ -413,8 +422,18 @@ app.post('/api/admin/questions', async (req, res) => {
         correct_answer: String(payload.correct_answer),
         image_url: payload.image_url || null,
         sub_text: payload.sub_text || null,
+        explanation: payload.explanation || payload.solution || null,
         test_id: test.id
-      }).select().single();
+      };
+      let { data, error } = await supabaseAdmin.from('questions').insert(singleQ).select().single();
+      if (error && (error.code === '42703' || error.message?.includes('explanation'))) {
+        console.warn("[ADD_QUESTION_WARNING] 'explanation' column not found, saving without explanation column.");
+        const { explanation, ...fbSingle } = singleQ;
+        const { data: fbData, error: fbError } = await supabaseAdmin.from('questions').insert(fbSingle).select().single();
+        if (fbError) throw fbError;
+        data = fbData;
+        error = null;
+      }
       if (error) throw error;
       result = data;
     }
@@ -773,6 +792,7 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
       "sub_text": "Any optional question text or follow-up question that appears AFTER the diagram or image, with LaTeX if applicable, or null if there is no text below the diagram",
       "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
       "correct_answer": "", // Leave empty if not explicitly found in the text
+      "explanation": "Step-by-step solution, mathematical proof, or rationale if present on page, else null",
       "diagram_bbox": [ymin, xmin, ymax, xmax] // If this specific question contains or refers to an associated visual diagram, graph, circuit, structure, or illustration on the page image, return its bounding box coordinates normalized to a 0-1000 scale. If no diagram exists for this question, return null.
     }
   ],
@@ -1271,12 +1291,25 @@ app.post('/api/admin/tests', async (req, res) => {
         correct_answer: q.correct_answer || null,
         image_url: q.image_url || null,
         sub_text: q.sub_text || null,
+        explanation: q.explanation || q.solution || null,
         test_id: data.id,
         created_at: new Date(baseTime + idx * 1000).toISOString()
       }));
-      const { error: newQError } = await supabaseAdmin
+
+      let { error: newQError } = await supabaseAdmin
         .from('questions')
         .insert(questionsToInsert);
+
+      // Graceful fallback if 'explanation' column is not yet migrated in Supabase
+      if (newQError && (newQError.code === '42703' || newQError.message?.includes('explanation'))) {
+        console.warn("[ADD_TEST_WARNING] 'explanation' column not found in 'questions' table. Retrying insert without explanation column...");
+        const fallbackQuestions = questionsToInsert.map(({ explanation, ...rest }) => rest);
+        const { error: fallbackErr } = await supabaseAdmin
+          .from('questions')
+          .insert(fallbackQuestions);
+        newQError = fallbackErr;
+      }
+
       if (newQError) {
         await supabaseAdmin.from('tests').delete().eq('id', data.id); // Rollback
         throw newQError;
