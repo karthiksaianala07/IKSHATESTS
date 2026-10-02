@@ -130,7 +130,7 @@ export default function Home() {
 
           {/* Subparagraph */}
           <p className="text-sm sm:text-base text-[#fefcfb] leading-relaxed font-medium">
-            Accelerate your preparation with real-time testing metrics, instant time-wastage diagnostics, and targeted error correction consoles designed for all competitive examinations.
+            Accelerate your preparation with real-time testing metrics, instant time-management diagnostics, and targeted error correction consoles designed for all competitive examinations.
           </p>
 
           {/* CTA Buttons */}
