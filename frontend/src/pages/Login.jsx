@@ -12,7 +12,7 @@ export default function Login() {
   const { user, login, loginWithGoogle } = useAuth();
 
   // Form States
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -30,16 +30,18 @@ export default function Login() {
     setError('');
     setSuccessMessage('');
 
-    if (!email.trim() || !password.trim()) {
-      setError('Please provide both email and password.');
+    if (!identifier.trim() || !password.trim()) {
+      setError('Please provide both User ID / Email and password.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const res = await login(email, password);
+      const res = await login(identifier, password);
       if (res.success) {
-        const isAdmin = res.user?.role === 'admin' || email.trim().toLowerCase() === 'karthiksaianala@gmail.com';
+        const isAdmin = res.user?.role === 'admin' || 
+          identifier.trim().toLowerCase() === 'karthiksaianala@gmail.com' || 
+          identifier.trim().toUpperCase() === 'DBA';
         if (isAdmin) {
           navigate('/admin', { replace: true });
         } else {
@@ -164,10 +166,10 @@ export default function Login() {
             <form onSubmit={handleLoginSubmit} className="space-y-3.5">
               <div>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="User ID or Email (e.g. IK2026-101)"
                   className="w-full px-4 py-3 bg-[#0a1128]/80 border border-[#034078]/60 hover:border-[#1282a2]/60 rounded-xl sm:rounded-2xl text-[#fefcfb] placeholder-slate-400 text-sm font-medium focus:outline-none focus:border-[#1282a2] focus:ring-4 focus:ring-[#1282a2]/20 transition-all shadow-inner"
                   required
                 />
@@ -185,7 +187,7 @@ export default function Login() {
                 <div className="text-right mt-1.5">
                   <button
                     type="button"
-                    onClick={() => alert('Password reset link will be sent to your registered email.')}
+                    onClick={() => alert('Student credentials and passwords are administrator-managed.\n\nPlease contact your teacher or institution administrator to update or reset your password.')}
                     className="text-[11px] font-semibold text-[#1282a2] hover:text-[#00b4d8] transition-colors cursor-pointer bg-transparent border-none p-0"
                   >
                     Forgot password ?

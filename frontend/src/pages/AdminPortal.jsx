@@ -73,6 +73,7 @@ export default function AdminPortal() {
   const [loadingSeries, setLoadingSeries] = useState(false);
   const [selectedSeries, setSelectedSeries] = useState(null);
   const [seriesSectionFilter, setSeriesSectionFilter] = useState('all');
+  const [seriesStatusFilter, setSeriesStatusFilter] = useState('all'); // 'all' | 'published' | 'draft'
 
   // Series Modals
   const [showCreateSeriesModal, setShowCreateSeriesModal] = useState(false);
@@ -96,6 +97,38 @@ export default function AdminPortal() {
     duration_minutes: 180,
     scheduled_at: ''
   });
+
+  // Student Profile Management & Enrollment state
+  const [studentSubTab, setStudentSubTab] = useState('directory'); // 'directory' | 'analytics'
+  const [enrolledStudents, setEnrolledStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentCohortFilter, setStudentCohortFilter] = useState('all');
+  const [studentExamFilter, setStudentExamFilter] = useState('all');
+
+  // Enroll Student Modal state
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [isEnrollingStudent, setIsEnrollingStudent] = useState(false);
+  const [enrollForm, setEnrollForm] = useState({
+    fullName: '',
+    userId: '',
+    email: '',
+    password: '',
+    classCohort: 'Class 11',
+    targetExam: 'JEE',
+    phoneNumber: '',
+    batchName: 'General'
+  });
+
+  // Created Student Credentials Slip Modal state
+  const [createdStudentSlip, setCreatedStudentSlip] = useState(null);
+  const [copiedSlip, setCopiedSlip] = useState(false);
+
+  // Reset Password Modal state
+  const [resetPasswordModal, setResetPasswordModal] = useState(null);
+  const [newPasswordVal, setNewPasswordVal] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetSuccessMessage, setResetSuccessMessage] = useState('');
 
   // Manual Question state
   const textRef = useRef(null);
@@ -173,6 +206,7 @@ export default function AdminPortal() {
     fetchExamSeries();
     fetchQuestions();
     fetchViolations();
+    fetchStudents();
 
     if (activeTab === 'dashboard') {
       const interval = setInterval(fetchViolations, 8000);
@@ -308,6 +342,27 @@ export default function AdminPortal() {
     window.open(`/admin/test-paper/${testId}`, '_blank');
   };
 
+  const handlePublishTest = async (testId, testTitle) => {
+    try {
+      await axios.post(`${API_URL}/api/admin/tests/${testId}/publish`);
+      fetchAdminTests();
+      alert(`"${testTitle}" approved & published! It is now live for students.`);
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || 'Failed to publish test');
+    }
+  };
+
+  const handleUnpublishTest = async (testId, testTitle) => {
+    if (!window.confirm(`Revert "${testTitle}" to staged draft? It will be hidden from students.`)) return;
+    try {
+      await axios.post(`${API_URL}/api/admin/tests/${testId}/unpublish`);
+      fetchAdminTests();
+      alert(`"${testTitle}" reverted to Staged Draft.`);
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || 'Failed to revert test to draft');
+    }
+  };
+
   const fetchAdminTests = async () => {
     setLoadingAdminTests(true);
     try {
@@ -361,6 +416,150 @@ export default function AdminPortal() {
       .catch(err => {
         console.error("Questions Error:", err);
       });
+  };
+
+  // ── Student Management Helpers & API Handlers ──
+  const generateRandomUserId = () => {
+    const year = new Date().getFullYear();
+    const randNum = Math.floor(100 + Math.random() * 900);
+    return `IK${year}-${randNum}`;
+  };
+
+  const generateRandomPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    let pass = 'Iksha@';
+    for (let i = 0; i < 4; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return pass;
+  };
+
+  const openEnrollModal = () => {
+    const autoUserId = generateRandomUserId();
+    const autoPass = generateRandomPassword();
+    setEnrollForm({
+      fullName: '',
+      userId: autoUserId,
+      email: '',
+      password: autoPass,
+      classCohort: 'Class 11',
+      targetExam: 'JEE',
+      phoneNumber: '',
+      batchName: 'General'
+    });
+    setShowEnrollModal(true);
+  };
+
+  const fetchStudents = async () => {
+    setLoadingStudents(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/admin/students`);
+      if (res.data && res.data.students) {
+        setEnrolledStudents(res.data.students);
+      }
+    } catch (err) {
+      console.error('Fetch students error:', err);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  const handleEnrollStudent = async (e) => {
+    e.preventDefault();
+    if (!enrollForm.fullName?.trim() || !enrollForm.userId?.trim() || !enrollForm.password?.trim()) {
+      alert('Please fill in Student Name, User ID, and Password.');
+      return;
+    }
+    if (enrollForm.password.trim().length < 6) {
+      alert('Password must be at least 6 characters.');
+      return;
+    }
+
+    setIsEnrollingStudent(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/admin/students`, enrollForm);
+      if (res.data?.success) {
+        const student = res.data.student;
+        setCreatedStudentSlip({
+          fullName: student.full_name,
+          userId: student.user_id,
+          email: student.email,
+          password: enrollForm.password.trim(),
+          classCohort: student.class_cohort,
+          targetExam: student.target_exam,
+          phoneNumber: student.phone_number
+        });
+        setShowEnrollModal(false);
+        fetchStudents();
+        fetchStats();
+      }
+    } catch (err) {
+      const errMsg = err.response?.data?.error || err.message || 'Failed to enroll student';
+      alert('Enrollment Error: ' + errMsg);
+    } finally {
+      setIsEnrollingStudent(false);
+    }
+  };
+
+  const handleOpenResetPassword = (student) => {
+    const suggestedPass = generateRandomPassword();
+    setResetPasswordModal(student);
+    setNewPasswordVal(suggestedPass);
+    setResetSuccessMessage('');
+  };
+
+  const handleResetPasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!resetPasswordModal || !newPasswordVal.trim()) return;
+    if (newPasswordVal.trim().length < 6) {
+      alert('Password must be at least 6 characters.');
+      return;
+    }
+
+    setIsResettingPassword(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/admin/students/${resetPasswordModal.id}/reset-password`, {
+        newPassword: newPasswordVal.trim()
+      });
+      if (res.data?.success) {
+        setResetSuccessMessage(`Password successfully reset to: "${newPasswordVal.trim()}"`);
+      }
+    } catch (err) {
+      const errMsg = err.response?.data?.error || err.message || 'Failed to reset password';
+      alert('Reset Password Error: ' + errMsg);
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  const handleDeleteStudent = async (student) => {
+    const confirmName = prompt(
+      `CAUTION: Deleting this student will permanently erase their profile, auth credentials, and past test submissions.\n\nTo confirm, please type the student's User ID ("${student.user_id}"):`
+    );
+    if (confirmName !== student.user_id) {
+      if (confirmName !== null) alert('User ID did not match. Deletion cancelled.');
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_URL}/api/admin/students/${student.id}`);
+      alert(`Student profile for ${student.full_name} (${student.user_id}) has been removed.`);
+      fetchStudents();
+      fetchStats();
+    } catch (err) {
+      const errMsg = err.response?.data?.error || err.message || 'Failed to delete student';
+      alert('Delete Error: ' + errMsg);
+    }
+  };
+
+  const handleCopyCredentialsSlip = () => {
+    if (!createdStudentSlip) return;
+    const slipText = `IKSHATESTS - Student Login Credentials\n--------------------------------------\nStudent: ${createdStudentSlip.fullName}\nUser ID: ${createdStudentSlip.userId}\nLogin Email: ${createdStudentSlip.email}\nPassword: ${createdStudentSlip.password}\nClass: ${createdStudentSlip.classCohort}\nTarget Exam: ${createdStudentSlip.targetExam}\nPortal URL: ${window.location.origin}/login\n\n* Note: You can sign in using either your User ID or Email.\n* Passwords are institutionally managed for academic focus.`;
+
+    navigator.clipboard.writeText(slipText).then(() => {
+      setCopiedSlip(true);
+      setTimeout(() => setCopiedSlip(false), 2500);
+    });
   };
 
   const handleImageUpload = async (e, type = 'main', optIndex = null) => {
@@ -971,31 +1170,59 @@ export default function AdminPortal() {
                         </div>
                       </div>
 
-                      {/* Section Filter Pills */}
-                      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-slate-900/80 pb-4">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-mono text-slate-500 uppercase mr-1">Filter:</span>
-                          {[
-                            { id: 'all', label: 'All Tests' },
-                            { id: 'full', label: 'Full Length Mocks' },
-                            { id: 'pyq', label: 'PYQ Archive' },
-                            { id: 'chapter', label: 'Chapter / Topic Wise' }
-                          ].map((tab) => (
-                            <button
-                              key={tab.id}
-                              onClick={() => setSeriesSectionFilter(tab.id)}
-                              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                                seriesSectionFilter === tab.id
-                                  ? 'bg-primary/20 text-primary border-primary/40'
-                                  : 'bg-slate-950/60 text-slate-400 border-slate-900 hover:text-slate-200'
-                              }`}
-                            >
-                              {tab.label}
-                            </button>
-                          ))}
+                      {/* Section & Status Filter Pills */}
+                      <div className="space-y-3 border-b border-slate-900/80 pb-4">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-mono text-slate-500 uppercase mr-1">Section:</span>
+                            {[
+                              { id: 'all', label: 'All Tests' },
+                              { id: 'full', label: 'Full Length Mocks' },
+                              { id: 'pyq', label: 'PYQ Archive' },
+                              { id: 'chapter', label: 'Chapter / Topic Wise' }
+                            ].map((tab) => (
+                              <button
+                                key={tab.id}
+                                onClick={() => setSeriesSectionFilter(tab.id)}
+                                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                                  seriesSectionFilter === tab.id
+                                    ? 'bg-primary/20 text-primary border-primary/40'
+                                    : 'bg-slate-950/60 text-slate-400 border-slate-900 hover:text-slate-200'
+                                }`}
+                              >
+                                {tab.label}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Status Filter Chips */}
+                          <div className="flex items-center gap-1.5 flex-wrap bg-slate-950/90 p-1 rounded-xl border border-slate-900">
+                            <span className="text-[11px] font-mono text-slate-500 uppercase px-2">Status:</span>
+                            {[
+                              { id: 'all', label: 'All' },
+                              { id: 'published', label: 'Published' },
+                              { id: 'draft', label: 'Staged Drafts' }
+                            ].map((st) => (
+                              <button
+                                key={st.id}
+                                onClick={() => setSeriesStatusFilter(st.id)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                                  seriesStatusFilter === st.id
+                                    ? st.id === 'draft'
+                                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm'
+                                      : st.id === 'published'
+                                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm'
+                                      : 'bg-primary/20 text-primary border-primary/40 shadow-sm'
+                                    : 'text-slate-400 hover:text-white border-transparent'
+                                }`}
+                              >
+                                {st.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
-                        <div className="text-xs font-mono text-slate-500">
+                        <div className="text-xs font-mono text-slate-500 text-right">
                           Showing{' '}
                           <span className="font-bold text-slate-300">
                             {
@@ -1011,6 +1238,12 @@ export default function AdminPortal() {
                                   if (seriesSectionFilter === 'full') return cat.includes('full');
                                   if (seriesSectionFilter === 'pyq') return cat.includes('pyq');
                                   if (seriesSectionFilter === 'chapter') return cat.includes('chapter') || cat.includes('topic');
+                                  return true;
+                                })
+                                .filter((t) => {
+                                  const isDraft = (t.status === 'draft') || (t.category && t.category.includes('__draft'));
+                                  if (seriesStatusFilter === 'published') return !isDraft;
+                                  if (seriesStatusFilter === 'draft') return isDraft;
                                   return true;
                                 }).length
                             }
@@ -1041,6 +1274,12 @@ export default function AdminPortal() {
                                   if (seriesSectionFilter === 'pyq') return cat.includes('pyq');
                                   if (seriesSectionFilter === 'chapter') return cat.includes('chapter') || cat.includes('topic');
                                   return true;
+                                })
+                                .filter((t) => {
+                                  const isDraft = (t.status === 'draft') || (t.category && t.category.includes('__draft'));
+                                  if (seriesStatusFilter === 'published') return !isDraft;
+                                  if (seriesStatusFilter === 'draft') return isDraft;
+                                  return true;
                                 });
 
                               if (filteredTests.length === 0) {
@@ -1048,10 +1287,10 @@ export default function AdminPortal() {
                                   <div className="text-center py-16 text-slate-500 space-y-3">
                                     <span className="material-symbols-outlined text-5xl text-slate-600">assignment_late</span>
                                     <p className="text-sm font-bold uppercase tracking-wider text-slate-400">
-                                      No tests found in this category
+                                      No tests match the current filter
                                     </p>
                                     <p className="text-xs text-slate-600 max-w-sm mx-auto">
-                                      Add a new test configured for the "{selectedSeries.title}" series.
+                                      Try changing the section or status filter, or create a new test.
                                     </p>
                                     <button
                                       onClick={() => navigate('/admin/add-test')}
@@ -1063,67 +1302,122 @@ export default function AdminPortal() {
                                 );
                               }
 
-                              return filteredTests.map((test) => (
-                                <div
-                                  key={test.id}
-                                  className="bg-slate-950/60 p-4 md:p-5 rounded-xl flex flex-col md:flex-row gap-4 justify-between md:items-center border border-slate-900/80 hover:border-primary/40 transition-all group"
-                                >
-                                  <div className="flex items-center gap-4">
-                                    <div
-                                      className="w-3 h-3 rounded-full flex-shrink-0"
-                                      style={{ backgroundColor: selectedSeries.color || '#81c3d7' }}
-                                    />
-                                    <div>
-                                      <h4 className="font-bold text-slate-200 text-base group-hover:text-primary transition-colors">
-                                        {test.title}
-                                      </h4>
-                                      <div className="flex gap-3 mt-1.5 flex-wrap font-mono text-[10px]">
-                                        <span className="px-2 py-0.5 rounded uppercase font-bold border bg-red-950/30 text-red-400 border-red-900/40">
-                                          {test.category || selectedSeries.key}
-                                        </span>
-                                        <span className="text-slate-400 flex items-center gap-1">
-                                          <span className="material-symbols-outlined text-[14px]">schedule</span>
-                                          {test.duration_minutes} Mins
-                                        </span>
-                                        <span className="text-slate-400 flex items-center gap-1">
-                                          <span className="material-symbols-outlined text-[14px]">help</span>
-                                          {test.question_count || 0} Questions
-                                        </span>
+                              return filteredTests.map((test) => {
+                                const isDraft = (test.status === 'draft') || (test.category && test.category.includes('__draft'));
+                                return (
+                                  <div
+                                    key={test.id}
+                                    className={`bg-slate-950/60 p-4 md:p-5 rounded-xl flex flex-col md:flex-row gap-4 justify-between md:items-center border transition-all group ${
+                                      isDraft
+                                        ? 'border-amber-500/30 hover:border-amber-500/60 bg-amber-950/10'
+                                        : 'border-slate-900/80 hover:border-primary/40'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-4">
+                                      <div
+                                        className="w-3 h-3 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: isDraft ? '#f59e0b' : (selectedSeries.color || '#81c3d7') }}
+                                      />
+                                      <div>
+                                        <div className="flex items-center gap-2.5 flex-wrap">
+                                          <h4 className="font-bold text-slate-200 text-base group-hover:text-primary transition-colors">
+                                            {test.title}
+                                          </h4>
+                                          {isDraft ? (
+                                            <span className="px-2 py-0.5 rounded font-bold border bg-amber-950/40 text-amber-300 border-amber-800/60 flex items-center gap-1 font-mono text-[10px]">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                              STAGED DRAFT
+                                            </span>
+                                          ) : (
+                                            <span className="px-2 py-0.5 rounded font-bold border bg-emerald-950/40 text-emerald-300 border-emerald-800/60 flex items-center gap-1 font-mono text-[10px]">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                              PUBLISHED
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex gap-3 mt-1.5 flex-wrap font-mono text-[10px]">
+                                          <span className="px-2 py-0.5 rounded uppercase font-bold border bg-red-950/30 text-red-400 border-red-900/40">
+                                            {(test.category || selectedSeries.key || '').replace('__draft', '')}
+                                          </span>
+                                          <span className="text-slate-400 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-[14px]">schedule</span>
+                                            {test.duration_minutes} Mins
+                                          </span>
+                                          <span className="text-slate-400 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-[14px]">help</span>
+                                            {test.question_count || 0} Questions
+                                          </span>
+                                        </div>
                                       </div>
                                     </div>
+
+                                    <div className="flex items-center gap-2 flex-wrap self-end md:self-center">
+                                      {isDraft ? (
+                                        <>
+                                          {/* Proofread & Publish */}
+                                          <button
+                                            onClick={() => navigate(`/admin/test-paper/${test.id}`)}
+                                            className="px-3.5 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500 hover:text-slate-950 transition-all text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                                            title="Open full question paper proofreading console to inspect and publish"
+                                          >
+                                            <span className="material-symbols-outlined text-base">rate_review</span>
+                                            <span>Proofread & Publish</span>
+                                          </button>
+
+                                          {/* Quick Publish */}
+                                          <button
+                                            onClick={() => handlePublishTest(test.id, test.title)}
+                                            className="px-3 py-2 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+                                            title="Directly publish to students"
+                                          >
+                                            <span className="material-symbols-outlined text-base">rocket_launch</span>
+                                            <span>Publish</span>
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          {/* Quick Question View */}
+                                          <button
+                                            onClick={() => handleQuickQuestionView(test.id)}
+                                            className="px-3.5 py-2 rounded-xl bg-blue-600/15 text-blue-400 border border-blue-500/30 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                                            title="Open question paper view with Answer Key and Solutions in new tab"
+                                          >
+                                            <span className="material-symbols-outlined text-base">picture_as_pdf</span>
+                                            <span>Question Paper View</span>
+                                          </button>
+
+                                          {/* Unpublish back to draft */}
+                                          <button
+                                            onClick={() => handleUnpublishTest(test.id, test.title)}
+                                            className="p-2 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 border border-slate-800 hover:border-amber-400/30 transition-all cursor-pointer bg-transparent"
+                                            title="Revert to Staged Draft (Hide from students)"
+                                          >
+                                            <span className="material-symbols-outlined text-base">unpublished</span>
+                                          </button>
+                                        </>
+                                      )}
+
+                                      {/* Edit Test Blueprint */}
+                                      <button
+                                        onClick={() => handleOpenEditTest(test)}
+                                        className="p-2 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 border border-slate-800 hover:border-amber-400/30 transition-all cursor-pointer bg-transparent"
+                                        title="Edit Test Blueprint Details"
+                                      >
+                                        <span className="material-symbols-outlined text-base">edit</span>
+                                      </button>
+
+                                      {/* Delete Test Blueprint */}
+                                      <button
+                                        onClick={() => handleDeleteTest(test.id, test.title)}
+                                        className="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-slate-800 hover:border-red-500/30 transition-all cursor-pointer bg-transparent"
+                                        title="Delete Test Blueprint"
+                                      >
+                                        <span className="material-symbols-outlined text-base">delete</span>
+                                      </button>
+                                    </div>
                                   </div>
-
-                                  <div className="flex items-center gap-2 flex-wrap self-end md:self-center">
-                                    {/* Quick Question View (PDF in Light Theme) */}
-                                    <button
-                                      onClick={() => handleQuickQuestionView(test.id)}
-                                      className="px-3.5 py-2 rounded-xl bg-blue-600/15 text-blue-400 border border-blue-500/30 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
-                                      title="Open printable light-themed PDF with Answer Key and Solutions in new tab"
-                                    >
-                                      <span className="material-symbols-outlined text-base">picture_as_pdf</span>
-                                      <span>Quick Question View</span>
-                                    </button>
-
-                                    {/* Edit Test Blueprint */}
-                                    <button
-                                      onClick={() => handleOpenEditTest(test)}
-                                      className="p-2 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 border border-slate-800 hover:border-amber-400/30 transition-all cursor-pointer bg-transparent"
-                                      title="Edit Test Blueprint Details"
-                                    >
-                                      <span className="material-symbols-outlined text-base">edit</span>
-                                    </button>
-
-                                    {/* Delete Test Blueprint */}
-                                    <button
-                                      onClick={() => handleDeleteTest(test.id, test.title)}
-                                      className="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-slate-800 hover:border-red-500/30 transition-all cursor-pointer bg-transparent"
-                                      title="Delete Test Blueprint"
-                                    >
-                                      <span className="material-symbols-outlined text-base">delete</span>
-                                    </button>
-                                  </div>
-                                </div>
-                              ));
+                                );
+                              });
                             })()}
                         </div>
                       </div>
@@ -1384,7 +1678,356 @@ export default function AdminPortal() {
               )}
 
               {activeTab === 'students' && (
-                <StudentAnalyticsWorkspace adminTests={adminTests} />
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  {/* Student Management Header & Sub-tabs */}
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-900/80 pb-5">
+                    <div>
+                      <div className="flex items-center gap-2.5">
+                        <span className="material-symbols-outlined text-primary text-2xl">badge</span>
+                        <h2 className="font-headline font-black text-2xl sm:text-3xl text-slate-100">
+                          Student Profiles & Enrollment
+                        </h2>
+                      </div>
+                      <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                        Enroll new student candidates, provision login credentials, and audit academic mock test performance.
+                      </p>
+                    </div>
+
+                    {/* Sub-tab Pill Switcher */}
+                    <div className="flex items-center gap-1.5 p-1 bg-slate-950/80 border border-slate-900 rounded-xl self-start lg:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => setStudentSubTab('directory')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer border-none ${
+                          studentSubTab === 'directory'
+                            ? 'bg-[#1282a2] text-white shadow-[0_0_15px_rgba(18,130,162,0.3)]'
+                            : 'bg-transparent text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-base">group</span>
+                        <span>Enrolled Directory</span>
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-black/40 text-cyan-200 font-mono font-bold">
+                          {enrolledStudents.length}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStudentSubTab('analytics')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer border-none ${
+                          studentSubTab === 'analytics'
+                            ? 'bg-[#1282a2] text-white shadow-[0_0_15px_rgba(18,130,162,0.3)]'
+                            : 'bg-transparent text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-base">insights</span>
+                        <span>Performance Analytics</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {studentSubTab === 'analytics' ? (
+                    <StudentAnalyticsWorkspace adminTests={adminTests} />
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Metric Cards & Quick Action */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Total Students</span>
+                            <span className="material-symbols-outlined text-cyan-400 text-xl">school</span>
+                          </div>
+                          <div className="mt-3 flex items-baseline gap-2">
+                            <span className="text-3xl font-black font-headline text-slate-100">{enrolledStudents.length}</span>
+                            <span className="text-xs text-emerald-400 font-bold font-mono">Active</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-1">Enrolled candidate accounts</p>
+                        </div>
+
+                        <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Target Tracks</span>
+                            <span className="material-symbols-outlined text-sky-400 text-xl">track_changes</span>
+                          </div>
+                          <div className="mt-3 flex items-center gap-2 font-mono text-xs font-bold">
+                            <span className="px-2 py-1 bg-sky-950/60 border border-sky-800/50 text-sky-300 rounded-lg">
+                              JEE: {enrolledStudents.filter(s => s.target_exam === 'JEE' || s.target_exam === 'BOTH').length}
+                            </span>
+                            <span className="px-2 py-1 bg-emerald-950/60 border border-emerald-800/50 text-emerald-300 rounded-lg">
+                              NEET: {enrolledStudents.filter(s => s.target_exam === 'NEET' || s.target_exam === 'BOTH').length}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-2">Curriculum track allocation</p>
+                        </div>
+
+                        <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Mock Submissions</span>
+                            <span className="material-symbols-outlined text-amber-400 text-xl">assignment_turned_in</span>
+                          </div>
+                          <div className="mt-3 flex items-baseline gap-2">
+                            <span className="text-3xl font-black font-headline text-slate-100">
+                              {enrolledStudents.reduce((sum, s) => sum + (s.tests_taken || 0), 0)}
+                            </span>
+                            <span className="text-xs text-slate-400 font-mono">attempts</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-1">Logged across all tests</p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-[#034078]/40 to-[#1282a2]/30 border border-[#1282a2]/40 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                          <div>
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-200 font-bold block mb-1">
+                              Institutional Provisioning
+                            </span>
+                            <h4 className="text-sm font-bold text-white leading-tight">
+                              Enroll New Student
+                            </h4>
+                            <p className="text-[11px] text-slate-300 mt-1">
+                              Create student User ID & managed credentials.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={openEnrollModal}
+                            className="mt-3 w-full py-2.5 px-4 rounded-xl bg-[#1282a2] hover:bg-[#159cc2] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(18,130,162,0.4)] transition-all cursor-pointer border-none"
+                          >
+                            <span className="material-symbols-outlined text-base">person_add</span>
+                            <span>Enroll Student</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Filter & Search Toolbar */}
+                      <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-lg">
+                        <div className="relative flex-1 max-w-md">
+                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-base">
+                            search
+                          </span>
+                          <input
+                            type="text"
+                            value={studentSearch}
+                            onChange={(e) => setStudentSearch(e.target.value)}
+                            placeholder="Search by Name, User ID, Email, Phone..."
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#1282a2] font-medium"
+                          />
+                          {studentSearch && (
+                            <button
+                              onClick={() => setStudentSearch('')}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs border-none bg-transparent cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Cohort Filter */}
+                          <select
+                            value={studentCohortFilter}
+                            onChange={(e) => setStudentCohortFilter(e.target.value)}
+                            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-medium focus:outline-none focus:border-[#1282a2]"
+                          >
+                            <option value="all">All Classes</option>
+                            <option value="Class 11">Class 11</option>
+                            <option value="Class 12">Class 12</option>
+                            <option value="Repeater">Repeater</option>
+                          </select>
+
+                          {/* Exam Filter */}
+                          <select
+                            value={studentExamFilter}
+                            onChange={(e) => setStudentExamFilter(e.target.value)}
+                            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-medium focus:outline-none focus:border-[#1282a2]"
+                          >
+                            <option value="all">All Exam Tracks</option>
+                            <option value="JEE">JEE (Main/Adv)</option>
+                            <option value="NEET">NEET (UG)</option>
+                            <option value="BOTH">JEE & NEET</option>
+                          </select>
+
+                          {/* Refresh Button */}
+                          <button
+                            type="button"
+                            onClick={() => { fetchStudents(); fetchStats(); }}
+                            disabled={loadingStudents}
+                            className="p-2.5 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-950 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+                            title="Refresh student records"
+                          >
+                            <span className={`material-symbols-outlined text-base ${loadingStudents ? 'animate-spin text-[#1282a2]' : ''}`}>
+                              refresh
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Enrolled Students Table */}
+                      <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl shadow-xl overflow-hidden">
+                        {loadingStudents ? (
+                          <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+                            <span className="material-symbols-outlined text-3xl animate-spin text-[#1282a2]">progress_activity</span>
+                            <p className="text-xs font-mono">Loading enrolled student directory...</p>
+                          </div>
+                        ) : enrolledStudents.length === 0 ? (
+                          <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+                            <span className="material-symbols-outlined text-4xl text-slate-600">group_off</span>
+                            <h4 className="text-base font-bold text-slate-200">No Enrolled Students Yet</h4>
+                            <p className="text-xs text-slate-500 max-w-sm">
+                              Get started by adding student profiles directly to the database with dedicated User IDs and passwords.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={openEnrollModal}
+                              className="mt-2 py-2 px-5 bg-[#1282a2] hover:bg-[#159cc2] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer border-none shadow-md"
+                            >
+                              <span className="material-symbols-outlined text-base">person_add</span>
+                              <span>Enroll First Student</span>
+                            </button>
+                          </div>
+                        ) : (
+                          (() => {
+                            const query = studentSearch.toLowerCase().trim();
+                            const filtered = enrolledStudents.filter((s) => {
+                              const matchesQuery = !query ||
+                                (s.full_name && s.full_name.toLowerCase().includes(query)) ||
+                                (s.user_id && s.user_id.toLowerCase().includes(query)) ||
+                                (s.email && s.email.toLowerCase().includes(query)) ||
+                                (s.phone_number && s.phone_number.includes(query)) ||
+                                (s.roll_number && s.roll_number.toLowerCase().includes(query));
+
+                              const matchesCohort = studentCohortFilter === 'all' || s.class_cohort === studentCohortFilter;
+                              const matchesExam = studentExamFilter === 'all' || s.target_exam === studentExamFilter;
+
+                              return matchesQuery && matchesCohort && matchesExam;
+                            });
+
+                            if (filtered.length === 0) {
+                              return (
+                                <div className="p-10 text-center text-slate-400">
+                                  <span className="material-symbols-outlined text-3xl text-slate-600 mb-2">search_off</span>
+                                  <p className="text-xs font-mono">No students match your filter criteria.</p>
+                                  <button
+                                    onClick={() => { setStudentSearch(''); setStudentCohortFilter('all'); setStudentExamFilter('all'); }}
+                                    className="mt-3 text-xs text-[#1282a2] hover:underline cursor-pointer bg-transparent border-none font-bold"
+                                  >
+                                    Reset Filters
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                  <thead>
+                                    <tr className="border-b border-slate-900 bg-slate-950/70 text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                                      <th className="py-3.5 px-4 font-bold">User ID</th>
+                                      <th className="py-3.5 px-4 font-bold">Student Name & Email</th>
+                                      <th className="py-3.5 px-4 font-bold">Class & Batch</th>
+                                      <th className="py-3.5 px-4 font-bold">Target Exam</th>
+                                      <th className="py-3.5 px-4 font-bold text-center">Tests Taken</th>
+                                      <th className="py-3.5 px-4 font-bold">Contact</th>
+                                      <th className="py-3.5 px-4 font-bold text-right">Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-900/60 text-xs">
+                                    {filtered.map((student) => (
+                                      <tr key={student.id} className="hover:bg-slate-900/30 transition-colors group">
+                                        {/* User ID */}
+                                        <td className="py-3.5 px-4 font-mono font-bold text-[#1282a2] whitespace-nowrap">
+                                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1282a2]/10 border border-[#1282a2]/30">
+                                            <span>{student.user_id}</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                navigator.clipboard.writeText(student.user_id);
+                                                alert(`User ID "${student.user_id}" copied!`);
+                                              }}
+                                              className="text-slate-400 hover:text-white transition-colors cursor-pointer border-none bg-transparent p-0 flex items-center"
+                                              title="Copy User ID"
+                                            >
+                                              <span className="material-symbols-outlined text-[13px]">content_copy</span>
+                                            </button>
+                                          </div>
+                                        </td>
+
+                                        {/* Name & Email */}
+                                        <td className="py-3.5 px-4">
+                                          <div className="font-bold text-slate-100 flex items-center gap-2">
+                                            <span>{student.full_name}</span>
+                                          </div>
+                                          <div className="text-[11px] text-slate-400 font-mono truncate max-w-xs mt-0.5">
+                                            {student.email}
+                                          </div>
+                                        </td>
+
+                                        {/* Class & Batch */}
+                                        <td className="py-3.5 px-4 whitespace-nowrap">
+                                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-900 border border-slate-800 text-slate-200">
+                                            {student.class_cohort}
+                                          </span>
+                                          <span className="text-[10px] text-slate-500 font-mono block mt-1">
+                                            Batch: {student.batch_name || 'General'}
+                                          </span>
+                                        </td>
+
+                                        {/* Target Exam */}
+                                        <td className="py-3.5 px-4 whitespace-nowrap">
+                                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
+                                            student.target_exam === 'JEE'
+                                              ? 'bg-sky-950/50 border-sky-600/40 text-sky-300'
+                                              : student.target_exam === 'NEET'
+                                              ? 'bg-emerald-950/50 border-emerald-600/40 text-emerald-300'
+                                              : 'bg-purple-950/50 border-purple-600/40 text-purple-300'
+                                          }`}>
+                                            {student.target_exam}
+                                          </span>
+                                        </td>
+
+                                        {/* Tests Taken */}
+                                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                                          <span className="inline-flex items-center justify-center min-w-8 px-2 py-1 rounded-full text-xs font-bold font-mono bg-slate-900 border border-slate-800 text-slate-200">
+                                            {student.tests_taken || 0}
+                                          </span>
+                                        </td>
+
+                                        {/* Contact */}
+                                        <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                                          {student.phone_number || '—'}
+                                        </td>
+
+                                        {/* Actions */}
+                                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                                          <div className="inline-flex items-center gap-1.5">
+                                            <button
+                                              type="button"
+                                              onClick={() => handleOpenResetPassword(student)}
+                                              className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                                              title="Reset password for this student"
+                                            >
+                                              <span className="material-symbols-outlined text-sm">vpn_key</span>
+                                              <span>Reset Password</span>
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleDeleteStudent(student)}
+                                              className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer border-none bg-transparent"
+                                              title="Delete student profile"
+                                            >
+                                              <span className="material-symbols-outlined text-base">delete</span>
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            );
+                          })()
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
               {activeTab === 'settings' && (
@@ -1875,6 +2518,398 @@ export default function AdminPortal() {
                   className="px-5 py-2.5 rounded-xl bg-primary hover:brightness-110 text-white text-xs font-bold uppercase tracking-wider cursor-pointer border-none shadow-md"
                 >
                   Update Test Blueprint
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Enroll New Student Modal ── */}
+      {showEnrollModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0b0f19] border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-900 flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-[#1282a2] text-2xl">person_add</span>
+                <h3 className="font-headline font-bold text-lg text-slate-100">Enroll New Student</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEnrollModal(false)}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-900 border-none bg-transparent cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleEnrollStudent} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {/* Full Name */}
+              <div>
+                <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                  Student Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Rahul Sharma"
+                  value={enrollForm.fullName}
+                  onChange={(e) => setEnrollForm({ ...enrollForm, fullName: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-[#1282a2] font-medium"
+                />
+              </div>
+
+              {/* User ID & Helper */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">
+                    Student User ID (Unique Login ID) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEnrollForm({ ...enrollForm, userId: generateRandomUserId() })}
+                    className="text-[10px] text-[#1282a2] hover:underline font-mono font-bold cursor-pointer bg-transparent border-none p-0 inline-flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[12px]">autorenew</span>
+                    Generate ID
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. IK2026-101"
+                  value={enrollForm.userId}
+                  onChange={(e) => setEnrollForm({ ...enrollForm, userId: e.target.value.trim() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono font-bold focus:outline-none focus:border-[#1282a2]"
+                />
+                <span className="text-[10px] text-slate-500 font-mono block mt-1">
+                  Students can use this User ID directly to log into the portal.
+                </span>
+              </div>
+
+              {/* Email (Optional) */}
+              <div>
+                <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                  Student / Parent Email (Optional)
+                </label>
+                <input
+                  type="email"
+                  placeholder="e.g. rahul@example.com (or leave empty)"
+                  value={enrollForm.email}
+                  onChange={(e) => setEnrollForm({ ...enrollForm, email: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-[#1282a2]"
+                />
+                <span className="text-[10px] text-slate-500 font-mono block mt-1">
+                  If left blank, an institutional address ({enrollForm.userId ? enrollForm.userId.toLowerCase().replace(/[^a-z0-9]/g, '') : 'userid'}@ikshatests.com) is created automatically.
+                </span>
+              </div>
+
+              {/* Password & Generator */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">
+                    Initial Password *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEnrollForm({ ...enrollForm, password: generateRandomPassword() })}
+                    className="text-[10px] text-[#1282a2] hover:underline font-mono font-bold cursor-pointer bg-transparent border-none p-0 inline-flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[12px]">password</span>
+                    Generate Random
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="Min 6 characters"
+                  value={enrollForm.password}
+                  onChange={(e) => setEnrollForm({ ...enrollForm, password: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono font-bold focus:outline-none focus:border-[#1282a2]"
+                />
+                <span className="text-[10px] text-amber-400/80 font-mono block mt-1">
+                  Notice: Students cannot change passwords after login. Credential updates remain admin-managed.
+                </span>
+              </div>
+
+              {/* Cohort & Target Exam */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Class Cohort
+                  </label>
+                  <select
+                    value={enrollForm.classCohort}
+                    onChange={(e) => setEnrollForm({ ...enrollForm, classCohort: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-bold focus:outline-none focus:border-[#1282a2]"
+                  >
+                    <option value="Class 11">Class 11</option>
+                    <option value="Class 12">Class 12</option>
+                    <option value="Repeater">Repeater / Dropper</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Target Exam
+                  </label>
+                  <select
+                    value={enrollForm.targetExam}
+                    onChange={(e) => setEnrollForm({ ...enrollForm, targetExam: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-bold focus:outline-none focus:border-[#1282a2]"
+                  >
+                    <option value="JEE">JEE (Main + Adv)</option>
+                    <option value="NEET">NEET (UG)</option>
+                    <option value="BOTH">JEE & NEET</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Phone & Batch */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Phone (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +91 9876543210"
+                    value={enrollForm.phoneNumber}
+                    onChange={(e) => setEnrollForm({ ...enrollForm, phoneNumber: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-[#1282a2]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                    Batch Code
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Batch-A"
+                    value={enrollForm.batchName}
+                    onChange={(e) => setEnrollForm({ ...enrollForm, batchName: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-[#1282a2]"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="pt-4 border-t border-slate-900 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEnrollModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-bold uppercase tracking-wider cursor-pointer bg-transparent"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEnrollingStudent}
+                  className="px-5 py-2.5 rounded-xl bg-[#1282a2] hover:bg-[#159cc2] text-white text-xs font-bold uppercase tracking-wider cursor-pointer border-none shadow-[0_0_20px_rgba(18,130,162,0.4)] flex items-center gap-2"
+                >
+                  {isEnrollingStudent ? (
+                    <>
+                      <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                      <span>Creating Account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-sm">how_to_reg</span>
+                      <span>Create & Provision Student</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Student Credentials Slip Modal ── */}
+      {createdStudentSlip && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#070b19] border-2 border-[#1282a2]/60 rounded-2xl w-full max-w-lg overflow-hidden shadow-[0_0_50px_rgba(18,130,162,0.3)] animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-6 bg-gradient-to-r from-[#034078]/80 to-[#1282a2]/50 border-b border-[#1282a2]/40 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                  <span className="material-symbols-outlined text-2xl">verified</span>
+                </div>
+                <div>
+                  <h3 className="font-headline font-black text-lg text-white">Student Enrolled Successfully</h3>
+                  <p className="text-[11px] text-cyan-200 font-mono">Official Academic Login Slip</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCreatedStudentSlip(null)}
+                className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-slate-900 border-none bg-transparent cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            {/* Slip Card Details */}
+            <div className="p-6 space-y-4">
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 font-mono text-xs">
+                <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+                  <span className="text-slate-400">Student Name:</span>
+                  <span className="text-slate-100 font-bold">{createdStudentSlip.fullName}</span>
+                </div>
+
+                <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+                  <span className="text-[#1282a2] font-bold">User ID (Sign-in identifier):</span>
+                  <span className="text-[#1282a2] font-black text-sm px-2 py-0.5 rounded bg-[#1282a2]/15 border border-[#1282a2]/40">
+                    {createdStudentSlip.userId}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+                  <span className="text-slate-400">Login Email:</span>
+                  <span className="text-slate-200">{createdStudentSlip.email}</span>
+                </div>
+
+                <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+                  <span className="text-amber-400 font-bold">Password:</span>
+                  <span className="text-amber-300 font-black text-sm px-2.5 py-0.5 rounded bg-amber-950/40 border border-amber-500/40 select-all">
+                    {createdStudentSlip.password}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+                  <span className="text-slate-400">Class & Target Exam:</span>
+                  <span className="text-slate-200 font-semibold">{createdStudentSlip.classCohort} • {createdStudentSlip.targetExam}</span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Portal URL:</span>
+                  <span className="text-cyan-400 font-semibold">{window.location.origin}/login</span>
+                </div>
+              </div>
+
+              {/* Policy Alert */}
+              <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-xl text-[11px] text-amber-200 flex items-start gap-2">
+                <span className="material-symbols-outlined text-base text-amber-400 shrink-0 mt-0.5">info</span>
+                <span>
+                  <strong>Academic Policy:</strong> Students log in using their <strong>User ID</strong> or <strong>Email</strong> with this password. Students cannot change passwords after logging in; any credential adjustments must be made by the administrator.
+                </span>
+              </div>
+
+              {/* Copy & Finish Actions */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleCopyCredentialsSlip}
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#1282a2] hover:bg-[#159cc2] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(18,130,162,0.4)] transition-all cursor-pointer border-none"
+                >
+                  <span className="material-symbols-outlined text-base">
+                    {copiedSlip ? 'check_circle' : 'content_copy'}
+                  </span>
+                  <span>{copiedSlip ? 'Copied Slip to Clipboard!' : 'Copy Credentials Slip'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreatedStudentSlip(null)}
+                  className="px-5 py-3 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-900 text-slate-200 font-bold text-xs uppercase tracking-wider cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Reset Password Modal ── */}
+      {resetPasswordModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0b0f19] border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-900 flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-amber-400 text-2xl">vpn_key</span>
+                <h3 className="font-headline font-bold text-lg text-slate-100">Reset Student Password</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetPasswordModal(null)}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-900 border-none bg-transparent cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleResetPasswordSubmit} className="p-6 space-y-4">
+              <div className="p-3 bg-slate-950 border border-slate-900 rounded-xl space-y-1">
+                <div className="text-xs font-bold text-slate-200">{resetPasswordModal.full_name}</div>
+                <div className="text-[11px] font-mono text-[#1282a2]">User ID: {resetPasswordModal.user_id}</div>
+                <div className="text-[11px] font-mono text-slate-400">{resetPasswordModal.email}</div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">
+                    New Password *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setNewPasswordVal(generateRandomPassword())}
+                    className="text-[10px] text-[#1282a2] hover:underline font-mono font-bold cursor-pointer bg-transparent border-none p-0 inline-flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[12px]">autorenew</span>
+                    Generate Random
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter new password"
+                  value={newPasswordVal}
+                  onChange={(e) => setNewPasswordVal(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono font-bold focus:outline-none focus:border-[#1282a2]"
+                />
+              </div>
+
+              {resetSuccessMessage && (
+                <div className="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center justify-between gap-2 animate-in fade-in">
+                  <span>{resetSuccessMessage}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(newPasswordVal);
+                      alert('Password copied to clipboard!');
+                    }}
+                    className="px-2 py-1 rounded bg-emerald-900/60 text-emerald-200 text-[10px] font-mono font-bold border border-emerald-500/50 cursor-pointer"
+                  >
+                    Copy
+                  </button>
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-slate-900 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setResetPasswordModal(null)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-bold uppercase tracking-wider cursor-pointer bg-transparent"
+                >
+                  {resetSuccessMessage ? 'Close' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResettingPassword}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider cursor-pointer border-none shadow-md flex items-center gap-2"
+                >
+                  {isResettingPassword ? (
+                    <>
+                      <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                      <span>Updating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-sm">lock_reset</span>
+                      <span>Update Password</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

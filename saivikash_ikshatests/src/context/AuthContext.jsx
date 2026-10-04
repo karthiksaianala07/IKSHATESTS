@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { supabase } from '../config/supabase';
+import { API_URL } from '../config/api';
 
 const AuthContext = createContext();
 
@@ -111,26 +113,51 @@ export function AuthProvider({ children }) {
     const isAdminEmail = supabaseUser.email?.toLowerCase().trim() === 'karthiksaianala@gmail.com';
 
     let profileData = null;
+    let isAdmin = isAdminEmail;
+
+    // 1. Check dedicated admin_profiles table first
     try {
-      const res = await withTimeout(
+      const adminRes = await withTimeout(
         supabase
-          .from('profiles')
-          .select('role, full_name')
+          .from('admin_profiles')
+          .select('full_name, designation, department, phone_number')
           .eq('id', supabaseUser.id)
-          .single(),
-        2000
+          .maybeSingle(),
+        1500
       );
-      if (res?.data && !res?.error) {
-        profileData = res.data;
+      if (adminRes?.data && !adminRes?.error) {
+        profileData = { ...adminRes.data, role: 'admin' };
+        isAdmin = true;
       }
-    } catch (err) {
-      console.warn("Profile fetch skipped/timed out:", err.message);
+    } catch (e) {
+      // quiet fallback
+    }
+
+    // 2. If not found in admin_profiles, check student profiles table
+    if (!isAdmin) {
+      try {
+        const res = await withTimeout(
+          supabase
+            .from('profiles')
+            .select('role, full_name, user_id, roll_number, class_cohort, target_exam')
+            .eq('id', supabaseUser.id)
+            .maybeSingle(),
+          2000
+        );
+        if (res?.data && !res?.error) {
+          profileData = res.data;
+          if (profileData.role === 'admin') isAdmin = true;
+        }
+      } catch (err) {
+        console.warn("Profile fetch skipped/timed out:", err.message);
+      }
     }
 
     const fullUser = { 
       ...supabaseUser, 
       ...(profileData || {}),
-      role: (profileData?.role === 'admin' || isAdminEmail) ? 'admin' : (profileData?.role || 'student') 
+      user_id: profileData?.user_id || profileData?.roll_number || supabaseUser.user_metadata?.user_id || supabaseUser.email?.split('@')[0],
+      role: (isAdmin || profileData?.role === 'admin') ? 'admin' : (profileData?.role || 'student') 
     };
 
     setUser(fullUser);
@@ -138,9 +165,50 @@ export function AuthProvider({ children }) {
     return fullUser;
   };
 
-  const login = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (error) return { success: false, error: error.message };
+  const login = async (identifier, password) => {
+    if (!identifier || !password) {
+      return { success: false, error: 'Please enter both User ID / Email and password.' };
+    }
+
+    const cleanId = String(identifier).trim();
+    let authEmail = cleanId;
+
+    // 1. If identifier is a User ID (does not have '@'), resolve it to the student's auth email
+    if (!cleanId.includes('@')) {
+      try {
+        const resolveRes = await axios.post(`${API_URL}/api/auth/resolve-identifier`, { identifier: cleanId });
+        if (resolveRes.data?.email) {
+          authEmail = resolveRes.data.email;
+        } else {
+          return { success: false, error: `No registered account found for User ID "${cleanId}".` };
+        }
+      } catch (err) {
+        return { 
+          success: false, 
+          error: err.response?.data?.error || `Unable to locate User ID "${cleanId}". Please check and try again.` 
+        };
+      }
+    }
+
+    // 2. Authenticate with Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({ email: authEmail, password });
+    if (error) {
+      // If direct email failed and cleanId has '@', check if cleanId is a custom User ID in database
+      if (cleanId.includes('@')) {
+        try {
+          const resolveRes = await axios.post(`${API_URL}/api/auth/resolve-identifier`, { identifier: cleanId });
+          if (resolveRes.data?.email && resolveRes.data.email !== cleanId) {
+            const retry = await supabase.auth.signInWithPassword({ email: resolveRes.data.email, password });
+            if (!retry.error && retry.data?.user) {
+              const userProfile = await fetchProfile(retry.data.user);
+              return { success: true, user: userProfile || retry.data.user };
+            }
+          }
+        } catch {}
+      }
+      return { success: false, error: error.message || 'Invalid credentials.' };
+    }
+
     let userProfile = null;
     if (data?.user) {
       userProfile = await fetchProfile(data.user);

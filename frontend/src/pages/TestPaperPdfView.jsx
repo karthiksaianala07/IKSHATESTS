@@ -14,6 +14,9 @@ export default function TestPaperPdfView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showSolutions, setShowSolutions] = useState(true);
+  const [publishing, setPublishing] = useState(false);
+  const [actionSuccess, setActionSuccess] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
   useEffect(() => {
     fetchTestDetails();
@@ -98,6 +101,51 @@ export default function TestPaperPdfView() {
     }
   };
 
+  const handlePublishTest = async () => {
+    if (!test?.id) return;
+    setPublishing(true);
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      await axios.post(`${API_URL}/api/admin/tests/${test.id}/publish`);
+      setTest(prev => ({
+        ...prev,
+        status: 'published',
+        category: (prev.category || '').replace('__draft', '')
+      }));
+      setActionSuccess('Question paper successfully approved and published! It is now live for students.');
+      setTimeout(() => setActionSuccess(null), 6000);
+    } catch (err) {
+      console.error('Publish test error:', err);
+      setActionError(err.response?.data?.error || err.message || 'Failed to publish test');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleUnpublishTest = async () => {
+    if (!test?.id) return;
+    if (!window.confirm('Revert this test to a staged draft? It will be hidden from students.')) return;
+    setPublishing(true);
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      await axios.post(`${API_URL}/api/admin/tests/${test.id}/unpublish`);
+      setTest(prev => ({
+        ...prev,
+        status: 'draft',
+        category: (prev.category || '').replace('__draft', '')
+      }));
+      setActionSuccess('Test reverted to Staged Draft. It is now hidden from students.');
+      setTimeout(() => setActionSuccess(null), 6000);
+    } catch (err) {
+      console.error('Unpublish test error:', err);
+      setActionError(err.response?.data?.error || err.message || 'Failed to revert test to draft');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -138,25 +186,39 @@ export default function TestPaperPdfView() {
   });
   const subjectKeys = Object.keys(subjectsMap);
 
+  const isDraft = test?.status === 'draft' || (test?.category && test.category.includes('__draft'));
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans print:bg-white print:text-black">
       {/* ── Floating Action Bar (Hidden on Print) ── */}
-      <div className="no-print sticky top-0 z-50 bg-[#060913]/90 backdrop-blur-md border-b border-slate-800 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
-        <div className="flex items-center gap-3">
+      <div className="no-print sticky top-0 z-50 bg-[#060913]/95 backdrop-blur-md border-b border-slate-800 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => navigate('/admin')}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-colors cursor-pointer border border-slate-700"
           >
             <span className="material-symbols-outlined text-base">arrow_back</span>
-            Back to Admin
+            Admin Portal
           </button>
-          <div className="h-4 w-[1px] bg-slate-700" />
-          <span className="text-xs font-bold text-slate-300 truncate max-w-xs md:max-w-md">
+          <div className="h-4 w-[1px] bg-slate-700 hidden sm:block" />
+          <span className="text-xs font-bold text-slate-300 truncate max-w-xs md:max-w-sm">
             {test.title}
           </span>
+          {/* Status Badge */}
+          {isDraft ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold font-mono">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              <span>STAGED DRAFT</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>PUBLISHED LIVE</span>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer select-none px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700">
             <input
               type="checkbox"
@@ -164,22 +226,91 @@ export default function TestPaperPdfView() {
               onChange={e => setShowSolutions(e.target.checked)}
               className="rounded accent-[#1282a2]"
             />
-            Include Solutions & Explanations
+            Solutions
           </label>
 
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#1282a2] hover:bg-[#034078] text-[#fefcfb] font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer border-none"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer border border-slate-700"
           >
             <span className="material-symbols-outlined text-base">print</span>
-            Print / Save as PDF
+            Print / PDF
           </button>
+
+          {/* Staging & Publishing Actions */}
+          {isDraft ? (
+            <button
+              onClick={handlePublishTest}
+              disabled={publishing}
+              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-950/40 active:scale-95 cursor-pointer border-none disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-base">{publishing ? 'hourglass_top' : 'check_circle'}</span>
+              <span>{publishing ? 'Publishing…' : 'Approve & Publish to Students'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleUnpublishTest}
+              disabled={publishing}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-amber-950/40 border border-slate-700 hover:border-amber-500/50 text-slate-300 hover:text-amber-300 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+              title="Revert this test to a staged draft hidden from students"
+            >
+              <span className="material-symbols-outlined text-sm">{publishing ? 'hourglass_top' : 'unpublished'}</span>
+              <span>{publishing ? 'Reverting…' : 'Revert to Draft'}</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Floating Action Feedback Alerts */}
+      {actionSuccess && (
+        <div className="no-print max-w-4xl mx-auto mt-4 px-4">
+          <div className="p-4 bg-emerald-950/70 border border-emerald-500/60 text-emerald-300 rounded-xl font-bold text-xs flex items-center justify-between shadow-lg animate-in fade-in duration-200">
+            <div className="flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-emerald-400 text-lg">check_circle</span>
+              <span>{actionSuccess}</span>
+            </div>
+            <button onClick={() => setActionSuccess(null)} className="text-emerald-400/80 hover:text-emerald-200">
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {actionError && (
+        <div className="no-print max-w-4xl mx-auto mt-4 px-4">
+          <div className="p-4 bg-red-950/70 border border-red-500/60 text-red-300 rounded-xl font-bold text-xs flex items-center justify-between shadow-lg animate-in fade-in duration-200">
+            <div className="flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-red-400 text-lg">error</span>
+              <span>{actionError}</span>
+            </div>
+            <button onClick={() => setActionError(null)} className="text-red-400/80 hover:text-red-200">
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Printable Paper Container ── */}
       <div className="max-w-[850px] mx-auto my-8 bg-white border border-slate-200 shadow-2xl p-8 sm:p-14 rounded-2xl print:m-0 print:p-0 print:border-none print:shadow-none print:max-w-full">
         
+        {/* Admin Proofreading Notice Banner */}
+        {isDraft && (
+          <div className="no-print mb-8 p-4 bg-amber-50/90 border-2 border-amber-300 rounded-xl text-amber-950 flex items-start gap-3.5 shadow-sm">
+            <span className="material-symbols-outlined text-amber-600 text-2xl flex-shrink-0 mt-0.5">rate_review</span>
+            <div className="flex-1">
+              <h4 className="font-bold text-sm text-amber-900 flex items-center gap-2">
+                <span>Teacher Proofreading Console</span>
+                <span className="px-2 py-0.5 rounded bg-amber-200/80 text-amber-800 text-[10px] font-black uppercase tracking-wider">
+                  Draft Mode
+                </span>
+              </h4>
+              <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                This question paper is currently staged as a <strong>Private Draft</strong> and is hidden from students. Please inspect all questions, option choices, LaTeX formulas, diagrams, answer keys, and step-by-step explanations below. Once verified, click the green <strong>"Approve & Publish to Students"</strong> button in the top bar to release it live.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── Test Paper Header ── */}
         <header className="border-b-2 border-slate-900 pb-6 mb-8 text-center relative">
           {/* Top Brand Header */}

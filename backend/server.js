@@ -89,7 +89,15 @@ app.get('/api/tests', async (req, res) => {
     }
     const { data, error } = await query;
     if (error) throw error;
-    const testsWithCount = (data || []).map(t => ({
+
+    // Filter out draft / staged tests from students
+    const publishedTests = (data || []).filter(t => {
+      if (t.status === 'draft' || t.status === 'staged') return false;
+      if (t.category && t.category.includes('__draft')) return false;
+      return true;
+    });
+
+    const testsWithCount = publishedTests.map(t => ({
       ...t,
       question_count: t.questions ? t.questions.length : 0
     }));
@@ -129,6 +137,11 @@ app.get('/api/tests/:id', async (req, res) => {
         .order('created_at', { ascending: true });
 
       return res.json({ testId: fallbackTest.id, title: fallbackTest.title, scheduled_at: fallbackTest.scheduled_at || null, questions });
+    }
+
+    // Block students if test is currently staged in draft mode
+    if (test.status === 'draft' || (test.category && test.category.includes('__draft'))) {
+      return res.status(403).json({ error: "This exam paper is currently staged in draft mode for teacher proofreading and has not been published yet." });
     }
 
     // Fetch questions for this specific test
@@ -455,16 +468,404 @@ app.get('/api/admin/tests', async (req, res) => {
       .order('created_at', { ascending: false });
     if (error) throw error;
     
-    // Map questions array to a count
-    const testsWithCount = (data || []).map(t => ({
-      ...t,
-      question_count: t.questions ? t.questions.length : 0
-    }));
+    // Map questions array to a count and normalize status
+    const testsWithCount = (data || []).map(t => {
+      const isDraft = t.status === 'draft' || t.status === 'staged' || (t.category && t.category.includes('__draft'));
+      const cleanCategory = t.category ? t.category.replace('__draft', '') : t.category;
+      return {
+        ...t,
+        category: cleanCategory,
+        status: isDraft ? 'draft' : (t.status || 'published'),
+        question_count: t.questions ? t.questions.length : 0
+      };
+    });
     
     res.json(testsWithCount);
   } catch (err) {
     console.error("[GET_ADMIN_TESTS_ERROR]", err.message);
     res.status(500).json({ error: "Failed to fetch tests" });
+  }
+});
+
+// ==========================================
+// 7.6B User Identifier Resolution (Dual Login: User ID or Email)
+// ==========================================
+app.post('/api/auth/resolve-identifier', async (req, res) => {
+  try {
+    const rawId = req.body?.identifier;
+    if (!rawId || typeof rawId !== 'string') {
+      return res.status(400).json({ error: 'Please enter a valid User ID or Email address.' });
+    }
+    const identifier = rawId.trim();
+
+    // 0. Check if matching user_id (e.g. 'DBA') or email exists for administrators
+    try {
+      let adminProfile = null;
+
+      // 0a. Check admin_profiles table
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('admin_profiles')
+          .select('id, email, full_name, designation, department, user_id')
+          .or(`user_id.ilike.${identifier},email.ilike.${identifier}`)
+          .maybeSingle();
+        if (!error && data) adminProfile = data;
+      } catch (colErr) {
+        // Fallback if user_id column isn't added yet in admin_profiles
+        const { data } = await supabaseAdmin
+          .from('admin_profiles')
+          .select('id, email, full_name, designation, department')
+          .ilike('email', identifier)
+          .maybeSingle();
+        if (data) adminProfile = data;
+      }
+
+      // 0b. If not found in table, check auth.users user_metadata for admin user_id (e.g. DBA)
+      if (!adminProfile) {
+        const { data: authList } = await supabaseAdmin.auth.admin.listUsers();
+        const matched = (authList?.users || []).find(u => {
+          const uId = u.user_metadata?.user_id?.toLowerCase();
+          const uEmail = u.email?.toLowerCase();
+          const target = identifier.toLowerCase();
+          const isAdmin = u.user_metadata?.role === 'admin' || uEmail === 'karthiksaianala@gmail.com';
+          return isAdmin && (uId === target || uEmail === target);
+        });
+
+        if (matched) {
+          adminProfile = {
+            id: matched.id,
+            email: matched.email,
+            full_name: matched.user_metadata?.full_name || 'Platform Administrator',
+            user_id: matched.user_metadata?.user_id || 'DBA',
+            designation: 'Administrator / Faculty'
+          };
+        }
+      }
+
+      if (adminProfile && adminProfile.email) {
+        return res.json({
+          success: true,
+          email: adminProfile.email,
+          user_id: adminProfile.user_id || 'DBA',
+          full_name: adminProfile.full_name,
+          role: 'admin',
+          designation: adminProfile.designation || 'Administrator / Faculty'
+        });
+      }
+    } catch (adminErr) {
+      console.warn('[RESOLVE_ADMIN_WARN]', adminErr.message);
+    }
+
+    // 1. Check if matching user_id or email exists in student profiles
+    let profile = null;
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .select('id, email, user_id, full_name, role')
+        .or(`user_id.ilike.${identifier},email.ilike.${identifier}`)
+        .maybeSingle();
+      if (!error && data) {
+        profile = data;
+      }
+    } catch (dbErr) {
+      console.warn('[RESOLVE_IDENTIFIER_DB_WARN]', dbErr.message);
+    }
+
+    if (profile && profile.email) {
+      const isAdmin = profile.role === 'admin' || profile.email.toLowerCase() === 'karthiksaianala@gmail.com';
+      return res.json({
+        success: true,
+        email: profile.email,
+        user_id: profile.user_id || identifier,
+        full_name: profile.full_name,
+        role: isAdmin ? 'admin' : (profile.role || 'student')
+      });
+    }
+
+    // 2. If not found in profiles but identifier contains '@', allow direct email sign in
+    if (identifier.includes('@')) {
+      return res.json({
+        success: true,
+        email: identifier,
+        user_id: null
+      });
+    }
+
+    // 3. Not found
+    return res.status(404).json({
+      error: `No registered account found for User ID "${identifier}". Please verify your ID with your administrator.`
+    });
+  } catch (err) {
+    console.error('[RESOLVE_IDENTIFIER_ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to verify User ID. Please try again.' });
+  }
+});
+
+// ==========================================
+// 7.6C Student Account Management (Admin Provisioning)
+// ==========================================
+
+// Get all enrolled students
+app.get('/api/admin/students', async (req, res) => {
+  try {
+    // 1. Fetch student profiles
+    let profiles = [];
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('role', 'student')
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        profiles = data;
+      } else {
+        // Fallback to basic columns if extended columns aren't migrated
+        const { data: fbData } = await supabaseAdmin
+          .from('profiles')
+          .select('id, email, full_name, role, created_at')
+          .eq('role', 'student')
+          .order('created_at', { ascending: false });
+        profiles = fbData || [];
+      }
+    } catch (pErr) {
+      console.error('[GET_STUDENTS_PROFILES_ERROR]', pErr.message);
+    }
+
+    // 2. Count test submissions for each student
+    const { data: subs } = await supabaseAdmin
+      .from('submissions')
+      .select('user_id');
+
+    const subCounts = {};
+    (subs || []).forEach(s => {
+      subCounts[s.user_id] = (subCounts[s.user_id] || 0) + 1;
+    });
+
+    const students = profiles.map(p => ({
+      id: p.id,
+      user_id: p.user_id || p.roll_number || (p.email ? p.email.split('@')[0] : 'N/A'),
+      roll_number: p.roll_number || p.user_id || 'N/A',
+      email: p.email,
+      full_name: p.full_name || 'Enrolled Student',
+      class_cohort: p.class_cohort || 'Class 12',
+      target_exam: p.target_exam || 'JEE',
+      phone_number: p.phone_number || null,
+      batch_name: p.batch_name || 'General',
+      is_active: p.is_active !== false,
+      created_at: p.created_at,
+      tests_taken: subCounts[p.id] || 0
+    }));
+
+    res.json({ success: true, students });
+  } catch (err) {
+    console.error('[GET_STUDENTS_ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to retrieve enrolled students.' });
+  }
+});
+
+// Get administrator / faculty staff profiles (from dedicated admin_profiles)
+app.get('/api/admin/staff', async (req, res) => {
+  try {
+    let staff = [];
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('admin_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        staff = data;
+      } else {
+        // Fallback to profiles table where role = 'admin' or email matches
+        const { data: legacyAdmins } = await supabaseAdmin
+          .from('profiles')
+          .select('id, email, full_name, created_at')
+          .or(`role.eq.admin,email.eq.karthiksaianala@gmail.com`);
+        staff = (legacyAdmins || []).map(a => ({
+          ...a,
+          designation: 'Administrator / Faculty',
+          department: 'Academics'
+        }));
+      }
+    } catch (e) {
+      console.warn('[GET_STAFF_WARN]', e.message);
+    }
+    res.json({ success: true, staff });
+  } catch (err) {
+    console.error('[GET_STAFF_ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to retrieve staff profiles.' });
+  }
+});
+
+// Enroll a new student (Creates Auth credentials + Profile)
+app.post('/api/admin/students', async (req, res) => {
+  try {
+    const { fullName, userId, email, password, classCohort, targetExam, phoneNumber, batchName } = req.body || {};
+
+    if (!fullName || !fullName.trim()) {
+      return res.status(400).json({ error: 'Student full name is required.' });
+    }
+    if (!userId || !userId.trim()) {
+      return res.status(400).json({ error: 'Student User ID is required.' });
+    }
+    if (!password || password.trim().length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    }
+
+    const cleanUserId = userId.trim();
+    const cleanFullName = fullName.trim();
+    const cleanPassword = password.trim();
+    const cleanExam = targetExam || 'JEE';
+    const cleanClass = classCohort || 'Class 12';
+    const cleanPhone = phoneNumber ? phoneNumber.trim() : null;
+    const cleanBatch = batchName ? batchName.trim() : 'General';
+
+    // Auto-generate institutional email if custom email is not provided
+    const cleanEmail = (email && email.trim()) 
+      ? email.trim().toLowerCase() 
+      : `${cleanUserId.toLowerCase().replace(/[^a-z0-9]/g, '')}@ikshatests.com`;
+
+    // Check if user_id or email already exists in profiles
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id, user_id, email')
+      .or(`user_id.ilike.${cleanUserId},email.ilike.${cleanEmail}`)
+      .maybeSingle();
+
+    if (existingProfile) {
+      const matchType = (existingProfile.user_id?.toLowerCase() === cleanUserId.toLowerCase()) ? 'User ID' : 'Email address';
+      return res.status(409).json({ error: `A student with this ${matchType} (${cleanUserId}) already exists.` });
+    }
+
+    // 1. Create User in Supabase Auth via Admin Service Role (Auto-confirmed, instant login)
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: cleanEmail,
+      password: cleanPassword,
+      email_confirm: true,
+      user_metadata: {
+        full_name: cleanFullName,
+        user_id: cleanUserId,
+        role: 'student',
+        roll_number: cleanUserId,
+        class_cohort: cleanClass,
+        target_exam: cleanExam,
+        phone_number: cleanPhone
+      }
+    });
+
+    if (authError) {
+      console.error('[AUTH_ADMIN_CREATE_USER_ERROR]', authError.message);
+      return res.status(400).json({ error: authError.message || 'Failed to create student authentication credentials.' });
+    }
+
+    const newId = authUser.user.id;
+
+    // 2. Populate extended columns in public.profiles table
+    const profilePayload = {
+      id: newId,
+      user_id: cleanUserId,
+      email: cleanEmail,
+      full_name: cleanFullName,
+      role: 'student',
+      roll_number: cleanUserId,
+      class_cohort: cleanClass,
+      target_exam: cleanExam,
+      phone_number: cleanPhone,
+      batch_name: cleanBatch,
+      is_active: true
+    };
+
+    let profileResult = profilePayload;
+    try {
+      const { data: pData, error: pErr } = await supabaseAdmin
+        .from('profiles')
+        .upsert(profilePayload)
+        .select()
+        .single();
+      if (!pErr && pData) {
+        profileResult = pData;
+      } else {
+        // Fallback for missing columns
+        const { user_id, roll_number, class_cohort, target_exam, phone_number, batch_name, is_active, ...basicPayload } = profilePayload;
+        await supabaseAdmin.from('profiles').upsert(basicPayload);
+      }
+    } catch (saveErr) {
+      console.warn('[PROFILE_EXTENDED_SAVE_WARN]', saveErr.message);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Student account enrolled successfully!',
+      student: {
+        ...profileResult,
+        id: newId,
+        user_id: cleanUserId,
+        full_name: cleanFullName,
+        email: cleanEmail,
+        class_cohort: cleanClass,
+        target_exam: cleanExam,
+        phone_number: cleanPhone
+      },
+      credentials: {
+        fullName: cleanFullName,
+        userId: cleanUserId,
+        email: cleanEmail,
+        password: cleanPassword,
+        classCohort: cleanClass,
+        targetExam: cleanExam
+      }
+    });
+  } catch (err) {
+    console.error('[ENROLL_STUDENT_ERROR]', err.message);
+    res.status(500).json({ error: err.message || 'Internal server error while enrolling student.' });
+  }
+});
+
+// Admin resets a student password
+app.post('/api/admin/students/:id/reset-password', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body || {};
+
+    if (!password || password.trim().length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    }
+
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(id, {
+      password: password.trim()
+    });
+
+    if (updateError) {
+      console.error('[RESET_STUDENT_PASSWORD_ERROR]', updateError.message);
+      return res.status(400).json({ error: updateError.message || 'Failed to update student password.' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Student password updated successfully! The student can now log in with the new password.'
+    });
+  } catch (err) {
+    console.error('[RESET_PASSWORD_ENDPOINT_ERROR]', err.message);
+    res.status(500).json({ error: err.message || 'Failed to reset password.' });
+  }
+});
+
+// Admin deletes a student account
+app.delete('/api/admin/students/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Delete from auth (cascades to profiles and submissions via ON DELETE CASCADE)
+    const { error: authDelError } = await supabaseAdmin.auth.admin.deleteUser(id);
+    if (authDelError) {
+      console.warn('[AUTH_DELETE_WARN]', authDelError.message);
+    }
+
+    await supabaseAdmin.from('profiles').delete().eq('id', id);
+
+    res.json({ success: true, message: 'Student account deleted successfully.' });
+  } catch (err) {
+    console.error('[DELETE_STUDENT_ERROR]', err.message);
+    res.status(500).json({ error: err.message || 'Failed to delete student account.' });
   }
 });
 
@@ -1335,21 +1736,44 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
 // 7.8 Add test (Admin only, bypasses RLS)
 app.post('/api/admin/tests', async (req, res) => {
   try {
-    const { title, category, duration_minutes, scheduled_at, created_by, questionIds, newQuestions } = req.body;
+    const { title, category, duration_minutes, scheduled_at, created_by, questionIds, newQuestions, status } = req.body;
     if (!title || !category) {
       return res.status(400).json({ error: "Title and category are required." });
     }
-    const { data, error } = await supabaseAdmin
+
+    // Default to 'draft' so teachers can proofread before publishing
+    const isDraft = status === 'draft' || status === 'staged' || status === undefined;
+    const baseCat = category.replace('__draft', '');
+    const effectiveCategory = isDraft ? `${baseCat}__draft` : baseCat;
+
+    let testPayload = {
+      title,
+      category: effectiveCategory,
+      duration_minutes: duration_minutes ? parseInt(duration_minutes) : 180,
+      scheduled_at: scheduled_at || null,
+      created_by: created_by || null,
+      status: isDraft ? 'draft' : 'published'
+    };
+
+    let { data, error } = await supabaseAdmin
       .from('tests')
-      .insert({
-        title,
-        category,
-        duration_minutes: duration_minutes ? parseInt(duration_minutes) : 180,
-        scheduled_at: scheduled_at || null,
-        created_by: created_by || null
-      })
+      .insert(testPayload)
       .select()
       .single();
+
+    if (error && (error.code === '42703' || error.message?.includes('status'))) {
+      console.warn("[ADD_TEST_WARNING] 'status' column not found in 'tests' table. Using category tag fallback for draft staging...");
+      const { status: _, ...payloadWithoutStatus } = testPayload;
+      const { data: fbData, error: fbError } = await supabaseAdmin
+        .from('tests')
+        .insert(payloadWithoutStatus)
+        .select()
+        .single();
+      if (fbError) throw fbError;
+      data = fbData;
+      error = null;
+    }
+
     if (error) {
       if (error.message?.includes('tests_title_key') || error.code === '23505') {
         throw new Error("A test with this exact title already exists. Please choose a different title.");
@@ -1404,7 +1828,15 @@ app.post('/api/admin/tests', async (req, res) => {
       }
     }
 
-    res.json({ success: true, result: data });
+    // Attach normalized clean category & status to return response
+    const cleanCat = (data.category || '').replace('__draft', '');
+    const finalData = {
+      ...data,
+      category: cleanCat,
+      status: isDraft ? 'draft' : 'published'
+    };
+
+    res.json({ success: true, result: finalData });
   } catch (err) {
     console.error("[ADD_TEST_ERROR]", err.message);
     res.status(err.message.includes('already exists') ? 409 : 500).json({ error: err.message || "Failed to add test to database" });
@@ -1426,27 +1858,157 @@ app.delete('/api/admin/tests/:id', async (req, res) => {
   }
 });
 
-// 7.10 Update test category/section (Admin only)
+// 7.10 Update test category/section/status (Admin only)
 app.patch('/api/admin/tests/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { category, title, duration_minutes, scheduled_at } = req.body;
-    const updates = {};
-    if (category) updates.category = category;
+    const { category, title, duration_minutes, scheduled_at, status } = req.body;
+    
+    // Fetch existing test to determine current category and draft state
+    const { data: currentTest, error: curErr } = await supabaseAdmin
+      .from('tests')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (curErr) throw curErr;
+
+    const baseCategory = (category || currentTest.category || '').replace('__draft', '');
+    const isDraft = status !== undefined ? (status === 'draft' || status === 'staged') : (currentTest.status === 'draft' || currentTest.category?.includes('__draft'));
+    const effectiveCategory = isDraft ? `${baseCategory}__draft` : baseCategory;
+
+    const updates = { category: effectiveCategory };
     if (title) updates.title = title;
     if (duration_minutes) updates.duration_minutes = duration_minutes;
     if (scheduled_at !== undefined) updates.scheduled_at = scheduled_at || null;
-    const { data, error } = await supabaseAdmin
+    if (status !== undefined) updates.status = isDraft ? 'draft' : 'published';
+
+    let { data, error } = await supabaseAdmin
       .from('tests')
       .update(updates)
       .eq('id', id)
       .select()
       .single();
+
+    if (error && (error.code === '42703' || error.message?.includes('status'))) {
+      const { status: _, ...updatesWithoutStatus } = updates;
+      const { data: fbData, error: fbErr } = await supabaseAdmin
+        .from('tests')
+        .update(updatesWithoutStatus)
+        .eq('id', id)
+        .select()
+        .single();
+      if (fbErr) throw fbErr;
+      data = fbData;
+      error = null;
+    }
+
     if (error) throw error;
-    res.json({ success: true, test: data });
+
+    const cleanCat = (data.category || '').replace('__draft', '');
+    res.json({
+      success: true,
+      test: {
+        ...data,
+        category: cleanCat,
+        status: isDraft ? 'draft' : 'published'
+      }
+    });
   } catch (err) {
     console.error("[PATCH_TEST_ERROR]", err.message);
     res.status(500).json({ error: err.message || "Failed to update test" });
+  }
+});
+
+// 7.10b Publish test (Approve and make live for students)
+app.post('/api/admin/tests/:id/publish', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: currentTest, error: curErr } = await supabaseAdmin
+      .from('tests')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (curErr) throw curErr;
+
+    const cleanCategory = (currentTest.category || '').replace('__draft', '');
+    const updates = { category: cleanCategory, status: 'published' };
+
+    let { data, error } = await supabaseAdmin
+      .from('tests')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error && (error.code === '42703' || error.message?.includes('status'))) {
+      const { status: _, ...fbUpdates } = updates;
+      const { data: fbData, error: fbErr } = await supabaseAdmin
+        .from('tests')
+        .update(fbUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (fbErr) throw fbErr;
+      data = fbData;
+      error = null;
+    }
+
+    if (error) throw error;
+    res.json({
+      success: true,
+      test: { ...data, category: cleanCategory, status: 'published' },
+      message: "Test paper approved & published successfully! It is now live for students."
+    });
+  } catch (err) {
+    console.error("[PUBLISH_TEST_ERROR]", err.message);
+    res.status(500).json({ error: err.message || "Failed to publish test" });
+  }
+});
+
+// 7.10c Unpublish test (Revert to draft for further proofreading)
+app.post('/api/admin/tests/:id/unpublish', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: currentTest, error: curErr } = await supabaseAdmin
+      .from('tests')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (curErr) throw curErr;
+
+    const baseCategory = (currentTest.category || '').replace('__draft', '');
+    const draftCategory = `${baseCategory}__draft`;
+    const updates = { category: draftCategory, status: 'draft' };
+
+    let { data, error } = await supabaseAdmin
+      .from('tests')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error && (error.code === '42703' || error.message?.includes('status'))) {
+      const { status: _, ...fbUpdates } = updates;
+      const { data: fbData, error: fbErr } = await supabaseAdmin
+        .from('tests')
+        .update(fbUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (fbErr) throw fbErr;
+      data = fbData;
+      error = null;
+    }
+
+    if (error) throw error;
+    res.json({
+      success: true,
+      test: { ...data, category: baseCategory, status: 'draft' },
+      message: "Test paper reverted to draft. It is now hidden from students for proofreading."
+    });
+  } catch (err) {
+    console.error("[UNPUBLISH_TEST_ERROR]", err.message);
+    res.status(500).json({ error: err.message || "Failed to unpublish test" });
   }
 });
 
@@ -1690,8 +2252,16 @@ app.get('/api/admin/tests/:id/full', async (req, res) => {
       
     if (qError) throw qError;
     
+    const isDraft = (test.status === 'draft') || (test.category && test.category.includes('__draft'));
+    const cleanCategory = (test.category || '').replace('__draft', '');
+    const normalizedTest = {
+      ...test,
+      category: cleanCategory,
+      status: isDraft ? 'draft' : (test.status || 'published')
+    };
+
     res.json({
-      test,
+      test: normalizedTest,
       questions: questions || []
     });
   } catch (err) {
@@ -1792,6 +2362,14 @@ async function runMigrations() {
       console.log('[MIGRATION] ✅ scheduled_at column already exists. No migration needed.');
     } else {
       console.warn('[MIGRATION] Could not probe column:', error.message);
+    }
+
+    // Check if dedicated admin_profiles table exists
+    const { error: adminTableErr } = await supabaseAdmin.from('admin_profiles').select('id').limit(1);
+    if (!adminTableErr) {
+      console.log('[MIGRATION] ✅ Dedicated admin_profiles table is active.');
+    } else {
+      console.log('[MIGRATION] ℹ️  Dedicated admin_profiles table pending SQL creation. Run script from supabase_schema.sql');
     }
   } catch (err) {
     console.warn('[MIGRATION] Auto-migration check failed:', err.message);

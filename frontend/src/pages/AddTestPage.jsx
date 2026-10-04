@@ -32,9 +32,11 @@ export default function AddTestPage() {
   const [newTest, setNewTest] = useState({ title: '', category: 'jee-full', duration_minutes: 180, scheduled_at: '' });
   const [examType, setExamType] = useState('jee');
   const [sectionType, setSectionType] = useState('full');
+  const [testStatus, setTestStatus] = useState('draft'); // 'draft' (staged for proofreading) | 'published'
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Source toggle
   const [sourceMode, setSourceMode] = useState('database'); // 'database' | 'pdf' | 'manual'
@@ -439,26 +441,42 @@ export default function AddTestPage() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, forceStatus = null) => {
+    if (e && e.preventDefault) e.preventDefault();
     setAdding(true);
     setError(null);
+    const chosenStatus = forceStatus || testStatus || 'draft';
     try {
       // Convert the local datetime string to ISO 8601 with timezone offset
-      // datetime-local gives "YYYY-MM-DDTHH:mm" without timezone, so we
-      // explicitly parse it as local time and convert to UTC ISO string.
       const scheduledAtISO = newTest.scheduled_at
         ? new Date(newTest.scheduled_at).toISOString()
         : null;
-      await axios.post(`${API_URL}/api/admin/tests`, {
+      const res = await axios.post(`${API_URL}/api/admin/tests`, {
         ...newTest,
+        status: chosenStatus,
         scheduled_at: scheduledAtISO,
         created_by: user?.id,
         questionIds: selectedQuestions.map(q => q.id),
         newQuestions: extractedQuestions
       });
+
+      const createdTest = res.data?.result;
+      const createdTestId = createdTest?.id;
       setSuccess(true);
-      setTimeout(() => navigate('/dashboard'), 1800);
+
+      if (chosenStatus === 'draft') {
+        setSuccessMessage('Test staged successfully as a Draft! Opening Proofreading Console…');
+        setTimeout(() => {
+          if (createdTestId) {
+            navigate(`/admin/test-paper/${createdTestId}`);
+          } else {
+            navigate('/admin');
+          }
+        }, 1200);
+      } else {
+        setSuccessMessage('Test published directly and is now live for students! Redirecting…');
+        setTimeout(() => navigate('/admin'), 1500);
+      }
     } catch (err) {
       console.error('Create test error:', err);
       setError(err.response?.data?.error || err.message || 'Failed to create test');
@@ -483,14 +501,14 @@ export default function AddTestPage() {
     <div className="min-h-screen bg-transparent animate-in fade-in duration-300">
       <div className="sticky top-16 z-40 bg-[#001f54]/95 backdrop-blur-xl border-b border-[#034078]/40 px-6 md:px-12 py-4 flex items-center gap-4 shadow-2xl">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/admin')}
           className="p-2.5 rounded-xl bg-[#034078]/50 hover:bg-[#034078] text-[#fefcfb] border border-[#034078]/50 transition-all active:scale-95 cursor-pointer flex items-center justify-center"
         >
           <span className="material-symbols-outlined text-sm">arrow_back_ios_new</span>
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-black text-white font-headline">Add New Test</h1>
-          <p className="text-xs text-[#fefcfb]/70 font-medium">Fill in the details, pick questions, and publish.</p>
+          <p className="text-xs text-[#fefcfb]/70 font-medium">Fill in the details, pick questions, and stage for proofreading before publishing.</p>
         </div>
         {totalSelectedCount > 0 && (
           <span className="px-3 py-1.5 bg-[#1282a2]/20 text-[#1282a2] text-xs font-black rounded-full border border-[#1282a2]/30">
@@ -503,7 +521,7 @@ export default function AddTestPage() {
         {success && (
           <div className="mb-6 p-5 bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 rounded-2xl font-bold text-sm flex items-center gap-3 animate-in zoom-in-95">
             <span className="material-symbols-outlined text-emerald-400">check_circle</span>
-            Test published successfully! Redirecting to dashboard…
+            {successMessage || 'Test saved successfully!'}
           </div>
         )}
 
@@ -1448,23 +1466,82 @@ export default function AddTestPage() {
             )}
           </section>
 
+          {/* ── Staging & Proofreading Notice ── */}
+          <div className="bg-[#001f54]/80 border border-[#1282a2]/40 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 flex-shrink-0 mt-0.5 sm:mt-0">
+                <span className="material-symbols-outlined text-xl">rate_review</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-black text-white font-headline flex items-center gap-2">
+                  <span>Teacher Proofreading & Staging Workflow</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    Recommended
+                  </span>
+                </h4>
+                <p className="text-xs text-[#fefcfb]/70 mt-0.5 leading-relaxed">
+                  Stage this test as a <strong>Private Draft</strong> hidden from students. You will immediately be taken to the Proofreading Console to verify formulas, diagrams, answer keys, and solutions before publishing.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-[#060913]/80 p-1.5 rounded-xl border border-[#034078]/60 self-stretch sm:self-auto justify-center flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setTestStatus('draft')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  testStatus === 'draft'
+                    ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 shadow-sm'
+                    : 'text-[#fefcfb]/60 hover:text-white border border-transparent'
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">edit_note</span>
+                Stage Draft
+              </button>
+              <button
+                type="button"
+                onClick={() => setTestStatus('published')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  testStatus === 'published'
+                    ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 shadow-sm'
+                    : 'text-[#fefcfb]/60 hover:text-white border border-transparent'
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">rocket_launch</span>
+                Publish Live
+              </button>
+            </div>
+          </div>
+
           {/* ── Submit bar ── */}
-          <div className="flex gap-4 pb-8">
+          <div className="flex flex-col sm:flex-row gap-4 pb-8">
             <button
               type="button"
-              onClick={() => navigate('/dashboard')}
-              className="px-6 py-4 rounded-xl border-2 border-[#034078]/60 bg-[#001f54]/40 text-[#fefcfb]/80 font-bold hover:border-[#1282a2]/50 hover:bg-[#034078]/40 hover:text-white transition-all active:scale-95 cursor-pointer"
+              onClick={() => navigate('/admin')}
+              className="px-6 py-4 rounded-xl border-2 border-[#034078]/60 bg-[#001f54]/40 text-[#fefcfb]/80 font-bold hover:border-[#1282a2]/50 hover:bg-[#034078]/40 hover:text-white transition-all active:scale-95 cursor-pointer text-center"
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={adding || success || totalSelectedCount === 0}
-              className="flex-1 py-4 bg-[#1282a2] hover:bg-[#159cc2] text-[#0a1128] font-black rounded-xl shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-sm uppercase tracking-wider cursor-pointer"
-            >
-              <span className="material-symbols-outlined">{adding ? 'hourglass_top' : 'publish'}</span>
-              {adding ? 'Publishing…' : `Publish Test (${totalSelectedCount} Qs)`}
-            </button>
+            {testStatus === 'draft' ? (
+              <button
+                type="button"
+                onClick={(e) => handleSubmit(e, 'draft')}
+                disabled={adding || success || totalSelectedCount === 0}
+                className="flex-1 py-4 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 hover:brightness-110 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-950/40 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-sm uppercase tracking-wider cursor-pointer border-none"
+              >
+                <span className="material-symbols-outlined">{adding ? 'hourglass_top' : 'rate_review'}</span>
+                {adding ? 'Staging Test…' : `Stage for Review & Open Proofreader (${totalSelectedCount} Qs)`}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => handleSubmit(e, 'published')}
+                disabled={adding || success || totalSelectedCount === 0}
+                className="flex-1 py-4 bg-[#1282a2] hover:bg-[#159cc2] text-[#0a1128] font-black rounded-xl shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-sm uppercase tracking-wider cursor-pointer border-none"
+              >
+                <span className="material-symbols-outlined">{adding ? 'hourglass_top' : 'publish'}</span>
+                {adding ? 'Publishing…' : `Publish Test Directly Live (${totalSelectedCount} Qs)`}
+              </button>
+            )}
           </div>
 
         </form>
