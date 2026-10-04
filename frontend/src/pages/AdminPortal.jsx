@@ -98,8 +98,8 @@ export default function AdminPortal() {
     scheduled_at: ''
   });
 
-  // Student Profile Management & Enrollment state
-  const [studentSubTab, setStudentSubTab] = useState('directory'); // 'directory' | 'analytics'
+  // Workspace Tab state ('students' | 'branding' | 'payments' | 'notifications' | 'access')
+  const [workspaceTab, setWorkspaceTab] = useState('students');
   const [enrolledStudents, setEnrolledStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentSearch, setStudentSearch] = useState('');
@@ -733,8 +733,8 @@ export default function AdminPortal() {
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 bg-transparent'
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px]">settings</span>
-                Settings
+                <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
+                Manage Workspace
               </button>
             </li>
           </ul>
@@ -1679,484 +1679,571 @@ export default function AdminPortal() {
 
               {activeTab === 'students' && (
                 <div className="space-y-6 animate-in fade-in duration-300">
-                  {/* Student Management Header & Sub-tabs */}
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-900/80 pb-5">
-                    <div>
-                      <div className="flex items-center gap-2.5">
-                        <span className="material-symbols-outlined text-primary text-2xl">badge</span>
-                        <h2 className="font-headline font-black text-2xl sm:text-3xl text-slate-100">
-                          Student Profiles & Enrollment
-                        </h2>
-                      </div>
-                      <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                        Enroll new student candidates, provision login credentials, and audit academic mock test performance.
-                      </p>
-                    </div>
-
-                    {/* Sub-tab Pill Switcher */}
-                    <div className="flex items-center gap-1.5 p-1 bg-slate-950/80 border border-slate-900 rounded-xl self-start lg:self-auto">
-                      <button
-                        type="button"
-                        onClick={() => setStudentSubTab('directory')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer border-none ${
-                          studentSubTab === 'directory'
-                            ? 'bg-[#1282a2] text-white shadow-[0_0_15px_rgba(18,130,162,0.3)]'
-                            : 'bg-transparent text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-base">group</span>
-                        <span>Enrolled Directory</span>
-                        <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-black/40 text-cyan-200 font-mono font-bold">
-                          {enrolledStudents.length}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setStudentSubTab('analytics')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer border-none ${
-                          studentSubTab === 'analytics'
-                            ? 'bg-[#1282a2] text-white shadow-[0_0_15px_rgba(18,130,162,0.3)]'
-                            : 'bg-transparent text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-base">insights</span>
-                        <span>Performance Analytics</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {studentSubTab === 'analytics' ? (
-                    <StudentAnalyticsWorkspace adminTests={adminTests} />
-                  ) : (
-                    <div className="space-y-6">
-                      {/* Metric Cards & Quick Action */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Total Students</span>
-                            <span className="material-symbols-outlined text-cyan-400 text-xl">school</span>
-                          </div>
-                          <div className="mt-3 flex items-baseline gap-2">
-                            <span className="text-3xl font-black font-headline text-slate-100">{enrolledStudents.length}</span>
-                            <span className="text-xs text-emerald-400 font-bold font-mono">Active</span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 mt-1">Enrolled candidate accounts</p>
-                        </div>
-
-                        <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Target Tracks</span>
-                            <span className="material-symbols-outlined text-sky-400 text-xl">track_changes</span>
-                          </div>
-                          <div className="mt-3 flex items-center gap-2 font-mono text-xs font-bold">
-                            <span className="px-2 py-1 bg-sky-950/60 border border-sky-800/50 text-sky-300 rounded-lg">
-                              JEE: {enrolledStudents.filter(s => s.target_exam === 'JEE' || s.target_exam === 'BOTH').length}
-                            </span>
-                            <span className="px-2 py-1 bg-emerald-950/60 border border-emerald-800/50 text-emerald-300 rounded-lg">
-                              NEET: {enrolledStudents.filter(s => s.target_exam === 'NEET' || s.target_exam === 'BOTH').length}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 mt-2">Curriculum track allocation</p>
-                        </div>
-
-                        <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Mock Submissions</span>
-                            <span className="material-symbols-outlined text-amber-400 text-xl">assignment_turned_in</span>
-                          </div>
-                          <div className="mt-3 flex items-baseline gap-2">
-                            <span className="text-3xl font-black font-headline text-slate-100">
-                              {enrolledStudents.reduce((sum, s) => sum + (s.tests_taken || 0), 0)}
-                            </span>
-                            <span className="text-xs text-slate-400 font-mono">attempts</span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 mt-1">Logged across all tests</p>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-[#034078]/40 to-[#1282a2]/30 border border-[#1282a2]/40 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-                          <div>
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-200 font-bold block mb-1">
-                              Institutional Provisioning
-                            </span>
-                            <h4 className="text-sm font-bold text-white leading-tight">
-                              Enroll New Student
-                            </h4>
-                            <p className="text-[11px] text-slate-300 mt-1">
-                              Create student User ID & managed credentials.
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={openEnrollModal}
-                            className="mt-3 w-full py-2.5 px-4 rounded-xl bg-[#1282a2] hover:bg-[#159cc2] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(18,130,162,0.4)] transition-all cursor-pointer border-none"
-                          >
-                            <span className="material-symbols-outlined text-base">person_add</span>
-                            <span>Enroll Student</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Filter & Search Toolbar */}
-                      <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-lg">
-                        <div className="relative flex-1 max-w-md">
-                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-base">
-                            search
-                          </span>
-                          <input
-                            type="text"
-                            value={studentSearch}
-                            onChange={(e) => setStudentSearch(e.target.value)}
-                            placeholder="Search by Name, User ID, Email, Phone..."
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#1282a2] font-medium"
-                          />
-                          {studentSearch && (
-                            <button
-                              onClick={() => setStudentSearch('')}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs border-none bg-transparent cursor-pointer"
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {/* Cohort Filter */}
-                          <select
-                            value={studentCohortFilter}
-                            onChange={(e) => setStudentCohortFilter(e.target.value)}
-                            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-medium focus:outline-none focus:border-[#1282a2]"
-                          >
-                            <option value="all">All Classes</option>
-                            <option value="Class 11">Class 11</option>
-                            <option value="Class 12">Class 12</option>
-                            <option value="Repeater">Repeater</option>
-                          </select>
-
-                          {/* Exam Filter */}
-                          <select
-                            value={studentExamFilter}
-                            onChange={(e) => setStudentExamFilter(e.target.value)}
-                            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-medium focus:outline-none focus:border-[#1282a2]"
-                          >
-                            <option value="all">All Exam Tracks</option>
-                            <option value="JEE">JEE (Main/Adv)</option>
-                            <option value="NEET">NEET (UG)</option>
-                            <option value="BOTH">JEE & NEET</option>
-                          </select>
-
-                          {/* Refresh Button */}
-                          <button
-                            type="button"
-                            onClick={() => { fetchStudents(); fetchStats(); }}
-                            disabled={loadingStudents}
-                            className="p-2.5 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-950 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
-                            title="Refresh student records"
-                          >
-                            <span className={`material-symbols-outlined text-base ${loadingStudents ? 'animate-spin text-[#1282a2]' : ''}`}>
-                              refresh
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Enrolled Students Table */}
-                      <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl shadow-xl overflow-hidden">
-                        {loadingStudents ? (
-                          <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-                            <span className="material-symbols-outlined text-3xl animate-spin text-[#1282a2]">progress_activity</span>
-                            <p className="text-xs font-mono">Loading enrolled student directory...</p>
-                          </div>
-                        ) : enrolledStudents.length === 0 ? (
-                          <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-                            <span className="material-symbols-outlined text-4xl text-slate-600">group_off</span>
-                            <h4 className="text-base font-bold text-slate-200">No Enrolled Students Yet</h4>
-                            <p className="text-xs text-slate-500 max-w-sm">
-                              Get started by adding student profiles directly to the database with dedicated User IDs and passwords.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={openEnrollModal}
-                              className="mt-2 py-2 px-5 bg-[#1282a2] hover:bg-[#159cc2] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer border-none shadow-md"
-                            >
-                              <span className="material-symbols-outlined text-base">person_add</span>
-                              <span>Enroll First Student</span>
-                            </button>
-                          </div>
-                        ) : (
-                          (() => {
-                            const query = studentSearch.toLowerCase().trim();
-                            const filtered = enrolledStudents.filter((s) => {
-                              const matchesQuery = !query ||
-                                (s.full_name && s.full_name.toLowerCase().includes(query)) ||
-                                (s.user_id && s.user_id.toLowerCase().includes(query)) ||
-                                (s.email && s.email.toLowerCase().includes(query)) ||
-                                (s.phone_number && s.phone_number.includes(query)) ||
-                                (s.roll_number && s.roll_number.toLowerCase().includes(query));
-
-                              const matchesCohort = studentCohortFilter === 'all' || s.class_cohort === studentCohortFilter;
-                              const matchesExam = studentExamFilter === 'all' || s.target_exam === studentExamFilter;
-
-                              return matchesQuery && matchesCohort && matchesExam;
-                            });
-
-                            if (filtered.length === 0) {
-                              return (
-                                <div className="p-10 text-center text-slate-400">
-                                  <span className="material-symbols-outlined text-3xl text-slate-600 mb-2">search_off</span>
-                                  <p className="text-xs font-mono">No students match your filter criteria.</p>
-                                  <button
-                                    onClick={() => { setStudentSearch(''); setStudentCohortFilter('all'); setStudentExamFilter('all'); }}
-                                    className="mt-3 text-xs text-[#1282a2] hover:underline cursor-pointer bg-transparent border-none font-bold"
-                                  >
-                                    Reset Filters
-                                  </button>
-                                </div>
-                              );
-                            }
-
-                            return (
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                  <thead>
-                                    <tr className="border-b border-slate-900 bg-slate-950/70 text-[10px] font-mono uppercase text-slate-400 tracking-wider">
-                                      <th className="py-3.5 px-4 font-bold">User ID</th>
-                                      <th className="py-3.5 px-4 font-bold">Student Name & Email</th>
-                                      <th className="py-3.5 px-4 font-bold">Class & Batch</th>
-                                      <th className="py-3.5 px-4 font-bold">Target Exam</th>
-                                      <th className="py-3.5 px-4 font-bold text-center">Tests Taken</th>
-                                      <th className="py-3.5 px-4 font-bold">Contact</th>
-                                      <th className="py-3.5 px-4 font-bold text-right">Actions</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-900/60 text-xs">
-                                    {filtered.map((student) => (
-                                      <tr key={student.id} className="hover:bg-slate-900/30 transition-colors group">
-                                        {/* User ID */}
-                                        <td className="py-3.5 px-4 font-mono font-bold text-[#1282a2] whitespace-nowrap">
-                                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1282a2]/10 border border-[#1282a2]/30">
-                                            <span>{student.user_id}</span>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                navigator.clipboard.writeText(student.user_id);
-                                                alert(`User ID "${student.user_id}" copied!`);
-                                              }}
-                                              className="text-slate-400 hover:text-white transition-colors cursor-pointer border-none bg-transparent p-0 flex items-center"
-                                              title="Copy User ID"
-                                            >
-                                              <span className="material-symbols-outlined text-[13px]">content_copy</span>
-                                            </button>
-                                          </div>
-                                        </td>
-
-                                        {/* Name & Email */}
-                                        <td className="py-3.5 px-4">
-                                          <div className="font-bold text-slate-100 flex items-center gap-2">
-                                            <span>{student.full_name}</span>
-                                          </div>
-                                          <div className="text-[11px] text-slate-400 font-mono truncate max-w-xs mt-0.5">
-                                            {student.email}
-                                          </div>
-                                        </td>
-
-                                        {/* Class & Batch */}
-                                        <td className="py-3.5 px-4 whitespace-nowrap">
-                                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-900 border border-slate-800 text-slate-200">
-                                            {student.class_cohort}
-                                          </span>
-                                          <span className="text-[10px] text-slate-500 font-mono block mt-1">
-                                            Batch: {student.batch_name || 'General'}
-                                          </span>
-                                        </td>
-
-                                        {/* Target Exam */}
-                                        <td className="py-3.5 px-4 whitespace-nowrap">
-                                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
-                                            student.target_exam === 'JEE'
-                                              ? 'bg-sky-950/50 border-sky-600/40 text-sky-300'
-                                              : student.target_exam === 'NEET'
-                                              ? 'bg-emerald-950/50 border-emerald-600/40 text-emerald-300'
-                                              : 'bg-purple-950/50 border-purple-600/40 text-purple-300'
-                                          }`}>
-                                            {student.target_exam}
-                                          </span>
-                                        </td>
-
-                                        {/* Tests Taken */}
-                                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                                          <span className="inline-flex items-center justify-center min-w-8 px-2 py-1 rounded-full text-xs font-bold font-mono bg-slate-900 border border-slate-800 text-slate-200">
-                                            {student.tests_taken || 0}
-                                          </span>
-                                        </td>
-
-                                        {/* Contact */}
-                                        <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px] whitespace-nowrap">
-                                          {student.phone_number || '—'}
-                                        </td>
-
-                                        {/* Actions */}
-                                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                                          <div className="inline-flex items-center gap-1.5">
-                                            <button
-                                              type="button"
-                                              onClick={() => handleOpenResetPassword(student)}
-                                              className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
-                                              title="Reset password for this student"
-                                            >
-                                              <span className="material-symbols-outlined text-sm">vpn_key</span>
-                                              <span>Reset Password</span>
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleDeleteStudent(student)}
-                                              className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer border-none bg-transparent"
-                                              title="Delete student profile"
-                                            >
-                                              <span className="material-symbols-outlined text-base">delete</span>
-                                            </button>
-                                          </div>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            );
-                          })()
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  <StudentAnalyticsWorkspace adminTests={adminTests} />
                 </div>
               )}
 
               {activeTab === 'settings' && (
                 <div className="space-y-8 animate-in fade-in duration-300">
-                  {/* Settings Header */}
-                  <div>
-                    <h2 className="font-headline font-black text-3xl text-slate-100">Configuration</h2>
-                    <p className="text-sm text-slate-400 mt-1">Manage portal visual identity, branding, and notification routes.</p>
+                  {/* Workspace Header */}
+                  <div className="border-b border-slate-900/80 pb-5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="material-symbols-outlined text-primary text-2xl">manage_accounts</span>
+                      <h2 className="font-headline font-black text-2xl sm:text-3xl text-slate-100">
+                        Manage Workspace
+                      </h2>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                      Administer enrolled student accounts, provision login credentials, access control, and platform configurations.
+                    </p>
                   </div>
 
                   <div className="flex flex-col lg:flex-row gap-8 items-start">
-                    {/* Settings Navigation */}
+                    {/* Workspace Navigation */}
                     <nav className="w-full lg:w-64 flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-none flex-shrink-0">
-                      <button className="whitespace-nowrap flex items-center gap-3 px-4 py-3 bg-[#060913] border border-slate-900 rounded-lg text-primary text-xs uppercase tracking-wider font-bold transition-all w-full text-left cursor-pointer">
+                      <button
+                        type="button"
+                        onClick={() => setWorkspaceTab('students')}
+                        className={`whitespace-nowrap flex items-center justify-between px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-bold transition-all w-full text-left cursor-pointer border-none ${
+                          workspaceTab === 'students'
+                            ? 'bg-primary/15 text-primary border-l-4 border-primary bg-[#060913]'
+                            : 'text-slate-400 hover:bg-slate-900/30 hover:text-slate-200 bg-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="material-symbols-outlined text-[18px]">group</span>
+                          <span>Student Accounts</span>
+                        </div>
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-cyan-200 font-mono font-bold">
+                          {enrolledStudents.length}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setWorkspaceTab('branding')}
+                        className={`whitespace-nowrap flex items-center gap-3 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-bold transition-all w-full text-left cursor-pointer border-none ${
+                          workspaceTab === 'branding'
+                            ? 'bg-primary/15 text-primary border-l-4 border-primary bg-[#060913]'
+                            : 'text-slate-400 hover:bg-slate-900/30 hover:text-slate-200 bg-transparent'
+                        }`}
+                      >
                         <span className="material-symbols-outlined text-[18px]">branding_watermark</span>
-                        Platform Branding
+                        <span>Platform Branding</span>
                       </button>
-                      <button className="whitespace-nowrap flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-900/30 hover:text-slate-200 rounded-lg text-xs uppercase tracking-wider font-bold transition-all w-full text-left cursor-pointer border-none bg-transparent">
+
+                      <button
+                        type="button"
+                        onClick={() => setWorkspaceTab('payments')}
+                        className={`whitespace-nowrap flex items-center gap-3 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-bold transition-all w-full text-left cursor-pointer border-none ${
+                          workspaceTab === 'payments'
+                            ? 'bg-primary/15 text-primary border-l-4 border-primary bg-[#060913]'
+                            : 'text-slate-400 hover:bg-slate-900/30 hover:text-slate-200 bg-transparent'
+                        }`}
+                      >
                         <span className="material-symbols-outlined text-[18px]">payments</span>
-                        Payment Integration
+                        <span>Payment Integration</span>
                       </button>
-                      <button className="whitespace-nowrap flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-900/30 hover:text-slate-200 rounded-lg text-xs uppercase tracking-wider font-bold transition-all w-full text-left cursor-pointer border-none bg-transparent">
+
+                      <button
+                        type="button"
+                        onClick={() => setWorkspaceTab('notifications')}
+                        className={`whitespace-nowrap flex items-center gap-3 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-bold transition-all w-full text-left cursor-pointer border-none ${
+                          workspaceTab === 'notifications'
+                            ? 'bg-primary/15 text-primary border-l-4 border-primary bg-[#060913]'
+                            : 'text-slate-400 hover:bg-slate-900/30 hover:text-slate-200 bg-transparent'
+                        }`}
+                      >
                         <span className="material-symbols-outlined text-[18px]">notifications_active</span>
-                        Notifications
+                        <span>Notifications</span>
                       </button>
-                      <button className="whitespace-nowrap flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-900/30 hover:text-slate-200 rounded-lg text-xs uppercase tracking-wider font-bold transition-all w-full text-left cursor-pointer border-none bg-transparent">
+
+                      <button
+                        type="button"
+                        onClick={() => setWorkspaceTab('access')}
+                        className={`whitespace-nowrap flex items-center gap-3 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-bold transition-all w-full text-left cursor-pointer border-none ${
+                          workspaceTab === 'access'
+                            ? 'bg-primary/15 text-primary border-l-4 border-primary bg-[#060913]'
+                            : 'text-slate-400 hover:bg-slate-900/30 hover:text-slate-200 bg-transparent'
+                        }`}
+                      >
                         <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
-                        Access Control
+                        <span>Access Control</span>
                       </button>
                     </nav>
 
-                    {/* Settings Panel Content */}
-                    <div className="flex-1 w-full bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-6 md:p-8 shadow-xl space-y-8">
-                      <div className="border-b border-slate-900/60 pb-4 mb-4 flex justify-between items-center flex-wrap gap-4">
-                        <div>
-                          <h3 className="font-headline font-bold text-lg text-slate-200">Platform Branding</h3>
-                          <p className="text-xs text-slate-500 mt-1">Customize the visual identity details of the Student Portal.</p>
-                        </div>
-                        <button
-                          onClick={() => alert('Branding settings saved locally! (Simulation)')}
-                          className="bg-primary hover:brightness-110 text-white font-bold text-[10px] uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow border-none"
-                        >
-                          Save Changes
-                        </button>
-                      </div>
-
-                      <div className="space-y-6">
-                        {/* Logo upload */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          <div>
-                            <h4 className="text-xs font-bold uppercase text-slate-300 font-mono tracking-wider">Platform Logo</h4>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Recommended format: SVG or PNG (256x256px).</p>
-                          </div>
-                          <div className="md:col-span-2">
-                            <div className="flex items-center gap-6">
-                              <div className="w-16 h-16 rounded-xl bg-slate-950 border border-slate-900 flex items-center justify-center overflow-hidden p-1.5">
-                                <Logo className="w-full h-full" showText={false} />
+                    {/* Workspace Panel Content */}
+                    <div className="flex-1 w-full min-w-0 space-y-6">
+                      {workspaceTab === 'students' && (
+                        <div className="space-y-6">
+                          {/* Student Accounts Sub-Header */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-6 shadow-xl">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary text-xl">school</span>
+                                <h3 className="font-headline font-bold text-lg text-slate-100">
+                                  Enrolled Student Directory
+                                </h3>
                               </div>
-                              <label className="flex-1 border border-dashed border-slate-900 bg-slate-950 hover:bg-slate-950/80 rounded-xl p-4 text-center cursor-pointer transition-colors">
-                                <span className="material-symbols-outlined text-slate-500 text-xl mb-1">cloud_upload</span>
-                                <p className="text-xs text-slate-200 font-bold font-mono">Upload new logo file</p>
-                                <input type="file" accept="image/*" className="hidden" />
-                              </label>
+                              <p className="text-xs text-slate-400 mt-1">
+                                Provision student candidate login credentials, manage User IDs, and monitor test participation.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={openEnrollModal}
+                              className="px-4 py-2.5 rounded-xl bg-[#1282a2] hover:bg-[#159cc2] text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-[0_0_20px_rgba(18,130,162,0.4)] transition-all cursor-pointer border-none self-start sm:self-auto"
+                            >
+                              <span className="material-symbols-outlined text-base">person_add</span>
+                              <span>Enroll Student</span>
+                            </button>
+                          </div>
+
+                          {/* Metric Cards */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Total Students</span>
+                                <span className="material-symbols-outlined text-cyan-400 text-xl">school</span>
+                              </div>
+                              <div className="mt-3 flex items-baseline gap-2">
+                                <span className="text-3xl font-black font-headline text-slate-100">{enrolledStudents.length}</span>
+                                <span className="text-xs text-emerald-400 font-bold font-mono">Active</span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 mt-1">Enrolled candidate accounts</p>
+                            </div>
+
+                            <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Target Tracks</span>
+                                <span className="material-symbols-outlined text-sky-400 text-xl">track_changes</span>
+                              </div>
+                              <div className="mt-3 flex items-center gap-2 font-mono text-xs font-bold">
+                                <span className="px-2 py-1 bg-sky-950/60 border border-sky-800/50 text-sky-300 rounded-lg">
+                                  JEE: {enrolledStudents.filter(s => s.target_exam === 'JEE' || s.target_exam === 'BOTH').length}
+                                </span>
+                                <span className="px-2 py-1 bg-emerald-950/60 border border-emerald-800/50 text-emerald-300 rounded-lg">
+                                  NEET: {enrolledStudents.filter(s => s.target_exam === 'NEET' || s.target_exam === 'BOTH').length}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 mt-2">Curriculum track allocation</p>
+                            </div>
+
+                            <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Mock Submissions</span>
+                                <span className="material-symbols-outlined text-amber-400 text-xl">assignment_turned_in</span>
+                              </div>
+                              <div className="mt-3 flex items-baseline gap-2">
+                                <span className="text-3xl font-black font-headline text-slate-100">
+                                  {enrolledStudents.reduce((sum, s) => sum + (s.tests_taken || 0), 0)}
+                                </span>
+                                <span className="text-xs text-slate-400 font-mono">attempts</span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 mt-1">Logged across all tests</p>
+                            </div>
+                          </div>
+
+                          {/* Filter & Search Toolbar */}
+                          <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-lg">
+                            <div className="relative flex-1 max-w-md">
+                              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-base">
+                                search
+                              </span>
+                              <input
+                                type="text"
+                                value={studentSearch}
+                                onChange={(e) => setStudentSearch(e.target.value)}
+                                placeholder="Search by Name, User ID, Email, Phone..."
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#1282a2] font-medium"
+                              />
+                              {studentSearch && (
+                                <button
+                                  onClick={() => setStudentSearch('')}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs border-none bg-transparent cursor-pointer"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Cohort Filter */}
+                              <select
+                                value={studentCohortFilter}
+                                onChange={(e) => setStudentCohortFilter(e.target.value)}
+                                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-medium focus:outline-none focus:border-[#1282a2]"
+                              >
+                                <option value="all">All Classes</option>
+                                <option value="Class 11">Class 11</option>
+                                <option value="Class 12">Class 12</option>
+                                <option value="Repeater">Repeater</option>
+                              </select>
+
+                              {/* Exam Filter */}
+                              <select
+                                value={studentExamFilter}
+                                onChange={(e) => setStudentExamFilter(e.target.value)}
+                                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-medium focus:outline-none focus:border-[#1282a2]"
+                              >
+                                <option value="all">All Exam Tracks</option>
+                                <option value="JEE">JEE (Main/Adv)</option>
+                                <option value="NEET">NEET (UG)</option>
+                                <option value="BOTH">JEE & NEET</option>
+                              </select>
+
+                              {/* Refresh Button */}
+                              <button
+                                type="button"
+                                onClick={() => { fetchStudents(); fetchStats(); }}
+                                disabled={loadingStudents}
+                                className="p-2.5 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-950 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+                                title="Refresh student records"
+                              >
+                                <span className={`material-symbols-outlined text-base ${loadingStudents ? 'animate-spin text-[#1282a2]' : ''}`}>
+                                  refresh
+                                </span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Enrolled Students Table */}
+                          <div className="bg-[#060913]/70 border border-slate-900/80 rounded-2xl shadow-xl overflow-hidden">
+                            {loadingStudents ? (
+                              <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+                                <span className="material-symbols-outlined text-3xl animate-spin text-[#1282a2]">progress_activity</span>
+                                <p className="text-xs font-mono">Loading enrolled student directory...</p>
+                              </div>
+                            ) : enrolledStudents.length === 0 ? (
+                              <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+                                <span className="material-symbols-outlined text-4xl text-slate-600">group_off</span>
+                                <h4 className="text-base font-bold text-slate-200">No Enrolled Students Yet</h4>
+                                <p className="text-xs text-slate-500 max-w-sm">
+                                  Get started by adding student profiles directly to the database with dedicated User IDs and passwords.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={openEnrollModal}
+                                  className="mt-2 py-2 px-5 bg-[#1282a2] hover:bg-[#159cc2] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer border-none shadow-md"
+                                >
+                                  <span className="material-symbols-outlined text-base">person_add</span>
+                                  <span>Enroll First Student</span>
+                                </button>
+                              </div>
+                            ) : (
+                              (() => {
+                                const query = studentSearch.toLowerCase().trim();
+                                const filtered = enrolledStudents.filter((s) => {
+                                  const matchesQuery = !query ||
+                                    (s.full_name && s.full_name.toLowerCase().includes(query)) ||
+                                    (s.user_id && s.user_id.toLowerCase().includes(query)) ||
+                                    (s.email && s.email.toLowerCase().includes(query)) ||
+                                    (s.phone_number && s.phone_number.includes(query)) ||
+                                    (s.roll_number && s.roll_number.toLowerCase().includes(query));
+
+                                  const matchesCohort = studentCohortFilter === 'all' || s.class_cohort === studentCohortFilter;
+                                  const matchesExam = studentExamFilter === 'all' || s.target_exam === studentExamFilter;
+
+                                  return matchesQuery && matchesCohort && matchesExam;
+                                });
+
+                                if (filtered.length === 0) {
+                                  return (
+                                    <div className="p-10 text-center text-slate-400">
+                                      <span className="material-symbols-outlined text-3xl text-slate-600 mb-2">search_off</span>
+                                      <p className="text-xs font-mono">No students match your filter criteria.</p>
+                                      <button
+                                        onClick={() => { setStudentSearch(''); setStudentCohortFilter('all'); setStudentExamFilter('all'); }}
+                                        className="mt-3 text-xs text-[#1282a2] hover:underline cursor-pointer bg-transparent border-none font-bold"
+                                      >
+                                        Reset Filters
+                                      </button>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                      <thead>
+                                        <tr className="border-b border-slate-900 bg-slate-950/70 text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                                          <th className="py-3.5 px-4 font-bold">User ID</th>
+                                          <th className="py-3.5 px-4 font-bold">Student Name & Email</th>
+                                          <th className="py-3.5 px-4 font-bold">Class & Batch</th>
+                                          <th className="py-3.5 px-4 font-bold">Target Exam</th>
+                                          <th className="py-3.5 px-4 font-bold text-center">Tests Taken</th>
+                                          <th className="py-3.5 px-4 font-bold">Contact</th>
+                                          <th className="py-3.5 px-4 font-bold text-right">Actions</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-900/60 text-xs">
+                                        {filtered.map((student) => (
+                                          <tr key={student.id} className="hover:bg-slate-900/30 transition-colors group">
+                                            {/* User ID */}
+                                            <td className="py-3.5 px-4 font-mono font-bold text-[#1282a2] whitespace-nowrap">
+                                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1282a2]/10 border border-[#1282a2]/30">
+                                                <span>{student.user_id}</span>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    navigator.clipboard.writeText(student.user_id);
+                                                    alert(`User ID "${student.user_id}" copied!`);
+                                                  }}
+                                                  className="text-slate-400 hover:text-white transition-colors cursor-pointer border-none bg-transparent p-0 flex items-center"
+                                                  title="Copy User ID"
+                                                >
+                                                  <span className="material-symbols-outlined text-[13px]">content_copy</span>
+                                                </button>
+                                              </div>
+                                            </td>
+
+                                            {/* Name & Email */}
+                                            <td className="py-3.5 px-4">
+                                              <div className="font-bold text-slate-100 flex items-center gap-2">
+                                                <span>{student.full_name}</span>
+                                              </div>
+                                              <div className="text-[11px] text-slate-400 font-mono truncate max-w-xs mt-0.5">
+                                                {student.email}
+                                              </div>
+                                            </td>
+
+                                            {/* Class & Batch */}
+                                            <td className="py-3.5 px-4 whitespace-nowrap">
+                                              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-900 border border-slate-800 text-slate-200">
+                                                {student.class_cohort}
+                                              </span>
+                                              <span className="text-[10px] text-slate-500 font-mono block mt-1">
+                                                Batch: {student.batch_name || 'General'}
+                                              </span>
+                                            </td>
+
+                                            {/* Target Exam */}
+                                            <td className="py-3.5 px-4 whitespace-nowrap">
+                                              <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
+                                                student.target_exam === 'JEE'
+                                                  ? 'bg-sky-950/50 border-sky-600/40 text-sky-300'
+                                                  : student.target_exam === 'NEET'
+                                                  ? 'bg-emerald-950/50 border-emerald-600/40 text-emerald-300'
+                                                  : 'bg-purple-950/50 border-purple-600/40 text-purple-300'
+                                              }`}>
+                                                {student.target_exam}
+                                              </span>
+                                            </td>
+
+                                            {/* Tests Taken */}
+                                            <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                                              <span className="inline-flex items-center justify-center min-w-8 px-2 py-1 rounded-full text-xs font-bold font-mono bg-slate-900 border border-slate-800 text-slate-200">
+                                                {student.tests_taken || 0}
+                                              </span>
+                                            </td>
+
+                                            {/* Contact */}
+                                            <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                                              {student.phone_number || '—'}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                                              <div className="inline-flex items-center gap-1.5">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleOpenResetPassword(student)}
+                                                  className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                                                  title="Reset password for this student"
+                                                >
+                                                  <span className="material-symbols-outlined text-sm">vpn_key</span>
+                                                  <span>Reset Password</span>
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleDeleteStudent(student)}
+                                                  className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer border-none bg-transparent"
+                                                  title="Delete student profile"
+                                                >
+                                                  <span className="material-symbols-outlined text-base">delete</span>
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                );
+                              })()
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {workspaceTab === 'branding' && (
+                        <div className="bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-6 md:p-8 shadow-xl space-y-8">
+                          <div className="border-b border-slate-900/60 pb-4 mb-4 flex justify-between items-center flex-wrap gap-4">
+                            <div>
+                              <h3 className="font-headline font-bold text-lg text-slate-200">Platform Branding</h3>
+                              <p className="text-xs text-slate-500 mt-1">Customize the visual identity details of the Student Portal.</p>
+                            </div>
+                            <button
+                              onClick={() => alert('Branding settings saved locally! (Simulation)')}
+                              className="bg-primary hover:brightness-110 text-white font-bold text-[10px] uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow border-none"
+                            >
+                              Save Changes
+                            </button>
+                          </div>
+
+                          <div className="space-y-6">
+                            {/* Logo upload */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              <div>
+                                <h4 className="text-xs font-bold uppercase text-slate-300 font-mono tracking-wider">Platform Logo</h4>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Recommended format: SVG or PNG (256x256px).</p>
+                              </div>
+                              <div className="md:col-span-2">
+                                <div className="flex items-center gap-6">
+                                  <div className="w-16 h-16 rounded-xl bg-slate-950 border border-slate-900 flex items-center justify-center overflow-hidden p-1.5">
+                                    <Logo className="w-full h-full" showText={false} />
+                                  </div>
+                                  <label className="flex-1 border border-dashed border-slate-900 bg-slate-950 hover:bg-slate-950/80 rounded-xl p-4 text-center cursor-pointer transition-colors">
+                                    <span className="material-symbols-outlined text-slate-500 text-xl mb-1">cloud_upload</span>
+                                    <p className="text-xs text-slate-200 font-bold font-mono">Upload new logo file</p>
+                                    <input type="file" accept="image/*" className="hidden" />
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+
+                            <hr className="border-slate-900/60" />
+
+                            {/* Colors */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              <div>
+                                <h4 className="text-xs font-bold uppercase text-slate-300 font-mono tracking-wider">Brand Theme</h4>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Define core accents for the student interface.</p>
+                              </div>
+                              <div className="md:col-span-2 space-y-4 font-mono text-[10px]">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded bg-[#81c3d7] border border-slate-900"></div>
+                                  <input
+                                    className="bg-slate-950 border border-slate-900 rounded-lg px-3 py-2 text-slate-100 font-bold w-28 focus:outline-none focus:border-primary"
+                                    type="text"
+                                    value={primaryColor}
+                                    onChange={e => setPrimaryColor(e.target.value)}
+                                  />
+                                  <span className="text-slate-500 uppercase tracking-widest font-bold">Primary Color</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded bg-[#3a7ca5] border border-slate-900"></div>
+                                  <input
+                                    className="bg-slate-950 border border-slate-900 rounded-lg px-3 py-2 text-slate-100 font-bold w-28 focus:outline-none focus:border-primary"
+                                    type="text"
+                                    value={secondaryColor}
+                                    onChange={e => setSecondaryColor(e.target.value)}
+                                  />
+                                  <span className="text-slate-500 uppercase tracking-widest font-bold">Secondary Color</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <hr className="border-slate-900/60" />
+
+                            {/* Text inputs */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              <div>
+                                <h4 className="text-xs font-bold uppercase text-slate-300 font-mono tracking-wider">Portal Details</h4>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Configuration details presented on main student headers.</p>
+                              </div>
+                              <div className="md:col-span-2 space-y-4">
+                                <div className="space-y-1">
+                                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Portal Title Name</label>
+                                  <input
+                                    className="w-full bg-slate-950 border border-slate-900 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-primary transition-colors font-medium"
+                                    type="text"
+                                    value={brandName}
+                                    onChange={e => setBrandName(e.target.value)}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Support Address Email</label>
+                                  <input
+                                    className="w-full bg-slate-950 border border-slate-900 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-primary transition-colors font-medium"
+                                    type="email"
+                                    value={supportEmail}
+                                    onChange={e => setSupportEmail(e.target.value)}
+                                  />
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
+                      )}
 
-                        <hr className="border-slate-900/60" />
+                      {workspaceTab === 'payments' && (
+                        <div className="bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-8 shadow-xl text-center py-16">
+                          <span className="material-symbols-outlined text-4xl text-slate-600 mb-3">payments</span>
+                          <h3 className="text-base font-bold text-slate-200">Payment Gateway Integration</h3>
+                          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                            Configure Razorpay or Stripe merchant credentials for automated student subscriptions and test registrations.
+                          </p>
+                          <span className="inline-block mt-4 px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                            Enterprise Module
+                          </span>
+                        </div>
+                      )}
 
-                        {/* Colors */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          <div>
-                            <h4 className="text-xs font-bold uppercase text-slate-300 font-mono tracking-wider">Brand Theme</h4>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Define core accents for the student interface.</p>
+                      {workspaceTab === 'notifications' && (
+                        <div className="bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-8 shadow-xl text-center py-16">
+                          <span className="material-symbols-outlined text-4xl text-slate-600 mb-3">notifications_active</span>
+                          <h3 className="text-base font-bold text-slate-200">Broadcast Alerts & Webhooks</h3>
+                          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                            Send bulk SMS, email notices, or WhatsApp notifications when mock results are published.
+                          </p>
+                          <span className="inline-block mt-4 px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                            Active via SMTP
+                          </span>
+                        </div>
+                      )}
+
+                      {workspaceTab === 'access' && (
+                        <div className="bg-[#060913]/60 border border-slate-900/60 rounded-2xl p-6 md:p-8 shadow-xl space-y-6">
+                          <div className="border-b border-slate-900/60 pb-4">
+                            <h3 className="font-headline font-bold text-lg text-slate-200">Administrator Access Control</h3>
+                            <p className="text-xs text-slate-500 mt-1">Authorized admin profiles with elevated permissions on examinations and user directories.</p>
                           </div>
-                          <div className="md:col-span-2 space-y-4 font-mono text-[10px]">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded bg-[#81c3d7] border border-slate-900"></div>
-                              <input
-                                className="bg-slate-950 border border-slate-900 rounded-lg px-3 py-2 text-slate-100 font-bold w-28 focus:outline-none focus:border-primary"
-                                type="text"
-                                value={primaryColor}
-                                onChange={e => setPrimaryColor(e.target.value)}
-                              />
-                              <span className="text-slate-500 uppercase tracking-widest font-bold">Primary Color</span>
+                          <div className="space-y-3 font-mono text-xs">
+                            <div className="flex items-center justify-between p-4 bg-slate-950/80 rounded-xl border border-slate-900">
+                              <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined text-[#81c3d7] text-2xl">shield_person</span>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-100">Karthik Sai Anala</span>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-cyan-950 border border-cyan-800 text-cyan-300 font-bold">DBA</span>
+                                  </div>
+                                  <span className="text-[11px] text-slate-400">karthiksaianala@gmail.com</span>
+                                </div>
+                              </div>
+                              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold text-[10px] uppercase">
+                                Superadmin
+                              </span>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded bg-[#3a7ca5] border border-slate-900"></div>
-                              <input
-                                className="bg-slate-950 border border-slate-900 rounded-lg px-3 py-2 text-slate-100 font-bold w-28 focus:outline-none focus:border-primary"
-                                type="text"
-                                value={secondaryColor}
-                                onChange={e => setSecondaryColor(e.target.value)}
-                              />
-                              <span className="text-slate-500 uppercase tracking-widest font-bold">Secondary Color</span>
+
+                            <div className="flex items-center justify-between p-4 bg-slate-950/80 rounded-xl border border-slate-900">
+                              <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined text-[#81c3d7] text-2xl">admin_panel_settings</span>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-100">Database Administrator</span>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-cyan-950 border border-cyan-800 text-cyan-300 font-bold">DBA2</span>
+                                  </div>
+                                  <span className="text-[11px] text-slate-400">ikshatests@zohomail.in</span>
+                                </div>
+                              </div>
+                              <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-bold text-[10px] uppercase">
+                                Administrator
+                              </span>
                             </div>
                           </div>
                         </div>
-
-                        <hr className="border-slate-900/60" />
-
-                        {/* Text inputs */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          <div>
-                            <h4 className="text-xs font-bold uppercase text-slate-300 font-mono tracking-wider">Portal Details</h4>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Configuration details presented on main student headers.</p>
-                          </div>
-                          <div className="md:col-span-2 space-y-4">
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Portal Title Name</label>
-                              <input
-                                className="w-full bg-slate-950 border border-slate-900 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-primary transition-colors font-medium"
-                                type="text"
-                                value={brandName}
-                                onChange={e => setBrandName(e.target.value)}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Support Address Email</label>
-                              <input
-                                className="w-full bg-slate-950 border border-slate-900 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-primary transition-colors font-medium"
-                                type="email"
-                                value={supportEmail}
-                                onChange={e => setSupportEmail(e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -110,17 +110,22 @@ export function AuthProvider({ children }) {
 
   const fetchProfile = async (supabaseUser) => {
     if (!supabaseUser) return null;
-    const isAdminEmail = supabaseUser.email?.toLowerCase().trim() === 'karthiksaianala@gmail.com';
+    const isMetaAdmin = supabaseUser.user_metadata?.role === 'admin';
+    const emailLower = supabaseUser.email?.toLowerCase().trim();
+    const isAdminEmail = emailLower === 'karthiksaianala@gmail.com' || 
+                         emailLower === 'ikshatests@zohomail.in' ||
+                         supabaseUser.user_metadata?.user_id?.toUpperCase() === 'DBA' ||
+                         supabaseUser.user_metadata?.user_id?.toUpperCase() === 'DBA2';
 
     let profileData = null;
-    let isAdmin = isAdminEmail;
+    let isAdmin = isMetaAdmin || isAdminEmail;
 
     // 1. Check dedicated admin_profiles table first
     try {
       const adminRes = await withTimeout(
         supabase
           .from('admin_profiles')
-          .select('full_name, designation, department, phone_number')
+          .select('full_name, designation, department, phone_number, user_id')
           .eq('id', supabaseUser.id)
           .maybeSingle(),
         1500
@@ -131,6 +136,23 @@ export function AuthProvider({ children }) {
       }
     } catch (e) {
       // quiet fallback
+    }
+
+    // 1b. If metadata or email indicates admin but client query was blocked by RLS, query via backend staff endpoint
+    if (isAdmin && !profileData) {
+      try {
+        const staffRes = await axios.get(`${API_URL}/api/admin/staff`);
+        const found = (staffRes.data?.staff || []).find(s => 
+          s.id === supabaseUser.id || 
+          s.email?.toLowerCase() === emailLower ||
+          (s.user_id && s.user_id?.toUpperCase() === supabaseUser.user_metadata?.user_id?.toUpperCase())
+        );
+        if (found) {
+          profileData = { ...found, role: 'admin' };
+        }
+      } catch (e) {
+        // quiet fallback
+      }
     }
 
     // 2. If not found in admin_profiles, check student profiles table
@@ -153,11 +175,13 @@ export function AuthProvider({ children }) {
       }
     }
 
+    const resolvedRole = (isAdmin || isMetaAdmin || profileData?.role === 'admin') ? 'admin' : (profileData?.role || 'student');
+
     const fullUser = { 
       ...supabaseUser, 
       ...(profileData || {}),
       user_id: profileData?.user_id || profileData?.roll_number || supabaseUser.user_metadata?.user_id || supabaseUser.email?.split('@')[0],
-      role: (isAdmin || profileData?.role === 'admin') ? 'admin' : (profileData?.role || 'student') 
+      role: resolvedRole
     };
 
     setUser(fullUser);

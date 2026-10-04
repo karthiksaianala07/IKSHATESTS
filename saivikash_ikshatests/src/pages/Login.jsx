@@ -39,9 +39,14 @@ export default function Login() {
     try {
       const res = await login(identifier, password);
       if (res.success) {
+        const cleanLower = identifier.trim().toLowerCase();
+        const cleanUpper = identifier.trim().toUpperCase();
         const isAdmin = res.user?.role === 'admin' || 
-          identifier.trim().toLowerCase() === 'karthiksaianala@gmail.com' || 
-          identifier.trim().toUpperCase() === 'DBA';
+          res.user?.user_metadata?.role === 'admin' ||
+          cleanLower === 'karthiksaianala@gmail.com' || 
+          cleanLower === 'ikshatests@zohomail.in' ||
+          cleanUpper === 'DBA' ||
+          cleanUpper === 'DBA2';
         if (isAdmin) {
           navigate('/admin', { replace: true });
         } else {
