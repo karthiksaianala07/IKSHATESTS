@@ -196,6 +196,8 @@ export function AuthProvider({ children }) {
 
     const cleanId = String(identifier).trim();
     let authEmail = cleanId;
+    let resolvedTenantSubdomain = null;
+    let resolvedTenantInstitution = null;
 
     // 1. If identifier is a User ID (does not have '@'), resolve it to the student's auth email
     if (!cleanId.includes('@')) {
@@ -203,6 +205,8 @@ export function AuthProvider({ children }) {
         const resolveRes = await axios.post(`${API_URL}/api/auth/resolve-identifier`, { identifier: cleanId });
         if (resolveRes.data?.email) {
           authEmail = resolveRes.data.email;
+          resolvedTenantSubdomain = resolveRes.data?.subdomain || null;
+          resolvedTenantInstitution = resolveRes.data?.institution || null;
         } else {
           return { success: false, error: `No registered account found for User ID "${cleanId}".` };
         }
@@ -222,10 +226,17 @@ export function AuthProvider({ children }) {
         try {
           const resolveRes = await axios.post(`${API_URL}/api/auth/resolve-identifier`, { identifier: cleanId });
           if (resolveRes.data?.email && resolveRes.data.email !== cleanId) {
+            resolvedTenantSubdomain = resolveRes.data?.subdomain || null;
+            resolvedTenantInstitution = resolveRes.data?.institution || null;
             const retry = await supabase.auth.signInWithPassword({ email: resolveRes.data.email, password });
             if (!retry.error && retry.data?.user) {
               const userProfile = await fetchProfile(retry.data.user);
-              return { success: true, user: userProfile || retry.data.user };
+              return { 
+                success: true, 
+                user: userProfile || retry.data.user,
+                subdomain: resolvedTenantSubdomain,
+                institution: resolvedTenantInstitution
+              };
             }
           }
         } catch {}
@@ -237,7 +248,12 @@ export function AuthProvider({ children }) {
     if (data?.user) {
       userProfile = await fetchProfile(data.user);
     }
-    return { success: true, user: userProfile || data.user };
+    return { 
+      success: true, 
+      user: userProfile || data.user,
+      subdomain: resolvedTenantSubdomain,
+      institution: resolvedTenantInstitution
+    };
   };
 
   const register = async (email, password, fullName) => {

@@ -488,7 +488,122 @@ app.get('/api/admin/tests', async (req, res) => {
 });
 
 // ==========================================
-// 7.6B User Identifier Resolution (Dual Login: User ID or Email)
+// 7.6A Multi-Tenant Institutions & Subdomain Endpoints
+// ==========================================
+
+// Helper: fallback default institution details when DB table is not yet migrated
+const DEFAULT_INSTITUTIONS = [
+  {
+    id: 'sv-institution-id',
+    code: 'SV',
+    subdomain: 'saivikash',
+    name: 'Sai Vikash Educational Institutions',
+    logo_url: '/assets/sai-vikash-logo.png',
+    brand_theme: {
+      primary: '#1282a2',
+      secondary: '#034078',
+      accent: '#00b4d8'
+    },
+    status: 'active'
+  },
+  {
+    id: 'ik-central-id',
+    code: 'IK',
+    subdomain: 'app',
+    name: 'IkshaTests Central',
+    logo_url: '/assets/Final_Logo.png',
+    brand_theme: {
+      primary: '#1282a2',
+      secondary: '#034078',
+      accent: '#00f0ff'
+    },
+    status: 'active'
+  }
+];
+
+// Helper to resolve an institution from DB or fallback
+async function getInstitutionByCodeOrSubdomain({ code, subdomain, institutionId }) {
+  try {
+    let query = supabaseAdmin.from('institutions').select('*');
+    if (institutionId) {
+      query = query.eq('id', institutionId);
+    } else if (subdomain) {
+      query = query.ilike('subdomain', subdomain);
+    } else if (code) {
+      query = query.ilike('code', code);
+    } else {
+      return null;
+    }
+    const { data, error } = await query.maybeSingle();
+    if (!error && data) return data;
+  } catch (err) {
+    // If table doesn't exist yet, proceed to in-memory fallback
+  }
+
+  // Fallback check
+  if (subdomain) {
+    return DEFAULT_INSTITUTIONS.find(i => i.subdomain.toLowerCase() === subdomain.toLowerCase()) || null;
+  }
+  if (code) {
+    return DEFAULT_INSTITUTIONS.find(i => i.code.toLowerCase() === code.toLowerCase()) || null;
+  }
+  if (institutionId) {
+    return DEFAULT_INSTITUTIONS.find(i => i.id === institutionId) || null;
+  }
+  return null;
+}
+
+// 1. Fetch institution details by subdomain (e.g. GET /api/institutions/by-subdomain/saivikash)
+app.get('/api/institutions/by-subdomain/:subdomain', async (req, res) => {
+  try {
+    const rawSubdomain = req.params.subdomain?.trim().toLowerCase();
+    if (!rawSubdomain) {
+      return res.status(400).json({ error: 'Subdomain is required' });
+    }
+
+    const inst = await getInstitutionByCodeOrSubdomain({ subdomain: rawSubdomain });
+    if (!inst) {
+      return res.status(404).json({ error: `No active institution found for subdomain "${rawSubdomain}"` });
+    }
+
+    res.json({
+      success: true,
+      institution: {
+        id: inst.id,
+        code: inst.code,
+        subdomain: inst.subdomain,
+        name: inst.name,
+        logo_url: inst.logo_url,
+        brand_theme: inst.brand_theme,
+        contact_email: inst.contact_email
+      }
+    });
+  } catch (err) {
+    console.error('[INSTITUTION_SUBDOMAIN_ERROR]', err.message);
+    res.status(500).json({ error: 'Failed to retrieve institution data' });
+  }
+});
+
+// 2. Fetch list of all active institutions
+app.get('/api/institutions', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('institutions')
+      .select('id, code, subdomain, name, logo_url, brand_theme')
+      .eq('status', 'active')
+      .order('name', { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      return res.json({ success: true, institutions: data });
+    }
+    return res.json({ success: true, institutions: DEFAULT_INSTITUTIONS });
+  } catch (err) {
+    return res.json({ success: true, institutions: DEFAULT_INSTITUTIONS });
+  }
+});
+
+// ==========================================
+// 7.6B User Identifier Resolution (Dual Login: User ID or Email + Multi-Tenant Subdomain)
 // ==========================================
 app.post('/api/auth/resolve-identifier', async (req, res) => {
   try {
@@ -498,6 +613,13 @@ app.post('/api/auth/resolve-identifier', async (req, res) => {
     }
     const identifier = rawId.trim();
 
+    // Parse potential institute code prefix (e.g., 'SV-STU-1001', 'SV_1001', 'DPS-ADM-01')
+    let parsedCode = null;
+    const separatorMatch = identifier.match(/^([A-Za-z0-9]{2,6})[-_]/);
+    if (separatorMatch) {
+      parsedCode = separatorMatch[1].toUpperCase();
+    }
+
     // 0. Check if matching user_id (e.g. 'DBA') or email exists for administrators
     try {
       let adminProfile = null;
@@ -506,18 +628,27 @@ app.post('/api/auth/resolve-identifier', async (req, res) => {
       try {
         const { data, error } = await supabaseAdmin
           .from('admin_profiles')
-          .select('id, email, full_name, designation, department, user_id')
+          .select('id, email, full_name, designation, department, user_id, institution_id, is_super_admin')
           .or(`user_id.ilike.${identifier},email.ilike.${identifier}`)
           .maybeSingle();
         if (!error && data) adminProfile = data;
       } catch (colErr) {
-        // Fallback if user_id column isn't added yet in admin_profiles
-        const { data } = await supabaseAdmin
-          .from('admin_profiles')
-          .select('id, email, full_name, designation, department')
-          .ilike('email', identifier)
-          .maybeSingle();
-        if (data) adminProfile = data;
+        // Fallback if columns aren't added yet in admin_profiles
+        try {
+          const { data } = await supabaseAdmin
+            .from('admin_profiles')
+            .select('id, email, full_name, designation, department, user_id')
+            .or(`user_id.ilike.${identifier},email.ilike.${identifier}`)
+            .maybeSingle();
+          if (data) adminProfile = data;
+        } catch (innerColErr) {
+          const { data } = await supabaseAdmin
+            .from('admin_profiles')
+            .select('id, email, full_name, designation, department')
+            .ilike('email', identifier)
+            .maybeSingle();
+          if (data) adminProfile = data;
+        }
       }
 
       // 0b. If not found in table, check auth.users user_metadata for admin user_id (e.g. DBA)
@@ -537,19 +668,44 @@ app.post('/api/auth/resolve-identifier', async (req, res) => {
             email: matched.email,
             full_name: matched.user_metadata?.full_name || 'Platform Administrator',
             user_id: matched.user_metadata?.user_id || 'DBA',
-            designation: 'Administrator / Faculty'
+            designation: 'Administrator / Faculty',
+            is_super_admin: true
           };
         }
       }
 
       if (adminProfile && adminProfile.email) {
+        const isSuperAdmin = adminProfile.is_super_admin || 
+                             adminProfile.email?.toLowerCase() === 'karthiksaianala@gmail.com' ||
+                             adminProfile.user_id?.toUpperCase() === 'DBA';
+        
+        // Resolve tenant details
+        let tenant = null;
+        if (adminProfile.institution_id) {
+          tenant = await getInstitutionByCodeOrSubdomain({ institutionId: adminProfile.institution_id });
+        } else if (parsedCode) {
+          tenant = await getInstitutionByCodeOrSubdomain({ code: parsedCode });
+        } else if (adminProfile.user_id?.toUpperCase().startsWith('SV')) {
+          tenant = await getInstitutionByCodeOrSubdomain({ code: 'SV' });
+        }
+
         return res.json({
           success: true,
           email: adminProfile.email,
           user_id: adminProfile.user_id || 'DBA',
           full_name: adminProfile.full_name,
           role: 'admin',
-          designation: adminProfile.designation || 'Administrator / Faculty'
+          designation: adminProfile.designation || 'Administrator / Faculty',
+          is_super_admin: isSuperAdmin,
+          subdomain: tenant?.subdomain || (isSuperAdmin ? null : null),
+          institution: tenant ? {
+            id: tenant.id,
+            code: tenant.code,
+            subdomain: tenant.subdomain,
+            name: tenant.name,
+            logo_url: tenant.logo_url,
+            brand_theme: tenant.brand_theme
+          } : null
         });
       }
     } catch (adminErr) {
@@ -561,24 +717,54 @@ app.post('/api/auth/resolve-identifier', async (req, res) => {
     try {
       const { data, error } = await supabaseAdmin
         .from('profiles')
-        .select('id, email, user_id, full_name, role')
+        .select('id, email, user_id, full_name, role, institution_id')
         .or(`user_id.ilike.${identifier},email.ilike.${identifier}`)
         .maybeSingle();
       if (!error && data) {
         profile = data;
       }
     } catch (dbErr) {
-      console.warn('[RESOLVE_IDENTIFIER_DB_WARN]', dbErr.message);
+      // Fallback if institution_id column not yet present
+      try {
+        const { data } = await supabaseAdmin
+          .from('profiles')
+          .select('id, email, user_id, full_name, role')
+          .or(`user_id.ilike.${identifier},email.ilike.${identifier}`)
+          .maybeSingle();
+        if (data) profile = data;
+      } catch (innerErr) {
+        console.warn('[RESOLVE_IDENTIFIER_DB_WARN]', innerErr.message);
+      }
     }
 
     if (profile && profile.email) {
       const isAdmin = profile.role === 'admin' || profile.email.toLowerCase() === 'karthiksaianala@gmail.com';
+      
+      // Resolve tenant for student
+      let tenant = null;
+      if (profile.institution_id) {
+        tenant = await getInstitutionByCodeOrSubdomain({ institutionId: profile.institution_id });
+      } else if (parsedCode) {
+        tenant = await getInstitutionByCodeOrSubdomain({ code: parsedCode });
+      } else if (profile.user_id?.toUpperCase().startsWith('SV')) {
+        tenant = await getInstitutionByCodeOrSubdomain({ code: 'SV' });
+      }
+
       return res.json({
         success: true,
         email: profile.email,
         user_id: profile.user_id || identifier,
         full_name: profile.full_name,
-        role: isAdmin ? 'admin' : (profile.role || 'student')
+        role: isAdmin ? 'admin' : (profile.role || 'student'),
+        subdomain: tenant?.subdomain || null,
+        institution: tenant ? {
+          id: tenant.id,
+          code: tenant.code,
+          subdomain: tenant.subdomain,
+          name: tenant.name,
+          logo_url: tenant.logo_url,
+          brand_theme: tenant.brand_theme
+        } : null
       });
     }
 
@@ -587,7 +773,9 @@ app.post('/api/auth/resolve-identifier', async (req, res) => {
       return res.json({
         success: true,
         email: identifier,
-        user_id: null
+        user_id: null,
+        subdomain: null,
+        institution: null
       });
     }
 

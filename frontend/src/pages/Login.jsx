@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTenant } from '../context/TenantContext';
 import { ArrowLeft, Shield, Check } from 'lucide-react';
 import { Logo } from '../components/Logo';
 
@@ -10,6 +11,7 @@ import ikshaCbtIllustration from '../assets/iksha-cbt-illustration.jpg';
 export default function Login() {
   const navigate = useNavigate();
   const { user, login, loginWithGoogle } = useAuth();
+  const { tenant, subdomain: currentSubdomain, redirectToSubdomain, isTenantPortal } = useTenant();
 
   // Form States
   const [identifier, setIdentifier] = useState('');
@@ -47,6 +49,20 @@ export default function Login() {
           cleanLower === 'ikshatests@zohomail.in' ||
           cleanUpper === 'DBA' ||
           cleanUpper === 'DBA2';
+
+        const targetPath = isAdmin ? '/admin' : '/dashboard';
+
+        // Multi-Tenant Cross-Subdomain Redirection:
+        // If user belongs to an institute with a subdomain and isn't currently on it,
+        // redirect them directly to that institute's subdomain portal!
+        if (res.subdomain && res.subdomain !== currentSubdomain) {
+          setSuccessMessage(`Redirecting to ${res.institution?.name || res.subdomain} portal...`);
+          setTimeout(() => {
+            redirectToSubdomain(res.subdomain, targetPath);
+          }, 400);
+          return;
+        }
+
         if (isAdmin) {
           navigate('/admin', { replace: true });
         } else {
@@ -144,10 +160,10 @@ export default function Login() {
             {/* Title & Greeting - Centered */}
             <div className="mb-3 text-center">
               <h2 className="text-2xl sm:text-3xl font-black text-[#fefcfb] tracking-tight">
-                Hi Aspirant
+                {tenant ? `Welcome to ${tenant.name}` : 'Hi Aspirant'}
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
-                Welcome to IKSHATESTS
+                {tenant ? `${tenant.name} CBT Examination Portal` : 'Welcome to IKSHATESTS'}
               </p>
             </div>
 
@@ -174,7 +190,7 @@ export default function Login() {
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="User ID or Email (e.g. IK2026-101)"
+                  placeholder={tenant ? `User ID or Email (e.g. ${tenant.code}-STU-101)` : "User ID or Email (e.g. SV-STU-101, IK2026-101)"}
                   className="w-full px-4 py-3 bg-[#0a1128]/80 border border-[#034078]/60 hover:border-[#1282a2]/60 rounded-xl sm:rounded-2xl text-[#fefcfb] placeholder-slate-400 text-sm font-medium focus:outline-none focus:border-[#1282a2] focus:ring-4 focus:ring-[#1282a2]/20 transition-all shadow-inner"
                   required
                 />

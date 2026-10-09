@@ -11,6 +11,7 @@ import Pricing from './pages/Pricing';
 import PlansComingSoon from './pages/PlansComingSoon';
 import SignUpComingSoon from './pages/SignUpComingSoon';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { TenantProvider } from './context/TenantContext';
 import { Logo } from './components/Logo';
 import SparkleOrbs from './components/SparkleOrbs';
 
@@ -55,9 +56,11 @@ function ProtectedRoute({ children, requireAdmin = false }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <TenantProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </TenantProvider>
   );
 }
 
