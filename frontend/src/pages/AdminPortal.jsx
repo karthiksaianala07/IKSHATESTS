@@ -570,19 +570,44 @@ export default function AdminPortal() {
     else setOptUploading(optIndex);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `questions/${fileName}`;
+      let publicUrl = null;
 
-      let { error: uploadError } = await supabase.storage
-        .from('question-assets')
-        .upload(filePath, file);
+      // 1. Try uploading via backend server using service role (bypasses RLS)
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await axios.post(`${API_URL}/api/admin/upload-image`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (res.data?.publicUrl) {
+          publicUrl = res.data.publicUrl;
+        }
+      } catch (backendErr) {
+        console.warn("Backend image upload route failed, attempting direct Supabase fallback:", backendErr.message);
+      }
 
-      if (uploadError) throw uploadError;
+      // 2. Fallback to client-side Supabase storage if backend is unavailable
+      if (!publicUrl) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+        const filePath = `questions/${fileName}`;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('question-assets')
-        .getPublicUrl(filePath);
+        let { error: uploadError } = await supabase.storage
+          .from('question-assets')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+          .from('question-assets')
+          .getPublicUrl(filePath);
+
+        publicUrl = data?.publicUrl;
+      }
+
+      if (!publicUrl) {
+        throw new Error("Unable to obtain public URL for uploaded image.");
+      }
 
       if (type === 'main') {
         setNewQuestion({ ...newQuestion, image_url: publicUrl });

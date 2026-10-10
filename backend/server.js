@@ -1639,32 +1639,52 @@ INSTRUCTIONS FOR DIAGRAM AND IMAGE DETECTION:
 });
 
 // 7.7.4 Upload Question Asset Image (Admin only)
-app.post('/api/admin/upload-image', async (req, res) => {
+app.post('/api/admin/upload-image', upload.single('file'), async (req, res) => {
   try {
-    const { base64Data, filename } = req.body;
-    if (!base64Data) {
-      return res.status(400).json({ error: "No image data provided" });
+    let buffer;
+    let contentType = 'image/png';
+    let safeName;
+
+    if (req.file) {
+      buffer = req.file.buffer;
+      contentType = req.file.mimetype || 'image/png';
+      const ext = req.file.originalname?.split('.').pop() || 'png';
+      safeName = `question_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
+    } else if (req.body?.base64Data) {
+      const base64Data = req.body.base64Data;
+      const mimeMatch = base64Data.match(/^data:([^;]+);base64,/);
+      contentType = req.body.contentType || (mimeMatch ? mimeMatch[1] : 'image/png');
+      const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, '');
+      buffer = Buffer.from(cleanBase64, 'base64');
+
+      let ext = 'png';
+      if (contentType.includes('jpeg') || contentType.includes('jpg')) ext = 'jpg';
+      else if (contentType.includes('webp')) ext = 'webp';
+      else if (contentType.includes('svg')) ext = 'svg';
+      else if (contentType.includes('gif')) ext = 'gif';
+
+      safeName = req.body.filename || `question_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
+    } else {
+      return res.status(400).json({ error: "No image file or base64Data provided" });
     }
 
     await ensureQuestionBucket();
 
-    const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
-    const buffer = Buffer.from(cleanBase64, 'base64');
-    const safeName = filename || `extracted_${Date.now()}_${Math.floor(Math.random() * 1000)}.png`;
     const filePath = `questions/${safeName}`;
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('question-assets')
       .upload(filePath, buffer, {
-        contentType: 'image/png',
+        contentType,
         upsert: true
       });
 
     if (uploadError) {
       console.warn("[UPLOAD_IMAGE] Storage upload warning:", uploadError.message);
-      // Fallback: return dataUrl so frontend never loses the image
-      const fallbackUrl = base64Data.startsWith('data:') ? base64Data : `data:image/png;base64,${cleanBase64}`;
-      return res.json({ success: true, publicUrl: fallbackUrl });
+      if (req.body?.base64Data) {
+        return res.json({ success: true, publicUrl: req.body.base64Data });
+      }
+      return res.status(500).json({ error: uploadError.message });
     }
 
     const { data: { publicUrl } } = supabaseAdmin.storage
@@ -1674,8 +1694,10 @@ app.post('/api/admin/upload-image', async (req, res) => {
     return res.json({ success: true, publicUrl });
   } catch (err) {
     console.error("[UPLOAD_IMAGE_ERROR]", err.message);
-    const fallbackUrl = req.body?.base64Data || null;
-    return res.json({ success: true, publicUrl: fallbackUrl });
+    if (req.body?.base64Data) {
+      return res.json({ success: true, publicUrl: req.body.base64Data });
+    }
+    return res.status(500).json({ error: err.message || "Failed to upload image" });
   }
 });
 
