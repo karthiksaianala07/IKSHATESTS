@@ -21,6 +21,10 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
   const [error, setError] = useState(null);
   const [stagedQuestions, setStagedQuestions] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [stagedImgUploading, setStagedImgUploading] = useState(null);
+  const [stagedOptUploading, setStagedOptUploading] = useState(null);
+  const [activeStagedOption, setActiveStagedOption] = useState({ qIdx: 0, oIdx: 0 });
+  const stagedOptionRefs = useRef(new Map());
 
   // Batch subject & chapter override
   const [batchSubject, setBatchSubject] = useState('Physics');
@@ -295,6 +299,51 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
         chapter: batchChapter || q.chapter
       }))
     );
+  };
+
+  const handleStagedImageUpload = async (e, qIndex, type = 'main', optIndex = null) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (type === 'main') setStagedImgUploading(qIndex);
+    else setStagedOptUploading(`${qIndex}-${optIndex}`);
+
+    try {
+      let publicUrl = null;
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await axios.post(`${API_URL}/api/admin/upload-image`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (res.data?.publicUrl) publicUrl = res.data.publicUrl;
+      } catch (err) {
+        console.warn("Backend image upload route failed, attempting direct Supabase fallback:", err.message);
+      }
+
+      if (!publicUrl) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+        const filePath = `questions/${fileName}`;
+        const { error: upErr } = await supabase.storage.from('question-assets').upload(filePath, file);
+        if (upErr) throw upErr;
+        const { data } = supabase.storage.from('question-assets').getPublicUrl(filePath);
+        publicUrl = data?.publicUrl;
+      }
+
+      if (!publicUrl) throw new Error("Could not obtain URL for uploaded image.");
+
+      if (type === 'main') {
+        updateStagedQuestion(qIndex, 'image_url', publicUrl);
+      } else {
+        updateStagedOption(qIndex, optIndex, 'image_url', publicUrl);
+      }
+    } catch (err) {
+      alert("Error uploading image: " + err.message);
+    } finally {
+      setStagedImgUploading(null);
+      setStagedOptUploading(null);
+    }
   };
 
   const handleSaveToBank = async () => {
@@ -609,39 +658,140 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                 </div>
 
                 {/* Diagram / Image */}
-                {q.image_url && (
+                {q.image_url ? (
                   <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex flex-col items-center gap-2">
-                    <p className="text-[9px] font-mono font-bold uppercase text-slate-400 self-start">Attached Diagram / Figure:</p>
+                    <div className="flex items-center justify-between w-full">
+                      <p className="text-[9px] font-mono font-bold uppercase text-slate-400">Attached Diagram / Figure:</p>
+                      <div className="flex items-center gap-2">
+                        <label className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/40">
+                          <span className="material-symbols-outlined text-xs">{stagedImgUploading === idx ? 'sync' : 'upload'}</span>
+                          <span>{stagedImgUploading === idx ? 'Uploading...' : 'Replace'}</span>
+                          <input type="file" accept="image/*" onChange={(e) => handleStagedImageUpload(e, idx, 'main')} className="hidden" />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => updateStagedQuestion(idx, 'image_url', null)}
+                          className="text-[10px] text-rose-400 hover:underline cursor-pointer"
+                        >
+                          Remove Diagram
+                        </button>
+                      </div>
+                    </div>
                     <img src={q.image_url} alt="Extracted diagram" className="max-h-48 object-contain rounded-lg border border-slate-800" />
-                    <button
-                      type="button"
-                      onClick={() => updateStagedQuestion(idx, 'image_url', null)}
-                      className="text-[10px] text-rose-400 hover:underline self-end cursor-pointer"
-                    >
-                      Remove Diagram
-                    </button>
+                  </div>
+                ) : (
+                  <div className="pt-1">
+                    <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-slate-800 hover:border-cyan-500/50 bg-slate-900/50 hover:bg-slate-900 text-slate-300 hover:text-cyan-300 text-xs font-bold cursor-pointer transition-all inline-flex">
+                      <span className="material-symbols-outlined text-sm">
+                        {stagedImgUploading === idx ? 'sync' : 'add_photo_alternate'}
+                      </span>
+                      <span>{stagedImgUploading === idx ? 'Uploading...' : 'Upload Question Diagram'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleStagedImageUpload(e, idx, 'main')}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
                 )}
 
                 {/* MCQ Options */}
                 {q.type === 'MCQ' && (
-                  <div className="space-y-2 pt-2 border-t border-slate-900/60">
-                    <label className="text-[10px] font-mono font-bold uppercase text-slate-400 block">Options</label>
+                  <div className="space-y-3 pt-2 border-t border-slate-900/60">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-400 block">Options</label>
+                      <span className="text-[10px] text-slate-500 font-mono">Select option to type math or attach diagram</span>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                      {q.options.map((opt, oIdx) => (
-                        <div key={oIdx} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono font-bold text-slate-400 flex items-center justify-center shrink-0">
-                            {String.fromCharCode(65 + oIdx)}
-                          </span>
-                          <input
-                            type="text"
-                            value={opt.text}
-                            onChange={(e) => updateStagedOption(idx, oIdx, 'text', e.target.value)}
-                            placeholder={`Option ${String.fromCharCode(65 + oIdx)}`}
-                            className="flex-1 p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200"
-                          />
-                        </div>
-                      ))}
+                      {q.options.map((opt, oIdx) => {
+                        const optText = typeof opt === 'object' && opt !== null ? opt.text : opt;
+                        const optImg = typeof opt === 'object' && opt !== null ? opt.image_url : null;
+                        const isActive = activeStagedOption.qIdx === idx && activeStagedOption.oIdx === oIdx;
+
+                        return (
+                          <div
+                            key={oIdx}
+                            className={`flex flex-col gap-2 p-2.5 rounded-xl border transition-all ${
+                              isActive ? 'border-primary bg-slate-900/90' : 'border-slate-800 bg-slate-900/50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono font-bold text-slate-400 flex items-center justify-center shrink-0">
+                                {String.fromCharCode(65 + oIdx)}
+                              </span>
+                              <input
+                                ref={(el) => {
+                                  if (el) stagedOptionRefs.current.set(`${idx}-${oIdx}`, el);
+                                  else stagedOptionRefs.current.delete(`${idx}-${oIdx}`);
+                                }}
+                                type="text"
+                                value={optText}
+                                onFocus={() => setActiveStagedOption({ qIdx: idx, oIdx })}
+                                onChange={(e) => updateStagedOption(idx, oIdx, 'text', e.target.value)}
+                                placeholder={`Option ${String.fromCharCode(65 + oIdx)} (LaTeX)`}
+                                className="flex-1 p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 focus:outline-none focus:border-primary"
+                              />
+                              {/* Option Image Upload */}
+                              <label
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg border border-dashed cursor-pointer transition-colors shrink-0 ${
+                                  optImg
+                                    ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-400'
+                                    : 'border-slate-800 hover:border-cyan-500/60 bg-slate-900 text-slate-400'
+                                }`}
+                                title={`Upload diagram for Option ${String.fromCharCode(65 + oIdx)}`}
+                              >
+                                <span className="material-symbols-outlined text-base">
+                                  {stagedOptUploading === `${idx}-${oIdx}` ? 'sync' : optImg ? 'check_circle' : 'add_photo_alternate'}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleStagedImageUpload(e, idx, 'option', oIdx)}
+                                  className="hidden"
+                                />
+                              </label>
+                            </div>
+
+                            {/* Option image thumbnail and remove */}
+                            {optImg && (
+                              <div className="flex items-center gap-2 pl-8 pt-1">
+                                <img
+                                  src={optImg}
+                                  alt={`Option ${String.fromCharCode(65 + oIdx)}`}
+                                  className="max-h-12 border border-slate-800 rounded object-contain"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => updateStagedOption(idx, oIdx, 'image_url', null)}
+                                  className="text-[10px] text-rose-400 hover:underline cursor-pointer"
+                                >
+                                  Remove Image
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Math Keypad for Active Staged Option */}
+                    <div className="pt-2">
+                      <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">
+                        Math Keyboard for Option {String.fromCharCode(65 + (activeStagedOption.qIdx === idx ? activeStagedOption.oIdx : 0))}:
+                      </p>
+                      <MathKeypad
+                        targetRef={{ current: stagedOptionRefs.current.get(`${idx}-${activeStagedOption.qIdx === idx ? activeStagedOption.oIdx : 0}`) }}
+                        value={(() => {
+                          const curOpt = (q.options || [])[activeStagedOption.qIdx === idx ? activeStagedOption.oIdx : 0];
+                          return typeof curOpt === 'object' && curOpt !== null ? curOpt.text : String(curOpt || '');
+                        })()}
+                        setValue={(val) => {
+                          const activeIdx = activeStagedOption.qIdx === idx ? activeStagedOption.oIdx : 0;
+                          updateStagedOption(idx, activeIdx, 'text', val);
+                        }}
+                      />
                     </div>
                   </div>
                 )}

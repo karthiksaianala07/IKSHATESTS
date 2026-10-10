@@ -77,6 +77,10 @@ export default function AddTestPage() {
   const [pdfFile, setPdfFile] = useState(null);
   const [extracting, setExtracting] = useState(false);
   const [extractedQuestions, setExtractedQuestions] = useState([]);
+  const [extractImgUploading, setExtractImgUploading] = useState(null);
+  const [extractOptUploading, setExtractOptUploading] = useState(null);
+  const [activeExtractedOption, setActiveExtractedOption] = useState({ qIdx: 0, oIdx: 0 });
+  const extractedOptionRefs = useRef(new Map());
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -401,6 +405,60 @@ export default function AddTestPage() {
     } finally {
       setManualUploading(false);
       setManualOptUploading(null);
+    }
+  };
+
+  const handleExtractedImageUpload = async (e, qIndex, type = 'main', optIndex = null) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (type === 'main') setExtractImgUploading(qIndex);
+    else setExtractOptUploading(`${qIndex}-${optIndex}`);
+
+    try {
+      let publicUrl = null;
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await axios.post(`${API_URL}/api/admin/upload-image`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (res.data?.publicUrl) publicUrl = res.data.publicUrl;
+      } catch (err) {
+        console.warn("Backend upload failed, attempting direct Supabase fallback:", err.message);
+      }
+
+      if (!publicUrl) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+        const filePath = `questions/${fileName}`;
+        const { error: upErr } = await supabase.storage.from('question-assets').upload(filePath, file);
+        if (upErr) throw upErr;
+        const { data } = supabase.storage.from('question-assets').getPublicUrl(filePath);
+        publicUrl = data?.publicUrl;
+      }
+
+      if (!publicUrl) throw new Error("Could not obtain URL for uploaded image.");
+
+      const next = [...extractedQuestions];
+      if (type === 'main') {
+        next[qIndex] = { ...next[qIndex], image_url: publicUrl };
+      } else {
+        const currentOpts = [...(next[qIndex].options || ['', '', '', ''])];
+        const currentOpt = currentOpts[optIndex];
+        if (typeof currentOpt === 'object' && currentOpt !== null) {
+          currentOpts[optIndex] = { ...currentOpt, image_url: publicUrl };
+        } else {
+          currentOpts[optIndex] = { text: String(currentOpt || ''), image_url: publicUrl };
+        }
+        next[qIndex] = { ...next[qIndex], options: currentOpts };
+      }
+      setExtractedQuestions(next);
+    } catch (err) {
+      alert("Error uploading image: " + err.message);
+    } finally {
+      setExtractImgUploading(null);
+      setExtractOptUploading(null);
     }
   };
 
@@ -1341,23 +1399,45 @@ export default function AddTestPage() {
                             </div>
                           </div>
                         )}
-                        {eq.image_url && (
+                        {eq.image_url ? (
                           <div className="mt-2 p-3 bg-[#001f54]/60 rounded-lg border border-[#034078]/50 flex flex-col items-center">
                             <div className="flex items-center justify-between w-full mb-2">
                               <p className="text-[10px] uppercase font-bold text-[#1282a2] flex items-center gap-1">
                                 <span className="material-symbols-outlined text-xs">image</span>
                                 Attached Diagram / Illustration:
                               </p>
-                              <button
-                                type="button"
-                                onClick={() => updateExtractedQuestion(i, 'image_url', null)}
-                                className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-0.5 cursor-pointer bg-red-950/30 px-1.5 py-0.5 rounded border border-red-900/40"
-                                title="Remove Diagram"
-                              >
-                                <span className="material-symbols-outlined text-xs">close</span> Remove
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <label className="text-[10px] text-cyan-300 hover:text-cyan-200 flex items-center gap-0.5 cursor-pointer bg-[#1282a2]/20 px-2 py-0.5 rounded border border-[#1282a2]/40">
+                                  <span className="material-symbols-outlined text-xs">{extractImgUploading === i ? 'sync' : 'upload'}</span>
+                                  <span>{extractImgUploading === i ? 'Uploading...' : 'Replace'}</span>
+                                  <input type="file" accept="image/*" onChange={(e) => handleExtractedImageUpload(e, i, 'main')} className="hidden" />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => updateExtractedQuestion(i, 'image_url', null)}
+                                  className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-0.5 cursor-pointer bg-red-950/30 px-1.5 py-0.5 rounded border border-red-900/40"
+                                  title="Remove Diagram"
+                                >
+                                  <span className="material-symbols-outlined text-xs">close</span> Remove
+                                </button>
+                              </div>
                             </div>
                             <img src={eq.image_url} alt={`Diagram for Question ${i + 1}`} className="max-h-56 object-contain rounded-md border border-[#034078]/40 bg-black/40 p-1" />
+                          </div>
+                        ) : (
+                          <div className="mt-2 flex items-center gap-2">
+                            <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-[#1282a2]/60 hover:border-[#1282a2] bg-[#001f54]/40 hover:bg-[#001f54]/70 text-cyan-300 text-xs font-bold cursor-pointer transition-all">
+                              <span className="material-symbols-outlined text-sm">
+                                {extractImgUploading === i ? 'sync' : 'add_photo_alternate'}
+                              </span>
+                              <span>{extractImgUploading === i ? 'Uploading...' : 'Upload Question Diagram'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleExtractedImageUpload(e, i, 'main')}
+                                className="hidden"
+                              />
+                            </label>
                           </div>
                         )}
                       </div>
@@ -1387,19 +1467,29 @@ export default function AddTestPage() {
                       </div>
 
                       <div className="mb-4">
-                        <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-2 block">Options</label>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 block">Options</label>
+                          <span className="text-[10px] text-slate-400">Click option to edit math or attach option image</span>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {(eq.options || ['', '', '', '']).map((opt, oIndex) => {
                             const isOptObj = typeof opt === 'object' && opt !== null;
                             const optText = isOptObj ? opt.text : opt;
                             const optImg = isOptObj ? opt.image_url : null;
+                            const isActiveOpt = activeExtractedOption.qIdx === i && activeExtractedOption.oIdx === oIndex;
+
                             return (
-                              <div key={oIndex} className="flex flex-col gap-2 border border-[#034078]/40 p-2.5 rounded-lg bg-[#001f54]/30">
+                              <div key={oIndex} className={`flex flex-col gap-2 border p-2.5 rounded-lg transition-all ${isActiveOpt ? 'border-[#1282a2] bg-[#001f54]/70 shadow-sm' : 'border-[#034078]/40 bg-[#001f54]/30'}`}>
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs font-bold text-[#1282a2] w-4">{String.fromCharCode(65 + oIndex)}.</span>
                                   <input 
+                                    ref={el => {
+                                      if (el) extractedOptionRefs.current.set(`${i}-${oIndex}`, el);
+                                      else extractedOptionRefs.current.delete(`${i}-${oIndex}`);
+                                    }}
                                     type="text"
                                     value={optText}
+                                    onFocus={() => setActiveExtractedOption({ qIdx: i, oIdx: oIndex })}
                                     onChange={(e) => {
                                       const next = [...extractedQuestions];
                                       if (isOptObj) {
@@ -1409,8 +1499,26 @@ export default function AddTestPage() {
                                       }
                                       setExtractedQuestions(next);
                                     }}
+                                    placeholder={`Option ${String.fromCharCode(65 + oIndex)}`}
                                     className="flex-1 p-2 text-xs border border-[#034078]/60 bg-[#001f54]/70 text-white rounded-md focus:border-[#1282a2] focus:outline-none"
                                   />
+                                  {/* Option Image Upload Button */}
+                                  <label
+                                    className={`w-8 h-8 flex items-center justify-center rounded-lg border border-dashed cursor-pointer transition-colors shrink-0 ${
+                                      optImg ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-400' : 'border-[#034078] hover:border-[#1282a2] bg-[#001f54]/40 text-slate-400'
+                                    }`}
+                                    title={`Upload image for Option ${String.fromCharCode(65 + oIndex)}`}
+                                  >
+                                    <span className="material-symbols-outlined text-base">
+                                      {extractOptUploading === `${i}-${oIndex}` ? 'sync' : optImg ? 'check_circle' : 'add_photo_alternate'}
+                                    </span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => handleExtractedImageUpload(e, i, 'option', oIndex)}
+                                      className="hidden"
+                                    />
+                                  </label>
                                 </div>
                                 {optImg && (
                                   <div className="flex items-center gap-2 ml-6">
@@ -1420,7 +1528,7 @@ export default function AddTestPage() {
                                       onClick={() => {
                                         const next = [...extractedQuestions];
                                         if (isOptObj) {
-                                          next[i].options[oIndex] = e.target.value; // convert back to string
+                                          next[i].options[oIndex] = { ...next[i].options[oIndex], image_url: null };
                                         }
                                         setExtractedQuestions(next);
                                       }}
@@ -1434,6 +1542,32 @@ export default function AddTestPage() {
                             );
                           })}
                         </div>
+
+                        {/* Math Keypad for Active Option */}
+                        <div className="mt-3">
+                          <p className="text-[10px] uppercase font-bold text-[#1282a2] mb-1">
+                            Math Keyboard for Option {String.fromCharCode(65 + (activeExtractedOption.qIdx === i ? activeExtractedOption.oIdx : 0))}:
+                          </p>
+                          <MathKeypad
+                            targetRef={{ current: extractedOptionRefs.current.get(`${i}-${activeExtractedOption.qIdx === i ? activeExtractedOption.oIdx : 0}`) }}
+                            value={(() => {
+                              const curOpt = (eq.options || [])[activeExtractedOption.qIdx === i ? activeExtractedOption.oIdx : 0];
+                              return typeof curOpt === 'object' && curOpt !== null ? curOpt.text : String(curOpt || '');
+                            })()}
+                            setValue={(val) => {
+                              const activeIdx = activeExtractedOption.qIdx === i ? activeExtractedOption.oIdx : 0;
+                              const next = [...extractedQuestions];
+                              const curOpt = (next[i].options || [])[activeIdx];
+                              if (typeof curOpt === 'object' && curOpt !== null) {
+                                next[i].options[activeIdx] = { ...curOpt, text: val };
+                              } else {
+                                next[i].options[activeIdx] = val;
+                              }
+                              setExtractedQuestions(next);
+                            }}
+                          />
+                        </div>
+
                         {eq.options && eq.options.some(opt => opt) && (
                           <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-[#001f54]/60 rounded-lg border border-[#034078]/40">
                             {(eq.options || ['', '', '', '']).map((opt, oIndex) => {

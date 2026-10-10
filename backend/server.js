@@ -459,6 +459,68 @@ app.post('/api/admin/questions', async (req, res) => {
   }
 });
 
+// 7.6.1 Update question (Admin only, bypasses RLS)
+app.put('/api/admin/questions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { subject, chapter, type, text, sub_text, image_url, options, correct_answer, explanation } = req.body;
+
+    const updates = {};
+    if (subject !== undefined) updates.subject = subject;
+    if (chapter !== undefined) updates.chapter = chapter || null;
+    if (type !== undefined) updates.type = type;
+    if (text !== undefined) updates.text = text;
+    if (sub_text !== undefined) updates.sub_text = sub_text || null;
+    if (image_url !== undefined) updates.image_url = image_url || null;
+    if (options !== undefined) updates.options = options || [];
+    if (correct_answer !== undefined) updates.correct_answer = String(correct_answer);
+    if (explanation !== undefined) updates.explanation = explanation || null;
+
+    let { data, error } = await supabaseAdmin
+      .from('questions')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error && (error.code === '42703' || error.message?.includes('explanation'))) {
+      const { explanation: _, ...updatesWithoutExp } = updates;
+      const { data: fbData, error: fbErr } = await supabaseAdmin
+        .from('questions')
+        .update(updatesWithoutExp)
+        .eq('id', id)
+        .select()
+        .single();
+      if (fbErr) throw fbErr;
+      data = fbData;
+      error = null;
+    }
+
+    if (error) throw error;
+    res.json({ success: true, question: data });
+  } catch (err) {
+    console.error("[PUT_QUESTION_ERROR]", err.message);
+    res.status(500).json({ error: err.message || "Failed to update question in database" });
+  }
+});
+
+// 7.6.2 Delete question (Admin only, bypasses RLS)
+app.delete('/api/admin/questions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabaseAdmin
+      .from('questions')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    res.json({ success: true, message: "Question successfully deleted" });
+  } catch (err) {
+    console.error("[DELETE_QUESTION_ERROR]", err.message);
+    res.status(500).json({ error: err.message || "Failed to delete question from database" });
+  }
+});
+
 // 7.7 Get all tests (Admin only, bypasses RLS)
 app.get('/api/admin/tests', async (req, res) => {
   try {
