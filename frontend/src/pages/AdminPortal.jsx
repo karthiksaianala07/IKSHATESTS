@@ -519,6 +519,7 @@ export default function AdminPortal() {
     setIsResettingPassword(true);
     try {
       const res = await axios.post(`${API_URL}/api/admin/students/${resetPasswordModal.id}/reset-password`, {
+        password: newPasswordVal.trim(),
         newPassword: newPasswordVal.trim()
       });
       if (res.data?.success) {

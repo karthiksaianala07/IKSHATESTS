@@ -43,13 +43,27 @@ export function Logo({
         )}
         
         {showText && (
-          <div className={`h-full flex flex-col justify-center items-center text-center leading-none select-none whitespace-nowrap shrink-0 py-[1px] ${textClassName}`}>
-            <span className={`text-[12.5px] font-black tracking-[0.04em] text-[#00b4d8] uppercase whitespace-nowrap group-hover:brightness-110 transition-all leading-tight ${titleClassName}`}>
-              {title || "CBT Platform"}
-            </span>
-            <span className={`text-[10px] font-medium tracking-[0.02em] text-slate-300 whitespace-nowrap group-hover:text-white transition-colors leading-tight mt-0.5 ${subtitleClassName}`}>
-              Powered by IkshaTests
-            </span>
+          <div className={`h-full flex flex-col justify-center select-none whitespace-nowrap shrink-0 py-[1px] ${textClassName}`}>
+            <svg viewBox="0 0 114 26" className="w-[114px] h-[26px] select-none shrink-0 overflow-visible" fill="none">
+              <text 
+                x="0" 
+                y="11" 
+                textLength="114" 
+                lengthAdjust="spacing" 
+                className={`fill-[#00b4d8] font-black text-[13px] uppercase font-sans tracking-normal transition-all group-hover:brightness-110 ${titleClassName}`}
+              >
+                {title || "CBT Platform"}
+              </text>
+              <text 
+                x="0" 
+                y="24" 
+                textLength="114" 
+                lengthAdjust="spacing" 
+                className={`fill-slate-300 font-medium text-[9.8px] font-sans tracking-normal transition-colors group-hover:fill-white ${subtitleClassName}`}
+              >
+                Powered by IkshaTests
+              </text>
+            </svg>
           </div>
         )}
       </div>

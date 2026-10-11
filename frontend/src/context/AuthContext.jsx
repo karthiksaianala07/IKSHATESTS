@@ -34,10 +34,10 @@ const withTimeout = (promise, ms = 2500) => {
 };
 
 export function AuthProvider({ children }) {
-  // OPTIMISTIC HYDRATION: Synchronously check for a stored user to avoid the refresh delay
+  // OPTIMISTIC HYDRATION: Synchronously check for a stored user across sessionStorage & localStorage
   const getInitialUser = () => {
     try {
-      const stored = safeSessionStorage.getItem('ikshatests_user');
+      const stored = safeSessionStorage.getItem('ikshatests_user') || localStorage.getItem('ikshatests_user');
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }, 2500);
 
-    // 1. Background verification of the session
+    // 1. Background verification of the session without destructive dropouts
     const checkUser = async () => {
       try {
         const initial = getInitialUser();
@@ -62,17 +62,19 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        const sessionRes = await withTimeout(supabase.auth.getSession(), 2500).catch(() => ({ data: {} }));
-        const session = sessionRes?.data?.session;
+        const { data, error } = await supabase.auth.getSession();
+        const session = data?.session;
 
         if (session) {
           await fetchProfile(session.user);
-        } else {
+        } else if (!error && !initial) {
+          // Only clear user if no session exists AND no initial cached user was present
           setUser(null);
           safeSessionStorage.removeItem('ikshatests_user');
+          try { localStorage.removeItem('ikshatests_user'); } catch {}
         }
       } catch (err) {
-        console.error("Auth initialization check failed:", err);
+        console.warn("Auth initialization check non-fatal error:", err.message);
       } finally {
         setLoading(false);
       }
@@ -81,7 +83,7 @@ export function AuthProvider({ children }) {
     checkUser();
 
     // 2. Continuous Auth Listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
         const initial = getInitialUser();
         if (initial && initial.id === 'mock-admin-id') {
@@ -91,9 +93,11 @@ export function AuthProvider({ children }) {
 
         if (session) {
           await fetchProfile(session.user);
-        } else {
+        } else if (event === 'SIGNED_OUT') {
+          // Only wipe user when an explicit SIGNED_OUT event is emitted
           setUser(null);
           safeSessionStorage.removeItem('ikshatests_user');
+          try { localStorage.removeItem('ikshatests_user'); } catch {}
         }
       } catch (err) {
         console.error("Auth state change verification failed:", err);
@@ -186,6 +190,7 @@ export function AuthProvider({ children }) {
 
     setUser(fullUser);
     safeSessionStorage.setItem('ikshatests_user', JSON.stringify(fullUser));
+    try { localStorage.setItem('ikshatests_user', JSON.stringify(fullUser)); } catch {}
     return fullUser;
   };
 
@@ -282,10 +287,11 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    // Optimistically clear local React auth state & sessionStorage first 
+    // Optimistically clear local React auth state & sessionStorage/localStorage first 
     // to prevent network/CORS sign-out latency from blocking the UI.
     setUser(null);
     safeSessionStorage.removeItem('ikshatests_user');
+    try { localStorage.removeItem('ikshatests_user'); } catch {}
 
     try {
       // Fire-and-forget Supabase sign-out in the background

@@ -68,6 +68,12 @@ export default function TestConsole() {
   const videoRef = useRef(null);
   const trackerTaskRef = useRef(null);
 
+  // Proctoring stability refs
+  const lastViolationTimeRef = useRef(0);
+  const isViolationModalOpenRef = useRef(false);
+  const blurTimeoutRef = useRef(null);
+  const violationsCountRef = useRef(0);
+
   const [currentQ, setCurrentQ] = useState(0);
   const [timeLeft, setTimeLeft] = useState(10800); 
   const [answers, setAnswers] = useState({});
@@ -85,17 +91,44 @@ export default function TestConsole() {
         if (res.data.scheduled_at) {
           setScheduledAt(new Date(res.data.scheduled_at));
         }
-        setStatus(res.data.questions.map((_, i) => i === 0 ? 'NOT_ANSWERED' : 'NOT_VISITED'));
+        let savedAnswers = {};
+        try {
+          const cached = localStorage.getItem(`iksha_test_answers_${id}`);
+          if (cached) savedAnswers = JSON.parse(cached);
+        } catch {}
+        setAnswers(savedAnswers);
+        setStatus(res.data.questions.map((_, i) => {
+          if (savedAnswers[i] !== undefined) return 'ANSWERED';
+          return i === 0 ? 'NOT_ANSWERED' : 'NOT_VISITED';
+        }));
         setIsLoadingTest(false);
       })
       .catch(err => {
         console.warn("Failed to fetch live API payload. Activating fallback demo exam payload.", err);
         setMockQuestions(fallbackQuestions);
         setDbTestId("mock-demo-uuid-1234");
-        setStatus(fallbackQuestions.map((_, i) => i === 0 ? 'NOT_ANSWERED' : 'NOT_VISITED'));
+        let savedAnswers = {};
+        try {
+          const cached = localStorage.getItem(`iksha_test_answers_${id}`);
+          if (cached) savedAnswers = JSON.parse(cached);
+        } catch {}
+        setAnswers(savedAnswers);
+        setStatus(fallbackQuestions.map((_, i) => {
+          if (savedAnswers[i] !== undefined) return 'ANSWERED';
+          return i === 0 ? 'NOT_ANSWERED' : 'NOT_VISITED';
+        }));
         setIsLoadingTest(false);
       });
   }, [id]);
+
+  // Persist answers locally during the exam so refreshing or connection blips never lose student progress
+  useEffect(() => {
+    if (id && Object.keys(answers).length > 0) {
+      try {
+        localStorage.setItem(`iksha_test_answers_${id}`, JSON.stringify(answers));
+      } catch {}
+    }
+  }, [answers, id]);
 
   // Live countdown to scheduled exam time
   useEffect(() => {
@@ -136,42 +169,60 @@ export default function TestConsole() {
     return () => clearInterval(timer);
   }, [isStarted, isSubmitted, violationWarning]);
 
-  // Window Focus and Fullscreen Event Listeners
+  // Window Focus and Fullscreen Event Listeners with Debounce and Cooldown
   useEffect(() => {
     if (!isStarted || isSubmitted) return;
     
     const handleFullscreenChange = () => { 
-      if (!document.fullscreenElement && !violationWarning) {
+      if (!document.fullscreenElement && !isViolationModalOpenRef.current) {
         handleViolation("Fullscreen mode was exited. Fullscreen is mandatory during the exam."); 
       } 
     };
+
     const handleVisibilityChange = () => { 
-      if (document.hidden && !violationWarning) {
+      if (document.hidden && !isViolationModalOpenRef.current) {
         handleViolation("Tab switch detected. You are not allowed to navigate away from the exam page."); 
       } 
     };
+
     const handleBlur = () => { 
-      if (!violationWarning) {
-        handleViolation("Window focus lost. You are restricted from switching to other applications."); 
-      } 
+      if (isViolationModalOpenRef.current) return;
+      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+      // Give a 1500ms grace period so fleeting OS notifications or window clicks don't falsely flag
+      blurTimeoutRef.current = setTimeout(() => {
+        if (!document.hasFocus() && !isViolationModalOpenRef.current && (document.hidden || !document.fullscreenElement)) {
+          handleViolation("Window focus lost. You are restricted from switching to other applications."); 
+        }
+      }, 1500);
+    };
+
+    const handleFocus = () => {
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+        blurTimeoutRef.current = null;
+      }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
     };
-  }, [isStarted, isSubmitted, violationWarning, violationsCount, violationsList]);
+  }, [isStarted, isSubmitted]);
 
-  // 60-Second Resume Countdown Timer
+  // 120-Second Resume Countdown Timer
   useEffect(() => {
     if (!violationWarning || resumeCountdown === null || isSubmitted) return;
 
     if (resumeCountdown <= 0) {
-      const reason = "Failed to resume the exam within the 60-second limit.";
+      const reason = "Failed to resume the exam within the 120-second limit.";
       handleSubmit(reason);
       return;
     }
@@ -204,7 +255,7 @@ export default function TestConsole() {
     };
   }, []);
 
-  // Keyboard and Input Blockers + Mouse Exit Detector
+  // Keyboard and Input Blockers (Clipboard & Shortcuts, no mouseleave)
   useEffect(() => {
     if (!isStarted || isSubmitted) return;
 
@@ -253,42 +304,45 @@ export default function TestConsole() {
       }
     };
 
-    // 4. Cursor Leave Detection
-    const handleMouseLeave = () => {
-      if (!violationWarning) {
-        handleViolation("Cursor left the secure exam browser window.");
-      }
-    };
-
     document.addEventListener('copy', handleCopy);
     document.addEventListener('cut', handleCut);
     document.addEventListener('paste', handlePaste);
     document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
       document.removeEventListener('copy', handleCopy);
       document.removeEventListener('cut', handleCut);
       document.removeEventListener('paste', handlePaste);
       document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [isStarted, isSubmitted, violationWarning, violationsCount, violationsList]);
+  }, [isStarted, isSubmitted]);
 
   const handleViolation = (reason) => {
+    const now = Date.now();
+    // 5-second cooldown to prevent stacked/cascading events (e.g. fullscreenchange + blur + visibilitychange firing together)
+    if (now - lastViolationTimeRef.current < 5000) {
+      return;
+    }
+    if (isViolationModalOpenRef.current) {
+      return;
+    }
+    lastViolationTimeRef.current = now;
+    isViolationModalOpenRef.current = true;
+
     const timestamp = new Date().toISOString();
-    const currentCount = violationsCount + 1;
+    const currentCount = violationsCountRef.current + 1;
+    violationsCountRef.current = currentCount;
     setViolationsCount(currentCount);
 
     const updatedViolations = [...violationsList, { reason, timestamp, severity: "HIGH" }];
     setViolationsList(updatedViolations);
 
-    if (currentCount >= 3) {
-      setViolationWarning({ reason: `${reason} (Proctoring strike limit reached. Auto-submitting...)`, count: currentCount });
+    if (currentCount >= 5) {
+      setViolationWarning({ reason: `${reason} (Proctoring strike limit reached: 5/5. Auto-submitting...)`, count: currentCount });
       handleSubmit(reason, updatedViolations, currentCount);
     } else {
       setViolationWarning({ reason, count: currentCount });
-      setResumeCountdown(60);
+      setResumeCountdown(120);
     }
   };
 
@@ -354,6 +408,10 @@ export default function TestConsole() {
       .catch(err => {
         console.error("Submission error:", err);
       });
+
+    try {
+      localStorage.removeItem(`iksha_test_answers_${id}`);
+    } catch {}
 
     stopWebcam();
     setIsSubmitted(true);
@@ -541,8 +599,8 @@ export default function TestConsole() {
               <div className="flex items-start gap-3">
                 <span className="material-symbols-outlined text-indigo-400 text-sm mt-0.5 font-bold">gavel</span>
                 <div>
-                  <p className="font-bold text-slate-200">3 Strike Rule</p>
-                  <p className="text-red-400 text-[10px] font-bold">Triggering 3 security violations will immediately auto-submit your exam.</p>
+                  <p className="font-bold text-slate-200">5 Strike Rule</p>
+                  <p className="text-red-400 text-[10px] font-bold">Triggering 5 security violations will auto-submit your exam.</p>
                 </div>
               </div>
             </div>
@@ -636,11 +694,11 @@ export default function TestConsole() {
             
             <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl mb-6">
               <p className="text-[10px] uppercase tracking-widest font-black text-red-400">Proctoring Strikes</p>
-              <p className="text-3xl font-black text-red-500 mt-1">{violationWarning.count} / 3</p>
+              <p className="text-3xl font-black text-red-500 mt-1">{violationWarning.count} / 5</p>
               <p className="text-[9px] text-slate-400 font-bold mt-2 uppercase">
-                {violationWarning.count < 2 
-                  ? "WARNING: Triggering 3 violations will auto-submit the exam." 
-                  : "WARNING: A third violation will auto-submit the exam."}
+                {violationWarning.count < 4 
+                  ? "WARNING: Triggering 5 violations will auto-submit the exam." 
+                  : "WARNING: A 5th violation will auto-submit the exam."}
               </p>
             </div>
 
@@ -649,14 +707,16 @@ export default function TestConsole() {
                 <p className="text-[10px] uppercase tracking-widest font-black text-amber-400">Action Required</p>
                 <p className="text-2xl font-black text-amber-500 mt-1">Resume in {resumeCountdown}s</p>
                 <p className="text-[9px] text-slate-400 font-bold mt-2 uppercase">
-                  Exam will auto-submit if not resumed within the 60-second limit.
+                  Exam will auto-submit if not resumed within the 120-second limit.
                 </p>
               </div>
             )}
 
-            {violationWarning.count < 3 && (
+            {violationWarning.count < 5 && (
               <button 
                 onClick={async () => {
+                  isViolationModalOpenRef.current = false;
+                  lastViolationTimeRef.current = Date.now();
                   setViolationWarning(null);
                   setResumeCountdown(null);
                   await enforceFullscreen();

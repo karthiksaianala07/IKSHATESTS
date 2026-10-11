@@ -1073,15 +1073,15 @@ app.post('/api/admin/students', async (req, res) => {
 // Admin resets a student password
 app.post('/api/admin/students/:id/reset-password', async (req, res) => {
   try {
-    const { id } = req.params;
-    const { password } = req.body || {};
+    const rawPassword = req.body?.password || req.body?.newPassword || '';
+    const password = typeof rawPassword === 'string' ? rawPassword.trim() : String(rawPassword || '').trim();
 
-    if (!password || password.trim().length < 6) {
+    if (!password || password.length < 6) {
       return res.status(400).json({ error: 'New password must be at least 6 characters.' });
     }
 
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(id, {
-      password: password.trim()
+      password: password
     });
 
     if (updateError) {

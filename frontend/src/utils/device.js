@@ -8,11 +8,18 @@ export const isMobileDevice = () => {
   if (typeof window === 'undefined') return false;
 
   const ua = navigator.userAgent || navigator.vendor || window.opera || '';
-  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua);
-  const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-  const isSmallScreen = window.innerWidth < 1024;
 
-  return isMobileUA || (hasTouch && isSmallScreen) || window.innerWidth < 768;
+  // 1. Explicit desktop operating systems (Windows, macOS, Linux, ChromeOS) must NEVER be treated as mobile,
+  // even if they have touchscreens (Surface, Lenovo Yoga, HP Envy) or high-DPI scaling.
+  const isDesktopOS = /Windows NT|Macintosh|X11|Linux x86_64|CrOS/i.test(ua);
+  if (isDesktopOS && window.innerWidth >= 768) {
+    return false;
+  }
+
+  // 2. Mobile User Agents
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua);
+
+  return (isMobileUA && window.innerWidth < 768) || window.innerWidth < 500;
 };
 
 /**
