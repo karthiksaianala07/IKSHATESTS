@@ -7,11 +7,16 @@ import { Logo } from '../components/Logo';
 
 // Brand educational assets
 import ikshaCbtIllustration from '../assets/iksha-cbt-illustration.jpg';
+import saiVikashLogo from '../assets/sai-vikash-logo.png';
 
 export default function Login() {
   const navigate = useNavigate();
   const { user, login, loginWithGoogle } = useAuth();
   const { tenant, subdomain: currentSubdomain, redirectToSubdomain, isTenantPortal } = useTenant();
+
+  const tenantLogoSrc = (tenant?.code === 'SV' || tenant?.subdomain === 'saivikash' || tenant?.logo_url?.includes('sai-vikash'))
+    ? saiVikashLogo
+    : (tenant?.logo_url || null);
 
   // Form States
   const [identifier, setIdentifier] = useState('');
@@ -143,29 +148,71 @@ export default function Login() {
         {/* RIGHT COLUMN: Glassmorphic Floating Window Panel */}
         <div className="lg:col-span-7 flex flex-col justify-between p-4 sm:p-6 lg:p-7 text-[#fefcfb]">
 
-          {/* Header Row: Brand Logo - Centered (50% larger) */}
-          <div className="flex items-center justify-center pb-2 sm:pb-3">
-            <Link to="/" className="flex items-center gap-2 group">
-              <Logo
-                className="h-11 sm:h-12 w-auto gap-3.5"
-                titleClassName="!text-[26px]"
-                subtitleClassName="!text-[17px]"
-              />
-            </Link>
-          </div>
-
           {/* Form Content Area */}
           <div className="max-w-md w-full mx-auto my-auto py-0">
 
-            {/* Title & Greeting - Centered */}
-            <div className="mb-3 text-center">
-              <h2 className="text-2xl sm:text-3xl font-black text-[#fefcfb] tracking-tight">
-                {tenant ? `Welcome to ${tenant.name}` : 'Hi Aspirant'}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
-                {tenant ? `${tenant.name} CBT Examination Portal` : 'Welcome to IKSHATESTS'}
-              </p>
-            </div>
+            {tenant ? (
+              /* Tenant Header: Welcome to -> <Logo> CBT Platform -> powered by <Ikshatests> */
+              <div className="mb-4 sm:mb-6 text-center flex flex-col items-center">
+                <span className="text-xs sm:text-sm font-bold tracking-widest text-[#00b4d8] uppercase mb-1">
+                  Welcome to
+                </span>
+
+                <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 py-1">
+                  {tenantLogoSrc ? (
+                    <img
+                      src={tenantLogoSrc}
+                      alt={tenant.name || "Institution Logo"}
+                      className="h-8 sm:h-10 md:h-11 w-auto max-w-[210px] sm:max-w-[250px] object-contain rounded-md shadow-sm"
+                    />
+                  ) : (
+                    <span className="text-xl sm:text-2xl font-black text-[#00b4d8] uppercase">
+                      {tenant.name}
+                    </span>
+                  )}
+                  <span className="text-xl sm:text-2xl md:text-3xl font-black text-[#fefcfb] tracking-tight uppercase whitespace-nowrap">
+                    CBT Platform
+                  </span>
+                </div>
+
+                <div className="mt-2.5 sm:mt-3 flex items-center justify-center gap-2 sm:gap-2.5">
+                  <span className="text-[11px] sm:text-xs font-semibold tracking-wider text-slate-300 lowercase">
+                    powered by
+                  </span>
+                  <Link to="/" className="inline-flex items-center hover:opacity-90 transition-opacity">
+                    <Logo
+                      forcePlatform={true}
+                      className="h-7 sm:h-8 w-auto gap-2"
+                      titleClassName="!text-[14px] sm:!text-[15px]"
+                      subtitleClassName="!text-[9.5px] sm:!text-[10px]"
+                    />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Central Platform Logo Header */}
+                <div className="flex items-center justify-center pb-2 sm:pb-3">
+                  <Link to="/" className="flex items-center gap-2 group">
+                    <Logo
+                      className="h-11 sm:h-12 w-auto gap-3.5"
+                      titleClassName="!text-[26px]"
+                      subtitleClassName="!text-[17px]"
+                    />
+                  </Link>
+                </div>
+
+                {/* Title & Greeting - Centered */}
+                <div className="mb-3 text-center">
+                  <h2 className="text-2xl sm:text-3xl font-black text-[#fefcfb] tracking-tight">
+                    Hi Aspirant
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
+                    Welcome to IKSHATESTS
+                  </p>
+                </div>
+              </>
+            )}
 
             {/* Error Message */}
             {error && (

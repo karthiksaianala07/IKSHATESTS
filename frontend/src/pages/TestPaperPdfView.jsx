@@ -229,6 +229,61 @@ export default function TestPaperPdfView() {
     }
   };
 
+  const handleClosePaperModal = () => {
+    const isDirty = (
+      paperEditData.title !== (test?.title || '') ||
+      parseInt(paperEditData.duration_minutes) !== (test?.duration_minutes || 180) ||
+      paperEditData.category !== (test?.category || '').replace('__draft', '')
+    );
+    if (isDirty) {
+      if (!window.confirm("You have unsaved changes to the paper specifications. Discard and close?")) {
+        return;
+      }
+    }
+    setShowEditPaperModal(false);
+  };
+
+  const handleCloseQuestionModal = () => {
+    if (editingQuestion) {
+      const isDirty = (
+        editFormData.text !== (editingQuestion.text || '') ||
+        editFormData.sub_text !== (editingQuestion.sub_text || '') ||
+        editFormData.image_url !== (editingQuestion.image_url || '') ||
+        editFormData.correct_answer !== (editingQuestion.correct_answer || '') ||
+        editFormData.explanation !== (editingQuestion.explanation || '') ||
+        editFormData.subject !== (editingQuestion.subject || 'Physics') ||
+        editFormData.chapter !== (editingQuestion.chapter || '') ||
+        editFormData.type !== (editingQuestion.type || 'MCQ')
+      );
+      if (isDirty) {
+        if (!window.confirm("You have unsaved changes in this question. Discard changes and close?")) {
+          return;
+        }
+      }
+    }
+    setEditingQuestion(null);
+  };
+
+  const handleBackToAdmin = () => {
+    if (editingQuestion || showEditPaperModal) {
+      if (!window.confirm("You have an editor open with unsaved changes. Are you sure you want to return to Admin Portal?")) {
+        return;
+      }
+    }
+    navigate('/admin');
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (editingQuestion || showEditPaperModal) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [editingQuestion, showEditPaperModal]);
+
   // ── Upload Image Helper ──
   const handleUploadImageFile = async (file) => {
     const formData = new FormData();
@@ -429,7 +484,7 @@ export default function TestPaperPdfView() {
       <div className="no-print sticky top-0 z-50 bg-[#060913]/95 backdrop-blur-md border-b border-slate-800 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3 flex-wrap">
           <button
-            onClick={() => navigate('/admin')}
+            onClick={handleBackToAdmin}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-colors cursor-pointer border border-slate-700"
           >
             <span className="material-symbols-outlined text-base">arrow_back</span>
@@ -903,7 +958,7 @@ export default function TestPaperPdfView() {
               </div>
               <button
                 type="button"
-                onClick={() => setShowEditPaperModal(false)}
+                onClick={handleClosePaperModal}
                 className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-lg">close</span>
@@ -958,7 +1013,7 @@ export default function TestPaperPdfView() {
               <div className="pt-4 border-t border-[#034078]/50 flex items-center justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowEditPaperModal(false)}
+                  onClick={handleClosePaperModal}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl cursor-pointer transition-colors"
                 >
                   Cancel
@@ -1004,7 +1059,7 @@ export default function TestPaperPdfView() {
               </div>
               <button
                 type="button"
-                onClick={() => setEditingQuestion(null)}
+                onClick={handleCloseQuestionModal}
                 className="text-slate-400 hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-xl">close</span>
@@ -1353,7 +1408,7 @@ export default function TestPaperPdfView() {
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setEditingQuestion(null)}
+                    onClick={handleCloseQuestionModal}
                     className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl cursor-pointer transition-colors"
                   >
                     Cancel
