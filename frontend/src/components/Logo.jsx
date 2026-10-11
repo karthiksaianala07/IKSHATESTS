@@ -10,7 +10,8 @@ export function Logo({
   textClassName = "",
   titleClassName = "",
   subtitleClassName = "",
-  forcePlatform = false
+  forcePlatform = false,
+  title = null
 }) {
   let tenant = null;
   try {
@@ -44,7 +45,7 @@ export function Logo({
         {showText && (
           <div className={`h-full flex flex-col justify-center text-left leading-none select-none whitespace-nowrap shrink-0 py-[1px] ${textClassName}`}>
             <span className={`text-[15px] font-black tracking-wider text-[#00b4d8] uppercase whitespace-nowrap group-hover:brightness-110 transition-all leading-tight ${titleClassName}`}>
-              {tenant.name}
+              {title || "CBT Platform"}
             </span>
             <span className={`text-[10px] font-medium tracking-normal text-slate-300 whitespace-nowrap group-hover:text-white transition-colors leading-tight ${subtitleClassName}`}>
               Powered by IkshaTests
