@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API_URL } from '../config/api';
@@ -10,15 +10,23 @@ import LatexRenderer from '../components/LatexRenderer';
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Submissions State for Real Student Analytics
   const [submissions, setSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
-  const [selectedSubId, setSelectedSubId] = useState(null);
+  const [selectedSubId, setSelectedSubId] = useState(location.state?.selectedSubId || null);
   const [selectedSubDetail, setSelectedSubDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [showReattemptModal, setShowReattemptModal] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.selectedSubId) {
+      setSelectedSubId(location.state.selectedSubId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (user?.role === 'admin') {

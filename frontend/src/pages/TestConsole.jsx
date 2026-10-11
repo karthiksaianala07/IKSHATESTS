@@ -52,6 +52,8 @@ export default function TestConsole() {
   const [violationsCount, setViolationsCount] = useState(0);
   const [violationsList, setViolationsList] = useState([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedSubId, setSubmittedSubId] = useState(null);
+  const [submissionTimeSpent, setSubmissionTimeSpent] = useState(0);
   const [resumeCountdown, setResumeCountdown] = useState(null);
 
   const [showInstructions, setShowInstructions] = useState(false);
@@ -401,9 +403,16 @@ export default function TestConsole() {
       }
     };
 
+    const timeSpent = Math.max(0, 10800 - timeLeft);
+    setSubmissionTimeSpent(timeSpent);
+
     axios.post(`${API_URL}/api/submissions`, payload)
       .then(res => {
         console.log("Submission successful:", res.data);
+        const subId = res.data?.submission?.id || res.data?.id;
+        if (subId) {
+          setSubmittedSubId(subId);
+        }
       })
       .catch(err => {
         console.error("Submission error:", err);
@@ -654,25 +663,249 @@ export default function TestConsole() {
 
   if (isSubmitted) {
     let score = 0, correct = 0, wrong = 0, unattempted = 0;
+    const subjectMap = {};
+
     mockQuestions.forEach((q, i) => {
-       if (answers[i] !== undefined) {
-         if (String(answers[i]) === String(q.correct_answer)) { score += 4; correct++; }
-         else { score -= 1; wrong++; }
-       } else unattempted++;
+      const subName = q.subject || 'General';
+      if (!subjectMap[subName]) {
+        subjectMap[subName] = { name: subName, total: 0, correct: 0, wrong: 0, skipped: 0, score: 0 };
+      }
+      subjectMap[subName].total += 1;
+
+      if (answers[i] !== undefined) {
+        if (String(answers[i]) === String(q.correct_answer)) {
+          score += 4;
+          correct++;
+          subjectMap[subName].correct += 1;
+          subjectMap[subName].score += 4;
+        } else {
+          score -= 1;
+          wrong++;
+          subjectMap[subName].wrong += 1;
+          subjectMap[subName].score -= 1;
+        }
+      } else {
+        unattempted++;
+        subjectMap[subName].skipped += 1;
+      }
+    });
+
+    const totalQuestions = mockQuestions.length;
+    const maxScore = totalQuestions * 4;
+    const percentage = maxScore > 0 ? Math.max(0, Math.round((score / maxScore) * 100)) : 0;
+    const attemptedCount = correct + wrong;
+    const accuracy = attemptedCount > 0 ? Math.round((correct / attemptedCount) * 100) : 0;
+    const penaltyLost = wrong * 1;
+    const marksGained = correct * 4;
+
+    const isNeet = (testTitle || '').toUpperCase().includes('NEET');
+    const benchmarkCutoff = isNeet ? 137 : 92;
+    const isCleared = score >= benchmarkCutoff;
+    const benchmarkDiff = Math.abs(score - benchmarkCutoff);
+
+    const subjects = Object.values(subjectMap).map(sub => {
+      const subAttempted = sub.correct + sub.wrong;
+      return {
+        ...sub,
+        maxScore: sub.total * 4,
+        accuracy: subAttempted > 0 ? Math.round((sub.correct / subAttempted) * 100) : 0
+      };
     });
 
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0f172a] text-white text-center p-6">
-        <h2 className="text-4xl font-black mb-4">Exam Completed</h2>
-        <div className="bg-[#1e293b] p-8 rounded-3xl border border-[#334155] mb-8 w-full max-w-lg shadow-2xl">
-           <h3 className="text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8b5cf6] to-[#ec4899] mb-8">{score}</h3>
-           <div className="grid grid-cols-3 gap-4 border-t border-[#334155] pt-6 uppercase tracking-widest text-[10px] font-black">
-             <div><p className="text-[#22c55e] text-2xl font-bold">{correct}</p>Correct</div>
-             <div><p className="text-[#ef4444] text-2xl font-bold">{wrong}</p>Wrong</div>
-             <div><p className="text-[#cbd5e1] text-2xl font-bold">{unattempted}</p>Skipped</div>
-           </div>
+      <div className="min-h-screen bg-[#070d1d] text-slate-100 flex flex-col items-center justify-start p-4 md:p-8 selection:bg-indigo-500/30 font-sans overflow-y-auto">
+        <div className="max-w-4xl w-full my-auto py-8 space-y-6">
+          
+          {/* Top Success Badge & Title */}
+          <div className="flex flex-col items-center text-center space-y-2">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-500/10">
+              <span className="material-symbols-outlined text-base text-emerald-400">check_circle</span>
+              Exam Completed & Submitted Successfully
+            </div>
+            <h1 className="text-2xl md:text-4xl font-black text-white font-headline tracking-tight">
+              {testTitle || 'Official Mock Examination'}
+            </h1>
+            <p className="text-xs md:text-sm text-slate-400 font-medium">
+              Performance Scorecard • Submitted on {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} at {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+            </p>
+          </div>
+
+          {/* Central Hero Scorecard */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#11192e] via-[#0d1527] to-[#141d34] border border-slate-700/60 p-6 md:p-10 shadow-2xl">
+            <div className="absolute -top-24 -right-24 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 border-b border-slate-700/40 pb-8">
+              
+              {/* Score Number & Verdict */}
+              <div className="text-center md:text-left space-y-2">
+                <span className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-400">
+                  Aggregate Score
+                </span>
+                <div className="flex items-baseline justify-center md:justify-start gap-3">
+                  <span className="text-6xl md:text-7xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-200 to-pink-300 drop-shadow-md">
+                    {score}
+                  </span>
+                  <span className="text-xl md:text-2xl font-bold text-slate-400">
+                    / {maxScore}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
+                  <span className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-white/10 text-slate-200 border border-white/10">
+                    {percentage}% Aggregate
+                  </span>
+                  <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border flex items-center gap-1.5 ${
+                    isCleared 
+                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
+                      : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  }`}>
+                    <span className="material-symbols-outlined text-sm">
+                      {isCleared ? 'verified' : 'info'}
+                    </span>
+                    {isCleared 
+                      ? `Cutoff Cleared (+${benchmarkDiff} pts)` 
+                      : `Below Benchmark (-${benchmarkDiff} pts)`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick Summary Pill Stats */}
+              <div className="grid grid-cols-3 gap-3 md:gap-5 w-full md:w-auto">
+                <div className="bg-[#18233c]/80 border border-slate-700/60 rounded-2xl p-4 text-center min-w-[90px]">
+                  <p className="text-2xl md:text-3xl font-black text-emerald-400">{correct}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Correct</p>
+                  <p className="text-[10px] text-emerald-400/80 font-bold">+{marksGained} pts</p>
+                </div>
+                <div className="bg-[#18233c]/80 border border-slate-700/60 rounded-2xl p-4 text-center min-w-[90px]">
+                  <p className="text-2xl md:text-3xl font-black text-rose-400">{wrong}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Wrong</p>
+                  <p className="text-[10px] text-rose-400/80 font-bold">-{penaltyLost} pts</p>
+                </div>
+                <div className="bg-[#18233c]/80 border border-slate-700/60 rounded-2xl p-4 text-center min-w-[90px]">
+                  <p className="text-2xl md:text-3xl font-black text-slate-300">{unattempted}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Skipped</p>
+                  <p className="text-[10px] text-slate-400 font-bold">0 pts</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 4 High-Level Diagnostic Highlights */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
+              <div className="bg-[#0b1222]/60 border border-slate-800/80 p-3.5 rounded-2xl">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Accuracy Rate</p>
+                <p className={`text-xl font-black mt-1 ${accuracy >= 70 ? 'text-emerald-400' : accuracy >= 40 ? 'text-amber-400' : 'text-rose-400'}`}>
+                  {accuracy}%
+                </p>
+                <p className="text-[10px] text-slate-500 font-medium">Of attempted questions</p>
+              </div>
+
+              <div className="bg-[#0b1222]/60 border border-slate-800/80 p-3.5 rounded-2xl">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Negative Penalty</p>
+                <p className="text-xl font-black mt-1 text-rose-400">
+                  -{penaltyLost} <span className="text-xs text-slate-400 font-normal">pts lost</span>
+                </p>
+                <p className="text-[10px] text-slate-500 font-medium">Careless negative marks</p>
+              </div>
+
+              <div className="bg-[#0b1222]/60 border border-slate-800/80 p-3.5 rounded-2xl">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Attempted</p>
+                <p className="text-xl font-black mt-1 text-indigo-300">
+                  {attemptedCount} <span className="text-xs text-slate-400 font-normal">/ {totalQuestions}</span>
+                </p>
+                <p className="text-[10px] text-slate-500 font-medium">{Math.round((attemptedCount / totalQuestions) * 100)}% coverage</p>
+              </div>
+
+              <div className="bg-[#0b1222]/60 border border-slate-800/80 p-3.5 rounded-2xl">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Time Taken</p>
+                <p className="text-xl font-black mt-1 text-purple-300">
+                  {formatTime(submissionTimeSpent)}
+                </p>
+                <p className="text-[10px] text-slate-500 font-medium">Pacing & Duration</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sectional / Subject-Wise Breakdown */}
+          {subjects.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-indigo-400 text-lg">subject</span>
+                  Subject-Wise Sectional Breakdown
+                </h3>
+                <span className="text-xs text-slate-400 font-semibold">{subjects.length} Sections Evaluated</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {subjects.map((sub, idx) => (
+                  <div 
+                    key={idx} 
+                    className="bg-[#10172b] border border-slate-700/50 hover:border-indigo-500/40 p-5 rounded-2xl shadow-sm transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-black uppercase tracking-wider text-indigo-300">
+                          {sub.name}
+                        </span>
+                        <span className="text-xs font-black text-white bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700">
+                          {sub.score} / {sub.maxScore}
+                        </span>
+                      </div>
+                      
+                      {/* Accuracy bar */}
+                      <div className="space-y-1 mb-3">
+                        <div className="flex justify-between text-[10px] font-bold text-slate-400">
+                          <span>Accuracy</span>
+                          <span>{sub.accuracy}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              sub.accuracy >= 70 ? 'bg-emerald-400' : sub.accuracy >= 40 ? 'bg-amber-400' : 'bg-rose-400'
+                            }`}
+                            style={{ width: `${sub.accuracy}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-800 text-[10px] font-bold text-center">
+                      <span className="text-emerald-400">{sub.correct} Correct</span>
+                      <span className="text-rose-400">{sub.wrong} Wrong</span>
+                      <span className="text-slate-400">{sub.skipped} Skipped</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action Row */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+            <button
+              onClick={() => navigate('/dashboard', { state: { selectedSubId: submittedSubId } })}
+              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:brightness-110 text-white font-black text-xs md:text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-indigo-600/25 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2.5"
+            >
+              <span className="material-symbols-outlined text-lg">insights</span>
+              Check In-Depth Diagnostic Analysis
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full sm:w-auto px-6 py-4 bg-[#131b2e] hover:bg-[#1a253f] text-slate-200 font-bold text-xs md:text-sm uppercase tracking-wider rounded-2xl border border-slate-700/60 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined text-lg">dashboard</span>
+              Dashboard
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full sm:w-auto px-6 py-4 bg-[#131b2e] hover:bg-[#1a253f] text-slate-200 font-bold text-xs md:text-sm uppercase tracking-wider rounded-2xl border border-slate-700/60 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined text-lg">home</span>
+              Home
+            </button>
+          </div>
+
         </div>
-        <Button onClick={() => navigate('/')}>Return Home</Button>
       </div>
     );
   }
