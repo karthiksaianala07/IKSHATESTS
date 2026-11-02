@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS questions (
   test_id UUID REFERENCES tests(id) ON DELETE CASCADE,
   subject TEXT NOT NULL, -- e.g., 'Physics', 'Chemistry'
   chapter TEXT, -- NCERT Chapter sub-classification
+  subtopic TEXT, -- Detailed syllabus sub-topic breakdown
   type TEXT CHECK (type IN ('MCQ', 'NUMERICAL')),
   text TEXT NOT NULL, -- Supports LaTeX
   image_url TEXT, -- Public URL for images stored in Supabase Storage
@@ -85,6 +86,9 @@ CREATE TABLE IF NOT EXISTS questions (
   correct_answer TEXT NOT NULL, -- Index for MCQ or string for Numerical
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Ensure subtopic column exists if table was already created
+ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS subtopic TEXT;
 
 -- 4. Create SUBMISSIONS table
 CREATE TABLE IF NOT EXISTS submissions (

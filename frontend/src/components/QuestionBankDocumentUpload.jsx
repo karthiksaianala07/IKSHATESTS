@@ -3,10 +3,11 @@ import axios from 'axios';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import LatexRenderer from './LatexRenderer';
-import MathKeypad from './MathKeypad';
+import SmartMathInput from './SmartMathInput';
 import { supabase } from '../config/supabase';
-import { NCERT_CHAPTERS } from '../config/ncertChapters';
+import { NCERT_CHAPTERS, getSubtopics } from '../config/ncertChapters';
 import { API_URL } from '../config/api';
+import { normalizeOptionLetter } from '../utils/answerEvaluation';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -29,6 +30,7 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
   // Batch subject & chapter override
   const [batchSubject, setBatchSubject] = useState('Physics');
   const [batchChapter, setBatchChapter] = useState('');
+  const [batchSubtopic, setBatchSubtopic] = useState('');
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -185,13 +187,15 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
               ];
             }
 
+            const isNum = (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
             cleaned.push({
               subject: q.subject || 'Physics',
               chapter: q.chapter || '',
-              type: (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL') ? 'NUMERICAL' : 'MCQ',
+              subtopic: q.subtopic || '',
+              type: isNum ? 'NUMERICAL' : 'MCQ',
               text: q.text || '',
               options: cleanedOptions,
-              correct_answer: q.correct_answer !== undefined && q.correct_answer !== null ? String(q.correct_answer) : '',
+              correct_answer: isNum ? (q.correct_answer !== undefined && q.correct_answer !== null ? String(q.correct_answer) : '') : normalizeOptionLetter(q.correct_answer),
               image_url: finalImageUrl,
               sub_text: q.sub_text || ''
             });
@@ -244,13 +248,15 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
               ];
             }
 
+            const isNum = (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
             return {
               subject: q.subject || 'Physics',
               chapter: q.chapter || '',
-              type: (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL') ? 'NUMERICAL' : 'MCQ',
+              subtopic: q.subtopic || '',
+              type: isNum ? 'NUMERICAL' : 'MCQ',
               text: q.text || '',
               options: cleanedOptions,
-              correct_answer: q.correct_answer !== undefined && q.correct_answer !== null ? String(q.correct_answer) : '',
+              correct_answer: isNum ? (q.correct_answer !== undefined && q.correct_answer !== null ? String(q.correct_answer) : '') : normalizeOptionLetter(q.correct_answer),
               image_url: q.image_url || null,
               sub_text: q.sub_text || ''
             };
@@ -271,7 +277,11 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
   const updateStagedQuestion = (index, field, value) => {
     setStagedQuestions((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], [field]: value };
+      let val = value;
+      if (field === 'correct_answer' && next[index]?.type !== 'NUMERICAL' && next[index]?.type !== 'INTEGER') {
+        val = normalizeOptionLetter(value);
+      }
+      next[index] = { ...next[index], [field]: val };
       return next;
     });
   };
@@ -296,7 +306,8 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
       prev.map((q) => ({
         ...q,
         subject: batchSubject,
-        chapter: batchChapter || q.chapter
+        chapter: batchChapter || q.chapter,
+        subtopic: batchSubtopic || q.subtopic || ''
       }))
     );
   };
@@ -360,16 +371,20 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
 
     setSaving(true);
     try {
-      const payload = stagedQuestions.map((q) => ({
-        subject: q.subject,
-        chapter: q.chapter || null,
-        type: q.type || 'MCQ',
-        text: q.text,
-        options: q.options || [],
-        correct_answer: q.correct_answer || '',
-        image_url: q.image_url || null,
-        sub_text: q.sub_text || null
-      }));
+      const payload = stagedQuestions.map((q) => {
+        const isNum = (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
+        return {
+          subject: q.subject,
+          chapter: q.chapter || null,
+          subtopic: q.subtopic || null,
+          type: q.type || 'MCQ',
+          text: q.text,
+          options: q.options || [],
+          correct_answer: isNum ? (q.correct_answer || '') : normalizeOptionLetter(q.correct_answer),
+          image_url: q.image_url || null,
+          sub_text: q.sub_text || null
+        };
+      });
 
       await axios.post(`${API_URL}/api/admin/questions`, payload);
       alert(`Success! Successfully added ${stagedQuestions.length} questions to the Question Bank.`);
@@ -531,8 +546,9 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                 const sub = e.target.value;
                 setBatchSubject(sub);
                 setBatchChapter(NCERT_CHAPTERS[sub] ? NCERT_CHAPTERS[sub][0] : '');
+                setBatchSubtopic('');
               }}
-              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-200 text-xs font-bold"
+              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-200 text-xs font-bold cursor-pointer"
             >
               <option value="Physics">Physics</option>
               <option value="Chemistry">Chemistry</option>
@@ -542,12 +558,26 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
 
             <select
               value={batchChapter}
-              onChange={(e) => setBatchChapter(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-200 text-xs font-bold max-w-[220px]"
+              onChange={(e) => {
+                setBatchChapter(e.target.value);
+                setBatchSubtopic('');
+              }}
+              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-200 text-xs font-bold max-w-[220px] cursor-pointer"
             >
               <option value="">Keep / Choose Chapter</option>
               {(NCERT_CHAPTERS[batchSubject] || []).map((ch) => (
                 <option key={ch} value={ch}>{ch}</option>
+              ))}
+            </select>
+
+            <select
+              value={batchSubtopic}
+              onChange={(e) => setBatchSubtopic(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-200 text-xs font-bold max-w-[240px] cursor-pointer"
+            >
+              <option value="">Keep / Choose Sub-topic</option>
+              {getSubtopics(batchSubject, batchChapter).map((st) => (
+                <option key={st} value={st}>{st}</option>
               ))}
             </select>
 
@@ -587,13 +617,19 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
                     <label className="text-[10px] font-mono font-bold uppercase text-slate-400 mb-1 block">Subject</label>
                     <select
                       value={q.subject}
-                      onChange={(e) => updateStagedQuestion(idx, 'subject', e.target.value)}
-                      className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-bold"
+                      onChange={(e) => {
+                        const newSub = e.target.value;
+                        const defChapter = NCERT_CHAPTERS[newSub] ? NCERT_CHAPTERS[newSub][0] : '';
+                        updateStagedQuestion(idx, 'subject', newSub);
+                        updateStagedQuestion(idx, 'chapter', defChapter);
+                        updateStagedQuestion(idx, 'subtopic', '');
+                      }}
+                      className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-bold cursor-pointer"
                     >
                       <option value="Physics">Physics</option>
                       <option value="Chemistry">Chemistry</option>
@@ -606,8 +642,11 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                     <label className="text-[10px] font-mono font-bold uppercase text-slate-400 mb-1 block">Chapter</label>
                     <select
                       value={q.chapter || ''}
-                      onChange={(e) => updateStagedQuestion(idx, 'chapter', e.target.value)}
-                      className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-bold truncate"
+                      onChange={(e) => {
+                        updateStagedQuestion(idx, 'chapter', e.target.value);
+                        updateStagedQuestion(idx, 'subtopic', '');
+                      }}
+                      className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-bold truncate cursor-pointer"
                     >
                       <option value="">Select Chapter</option>
                       {q.chapter && !(NCERT_CHAPTERS[q.subject] || []).includes(q.chapter) && (
@@ -620,34 +659,57 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                   </div>
 
                   <div>
+                    <label className="text-[10px] font-mono font-bold uppercase text-slate-400 mb-1 block">Sub-topic</label>
+                    <select
+                      value={q.subtopic || ''}
+                      onChange={(e) => updateStagedQuestion(idx, 'subtopic', e.target.value)}
+                      className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-bold truncate cursor-pointer"
+                    >
+                      <option value="">Select Sub-topic</option>
+                      {q.subtopic && !getSubtopics(q.subject, q.chapter).includes(q.subtopic) && (
+                        <option value={q.subtopic}>{q.subtopic} (Extracted)</option>
+                      )}
+                      {getSubtopics(q.subject, q.chapter).map((st) => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="text-[10px] font-mono font-bold uppercase text-slate-400 mb-1 block">Correct Answer</label>
-                    <input
-                      type="text"
-                      value={q.correct_answer}
-                      onChange={(e) => updateStagedQuestion(idx, 'correct_answer', e.target.value)}
-                      placeholder="e.g. Option A or 4.5"
-                      className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-mono"
-                    />
+                    {q.type === 'NUMERICAL' || q.type === 'INTEGER' ? (
+                      <input
+                        type="text"
+                        value={q.correct_answer || ''}
+                        onChange={(e) => updateStagedQuestion(idx, 'correct_answer', e.target.value)}
+                        placeholder="e.g. 4.5"
+                        className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-mono"
+                      />
+                    ) : (
+                      <select
+                        value={normalizeOptionLetter(q.correct_answer) || ''}
+                        onChange={(e) => updateStagedQuestion(idx, 'correct_answer', e.target.value)}
+                        className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-bold cursor-pointer"
+                      >
+                        <option value="">Select (A, B, C, D)</option>
+                        <option value="A">Option A</option>
+                        <option value="B">Option B</option>
+                        <option value="C">Option C</option>
+                        <option value="D">Option D</option>
+                      </select>
+                    )}
                   </div>
                 </div>
 
                 {/* Question Text */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-mono font-bold uppercase text-slate-400 block">Question Text (LaTeX)</label>
-                  <textarea
-                    ref={(el) => {
-                      if (el) reviewTextRefs.current.set(idx, el);
-                      else reviewTextRefs.current.delete(idx);
-                    }}
+                  <SmartMathInput
+                    mode="rich"
+                    label="Question Text (Smart Ribbon & Math Toolbar)"
+                    placeholder="Type or edit question..."
                     value={q.text}
-                    onChange={(e) => updateStagedQuestion(idx, 'text', e.target.value)}
-                    rows={3}
-                    className="w-full p-3 text-xs border border-slate-800 rounded-xl bg-slate-900 text-slate-200 font-mono focus:outline-none focus:border-primary"
-                  />
-                  <MathKeypad
-                    targetRef={{ current: reviewTextRefs.current.get(idx) }}
-                    value={q.text || ''}
-                    setValue={(val) => updateStagedQuestion(idx, 'text', val)}
+                    onChange={(val) => updateStagedQuestion(idx, 'text', val)}
+                    minHeight="80px"
                   />
                   {q.text && (
                     <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-xs text-slate-200 leading-relaxed">
@@ -721,18 +783,15 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                               <span className="w-6 h-6 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono font-bold text-slate-400 flex items-center justify-center shrink-0">
                                 {String.fromCharCode(65 + oIdx)}
                               </span>
-                              <input
-                                ref={(el) => {
-                                  if (el) stagedOptionRefs.current.set(`${idx}-${oIdx}`, el);
-                                  else stagedOptionRefs.current.delete(`${idx}-${oIdx}`);
-                                }}
-                                type="text"
-                                value={optText}
-                                onFocus={() => setActiveStagedOption({ qIdx: idx, oIdx })}
-                                onChange={(e) => updateStagedOption(idx, oIdx, 'text', e.target.value)}
-                                placeholder={`Option ${String.fromCharCode(65 + oIdx)} (LaTeX)`}
-                                className="flex-1 p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 focus:outline-none focus:border-primary"
-                              />
+                              <div className="flex-1">
+                                <SmartMathInput
+                                  mode="option"
+                                  placeholder={`Option ${String.fromCharCode(65 + oIdx)} value...`}
+                                  value={optText}
+                                  onChange={(val) => updateStagedOption(idx, oIdx, 'text', val)}
+                                  minHeight="40px"
+                                />
+                              </div>
                               {/* Option Image Upload */}
                               <label
                                 className={`w-8 h-8 flex items-center justify-center rounded-lg border border-dashed cursor-pointer transition-colors shrink-0 ${
@@ -774,24 +833,6 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                           </div>
                         );
                       })}
-                    </div>
-
-                    {/* Math Keypad for Active Staged Option */}
-                    <div className="pt-2">
-                      <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">
-                        Math Keyboard for Option {String.fromCharCode(65 + (activeStagedOption.qIdx === idx ? activeStagedOption.oIdx : 0))}:
-                      </p>
-                      <MathKeypad
-                        targetRef={{ current: stagedOptionRefs.current.get(`${idx}-${activeStagedOption.qIdx === idx ? activeStagedOption.oIdx : 0}`) }}
-                        value={(() => {
-                          const curOpt = (q.options || [])[activeStagedOption.qIdx === idx ? activeStagedOption.oIdx : 0];
-                          return typeof curOpt === 'object' && curOpt !== null ? curOpt.text : String(curOpt || '');
-                        })()}
-                        setValue={(val) => {
-                          const activeIdx = activeStagedOption.qIdx === idx ? activeStagedOption.oIdx : 0;
-                          updateStagedOption(idx, activeIdx, 'text', val);
-                        }}
-                      />
                     </div>
                   </div>
                 )}

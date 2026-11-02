@@ -55,6 +55,23 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 
+// Helper to normalize MCQ correct answers to single characters 'A', 'B', 'C', 'D'
+function normalizeOptionLetter(val) {
+  if (val === undefined || val === null) return '';
+  const s = String(val).trim();
+  if (!s) return '';
+  if (/^[a-dA-D]$/.test(s)) return s.toUpperCase();
+  const match = s.match(/option\s*([a-dA-D1-4])/i);
+  if (match) {
+    const char = match[1].toUpperCase();
+    if (/^[1-4]$/.test(char)) return String.fromCharCode(64 + parseInt(char, 10));
+    return char;
+  }
+  if (/^[0-3]$/.test(s)) return String.fromCharCode(65 + parseInt(s, 10));
+  if (/^[1-4]$/.test(s)) return String.fromCharCode(64 + parseInt(s, 10));
+  return s;
+}
+
 // -----------------------
 // LIVE SUPABASE ROUTES
 // -----------------------
@@ -332,7 +349,7 @@ app.get('/api/admin/violations', (req, res) => {
 // 7.5 Get all questions (Admin only, bypasses RLS, supports pagination)
 app.get('/api/admin/questions', async (req, res) => {
   try {
-    const { paginate, page, limit, search, subject, chapter } = req.query;
+    const { paginate, page, limit, search, subject, chapter, subtopic } = req.query;
 
     if (paginate === 'true') {
       const pageNum = parseInt(page) || 1;
@@ -348,6 +365,10 @@ app.get('/api/admin/questions', async (req, res) => {
 
       if (chapter && chapter !== 'All') {
         query = query.eq('chapter', chapter);
+      }
+
+      if (subtopic && subtopic !== 'All') {
+        query = query.eq('subtopic', subtopic);
       }
 
       if (search) {
@@ -381,6 +402,9 @@ app.get('/api/admin/questions', async (req, res) => {
     if (chapter && chapter !== 'All') {
       query = query.eq('chapter', chapter);
     }
+    if (subtopic && subtopic !== 'All') {
+      query = query.eq('subtopic', subtopic);
+    }
     const { data, error } = await query.order('created_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
@@ -403,22 +427,26 @@ app.post('/api/admin/questions', async (req, res) => {
 
     let result;
     if (Array.isArray(payload)) {
-      const formatted = payload.map(q => ({
-        subject: q.subject,
-        chapter: q.chapter || null,
-        type: q.type || 'MCQ',
-        text: q.text,
-        options: q.options || [],
-        correct_answer: String(q.correct_answer),
-        image_url: q.image_url || null,
-        sub_text: q.sub_text || null,
-        explanation: q.explanation || q.solution || null,
-        test_id: test.id
-      }));
+      const formatted = payload.map(q => {
+        const isNum = (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
+        return {
+          subject: q.subject,
+          chapter: q.chapter || null,
+          subtopic: q.subtopic || null,
+          type: isNum ? 'NUMERICAL' : 'MCQ',
+          text: q.text,
+          options: q.options || [],
+          correct_answer: isNum ? String(q.correct_answer || '') : normalizeOptionLetter(q.correct_answer),
+          image_url: q.image_url || null,
+          sub_text: q.sub_text || null,
+          explanation: q.explanation || q.solution || null,
+          test_id: test.id
+        };
+      });
       let { data, error } = await supabaseAdmin.from('questions').insert(formatted).select();
-      if (error && (error.code === '42703' || error.message?.includes('explanation'))) {
-        console.warn("[ADD_QUESTION_WARNING] 'explanation' column not found, saving without explanation column.");
-        const fallback = formatted.map(({ explanation, ...rest }) => rest);
+      if (error && (error.code === '42703' || error.message?.includes('explanation') || error.message?.includes('subtopic'))) {
+        console.warn("[ADD_QUESTION_WARNING] 'explanation' or 'subtopic' column not found, falling back without new columns.");
+        const fallback = formatted.map(({ explanation, subtopic, ...rest }) => rest);
         const { data: fbData, error: fbError } = await supabaseAdmin.from('questions').insert(fallback).select();
         if (fbError) throw fbError;
         data = fbData;
@@ -427,22 +455,24 @@ app.post('/api/admin/questions', async (req, res) => {
       if (error) throw error;
       result = data;
     } else {
+      const isNum = (payload.type?.toUpperCase() === 'INTEGER' || payload.type?.toUpperCase() === 'NUMERICAL');
       const singleQ = {
         subject: payload.subject,
         chapter: payload.chapter || null,
-        type: payload.type || 'MCQ',
+        subtopic: payload.subtopic || null,
+        type: isNum ? 'NUMERICAL' : 'MCQ',
         text: payload.text,
         options: payload.options || [],
-        correct_answer: String(payload.correct_answer),
+        correct_answer: isNum ? String(payload.correct_answer || '') : normalizeOptionLetter(payload.correct_answer),
         image_url: payload.image_url || null,
         sub_text: payload.sub_text || null,
         explanation: payload.explanation || payload.solution || null,
         test_id: test.id
       };
       let { data, error } = await supabaseAdmin.from('questions').insert(singleQ).select().single();
-      if (error && (error.code === '42703' || error.message?.includes('explanation'))) {
-        console.warn("[ADD_QUESTION_WARNING] 'explanation' column not found, saving without explanation column.");
-        const { explanation, ...fbSingle } = singleQ;
+      if (error && (error.code === '42703' || error.message?.includes('explanation') || error.message?.includes('subtopic'))) {
+        console.warn("[ADD_QUESTION_WARNING] 'explanation' or 'subtopic' column not found, falling back without new columns.");
+        const { explanation, subtopic, ...fbSingle } = singleQ;
         const { data: fbData, error: fbError } = await supabaseAdmin.from('questions').insert(fbSingle).select().single();
         if (fbError) throw fbError;
         data = fbData;
@@ -463,17 +493,21 @@ app.post('/api/admin/questions', async (req, res) => {
 app.put('/api/admin/questions/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { subject, chapter, type, text, sub_text, image_url, options, correct_answer, explanation } = req.body;
+    const { subject, chapter, subtopic, type, text, sub_text, image_url, options, correct_answer, explanation } = req.body;
 
     const updates = {};
     if (subject !== undefined) updates.subject = subject;
     if (chapter !== undefined) updates.chapter = chapter || null;
+    if (subtopic !== undefined) updates.subtopic = subtopic || null;
     if (type !== undefined) updates.type = type;
     if (text !== undefined) updates.text = text;
     if (sub_text !== undefined) updates.sub_text = sub_text || null;
     if (image_url !== undefined) updates.image_url = image_url || null;
     if (options !== undefined) updates.options = options || [];
-    if (correct_answer !== undefined) updates.correct_answer = String(correct_answer);
+    const isNum = (type?.toUpperCase() === 'INTEGER' || type?.toUpperCase() === 'NUMERICAL');
+    if (correct_answer !== undefined) {
+      updates.correct_answer = isNum ? String(correct_answer) : normalizeOptionLetter(correct_answer);
+    }
     if (explanation !== undefined) updates.explanation = explanation || null;
 
     let { data, error } = await supabaseAdmin
@@ -483,11 +517,11 @@ app.put('/api/admin/questions/:id', async (req, res) => {
       .select()
       .single();
 
-    if (error && (error.code === '42703' || error.message?.includes('explanation'))) {
-      const { explanation: _, ...updatesWithoutExp } = updates;
+    if (error && (error.code === '42703' || error.message?.includes('explanation') || error.message?.includes('subtopic'))) {
+      const { explanation: _, subtopic: _st, ...updatesWithoutNewCols } = updates;
       const { data: fbData, error: fbErr } = await supabaseAdmin
         .from('questions')
-        .update(updatesWithoutExp)
+        .update(updatesWithoutNewCols)
         .eq('id', id)
         .select()
         .single();
@@ -495,12 +529,12 @@ app.put('/api/admin/questions/:id', async (req, res) => {
       data = fbData;
       error = null;
     }
-
     if (error) throw error;
+
     res.json({ success: true, question: data });
   } catch (err) {
-    console.error("[PUT_QUESTION_ERROR]", err.message);
-    res.status(500).json({ error: err.message || "Failed to update question in database" });
+    console.error("[UPDATE_QUESTION_ERROR]", err.message);
+    res.status(500).json({ error: err.message || "Failed to update question" });
   }
 });
 
@@ -1458,6 +1492,7 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
       "question_number": "51", // The question number if explicitly written next to the question (e.g., "51.", "(51)"), else null
       "subject": "Physics", // Infer subject if possible (Physics, Chemistry, Mathematics, Biology), else "Physics"
       "chapter": "Inferred standard NCERT Class 11/12 Chapter name (e.g. 'Motion in a Plane', 'Electrochemistry', 'Integrals', 'Human Reproduction') matching the subject, or null if uncertain",
+      "subtopic": "Inferred syllabus subtopic (e.g. 'Uniform Circular Motion & Centripetal Acceleration', 'Nernst Equation and Applications', 'Integration by Parts') if identifiable, or null",
       "type": "mcq", // MUST BE EXACTLY "mcq", "integer", or "numerical"
       "text": "The main question text BEFORE the diagram or image, with LaTeX for math like $\\int x^2 dx$ or $\\frac{1}{2}$",
       "sub_text": "Any optional question text or follow-up question that appears AFTER the diagram or image, with LaTeX if applicable, or null if there is no text below the diagram",
@@ -1831,6 +1866,7 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
       "question_number": "51", // The question number if explicitly written next to the question (e.g., "51.", "(51)"), else null
       "subject": "Physics", // Infer subject if possible (Physics, Chemistry, Mathematics, Biology), else "Physics"
       "chapter": "Inferred standard NCERT Class 11/12 Chapter name (e.g. 'Motion in a Plane', 'Electrochemistry', 'Integrals', 'Human Reproduction') matching the subject, or null if uncertain",
+      "subtopic": "Inferred syllabus subtopic (e.g. 'Uniform Circular Motion & Centripetal Acceleration', 'Nernst Equation and Applications', 'Integration by Parts') if identifiable, or null",
       "type": "mcq", // MUST BE EXACTLY "mcq" or "numerical"
       "text": "The main question text BEFORE the diagram or image, with LaTeX for math like $\\int x^2 dx$ or $\\frac{1}{2}$",
       "sub_text": "Any optional question text or follow-up question that appears AFTER the diagram or image, with LaTeX if applicable, or null if there is no text below the diagram",
@@ -2066,19 +2102,22 @@ app.post('/api/admin/tests', async (req, res) => {
 
     if (newQuestions && Array.isArray(newQuestions) && newQuestions.length > 0) {
       const baseTime = Date.now();
-      const questionsToInsert = newQuestions.map((q, idx) => ({
-        subject: q.subject || 'Physics',
-        chapter: q.chapter || null,
-        type: (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL') ? 'NUMERICAL' : 'MCQ',
-        text: q.text || '',
-        options: Array.isArray(q.options) ? q.options : [],
-        correct_answer: q.correct_answer || null,
-        image_url: q.image_url || null,
-        sub_text: q.sub_text || null,
-        explanation: q.explanation || q.solution || null,
-        test_id: data.id,
-        created_at: new Date(baseTime + idx * 1000).toISOString()
-      }));
+      const questionsToInsert = newQuestions.map((q, idx) => {
+        const isNum = (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
+        return {
+          subject: q.subject || 'Physics',
+          chapter: q.chapter || null,
+          type: isNum ? 'NUMERICAL' : 'MCQ',
+          text: q.text || '',
+          options: Array.isArray(q.options) ? q.options : [],
+          correct_answer: isNum ? (q.correct_answer || null) : normalizeOptionLetter(q.correct_answer),
+          image_url: q.image_url || null,
+          sub_text: q.sub_text || null,
+          explanation: q.explanation || q.solution || null,
+          test_id: data.id,
+          created_at: new Date(baseTime + idx * 1000).toISOString()
+        };
+      });
 
       let { error: newQError } = await supabaseAdmin
         .from('questions')
@@ -2577,6 +2616,21 @@ app.get('/api/submissions/detail/:id', async (req, res) => {
 
     if (subError || !submission) {
       return res.status(404).json({ error: "Submission not found" });
+    }
+
+    if (submission.tests) {
+      // Ensure questions are strictly sorted by created_at ascending
+      const { data: sortedQuestions } = await supabaseAdmin
+        .from('questions')
+        .select('*')
+        .eq('test_id', submission.test_id || submission.tests.id)
+        .order('created_at', { ascending: true });
+
+      if (sortedQuestions && sortedQuestions.length > 0) {
+        submission.tests.questions = sortedQuestions;
+      } else if (Array.isArray(submission.tests.questions)) {
+        submission.tests.questions.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+      }
     }
 
     res.json(submission);

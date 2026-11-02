@@ -4,9 +4,10 @@ import axios from 'axios';
 import { API_URL } from '../config/api';
 import { supabase } from '../config/supabase';
 import LatexRenderer from '../components/LatexRenderer';
-import MathKeypad from '../components/MathKeypad';
-import { NCERT_CHAPTERS } from '../config/ncertChapters';
+import SmartMathInput from '../components/SmartMathInput';
+import { NCERT_CHAPTERS, getSubtopics } from '../config/ncertChapters';
 import finalLogo from '../assets/Final_Logo.png';
+import { normalizeOptionLetter } from '../utils/answerEvaluation';
 
 export default function TestPaperPdfView() {
   const { id } = useParams();
@@ -30,6 +31,7 @@ export default function TestPaperPdfView() {
   const [editFormData, setEditFormData] = useState({
     subject: 'Physics',
     chapter: '',
+    subtopic: '',
     type: 'MCQ',
     text: '',
     sub_text: '',
@@ -40,7 +42,7 @@ export default function TestPaperPdfView() {
       { text: '', image_url: null },
       { text: '', image_url: null }
     ],
-    correct_answer: 'Option A',
+    correct_answer: 'A',
     explanation: ''
   });
   const [savingQuestion, setSavingQuestion] = useState(false);
@@ -253,6 +255,7 @@ export default function TestPaperPdfView() {
         editFormData.explanation !== (editingQuestion.explanation || '') ||
         editFormData.subject !== (editingQuestion.subject || 'Physics') ||
         editFormData.chapter !== (editingQuestion.chapter || '') ||
+        editFormData.subtopic !== (editingQuestion.subtopic || '') ||
         editFormData.type !== (editingQuestion.type || 'MCQ')
       );
       if (isDirty) {
@@ -352,12 +355,13 @@ export default function TestPaperPdfView() {
       id: q.id,
       subject: q.subject || 'Physics',
       chapter: q.chapter || '',
+      subtopic: q.subtopic || '',
       type: q.type || 'MCQ',
       text: q.text || '',
       sub_text: q.sub_text || '',
       image_url: q.image_url || '',
       options: normalizedOptions,
-      correct_answer: q.correct_answer || (q.type === 'MCQ' ? 'Option A' : ''),
+      correct_answer: q.type === 'MCQ' ? (normalizeOptionLetter(q.correct_answer) || 'A') : (q.correct_answer || ''),
       explanation: q.explanation || ''
     });
     setActiveEditField('text');
@@ -379,12 +383,13 @@ export default function TestPaperPdfView() {
       const payload = {
         subject: editFormData.subject,
         chapter: editFormData.chapter || null,
+        subtopic: editFormData.subtopic || null,
         type: editFormData.type,
         text: editFormData.text,
         sub_text: editFormData.sub_text || null,
         image_url: editFormData.image_url || null,
         options: formattedOptions,
-        correct_answer: editFormData.correct_answer,
+        correct_answer: editFormData.type === 'MCQ' ? normalizeOptionLetter(editFormData.correct_answer) : editFormData.correct_answer,
         explanation: editFormData.explanation || null
       };
 
@@ -735,6 +740,11 @@ export default function TestPaperPdfView() {
                                   {q.chapter}
                                 </span>
                               )}
+                              {q.subtopic && (
+                                <span className="px-2 py-0.5 bg-cyan-50 text-cyan-800 border border-cyan-200 rounded font-bold">
+                                  {q.subtopic}
+                                </span>
+                              )}
                               <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded font-semibold uppercase">
                                 {isNumerical ? 'Numerical Value' : 'Single Correct (MCQ)'}
                               </span>
@@ -1068,18 +1078,20 @@ export default function TestPaperPdfView() {
 
             {/* Modal Body (Scrollable) */}
             <form onSubmit={handleSaveQuestion} className="p-6 space-y-5 overflow-y-auto flex-1">
-              {/* Row 1: Subject, Chapter, Type, Correct Answer */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-[#001f54]/30 p-3.5 rounded-xl border border-[#034078]/60">
+              {/* Row 1: Subject, Chapter, Sub-topic, Type, Correct Answer */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-[#001f54]/30 p-3.5 rounded-xl border border-[#034078]/60">
                 <div>
                   <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Subject</label>
                   <select
                     value={editFormData.subject}
                     onChange={e => {
                       const sub = e.target.value;
+                      const defChapter = NCERT_CHAPTERS[sub] ? NCERT_CHAPTERS[sub][0] : '';
                       setEditFormData({
                         ...editFormData,
                         subject: sub,
-                        chapter: NCERT_CHAPTERS[sub] ? NCERT_CHAPTERS[sub][0] : ''
+                        chapter: defChapter,
+                        subtopic: ''
                       });
                     }}
                     className="w-full p-2 text-xs border border-[#034078] bg-[#001f54] text-white rounded-lg cursor-pointer"
@@ -1095,12 +1107,29 @@ export default function TestPaperPdfView() {
                   <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Chapter</label>
                   <select
                     value={editFormData.chapter || ''}
-                    onChange={e => setEditFormData({ ...editFormData, chapter: e.target.value })}
+                    onChange={e => setEditFormData({ ...editFormData, chapter: e.target.value, subtopic: '' })}
                     className="w-full p-2 text-xs border border-[#034078] bg-[#001f54] text-white rounded-lg cursor-pointer truncate"
                   >
                     <option value="">Select Chapter</option>
                     {(NCERT_CHAPTERS[editFormData.subject] || []).map(ch => (
                       <option key={ch} value={ch}>{ch}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Sub-topic</label>
+                  <select
+                    value={editFormData.subtopic || ''}
+                    onChange={e => setEditFormData({ ...editFormData, subtopic: e.target.value })}
+                    className="w-full p-2 text-xs border border-[#034078] bg-[#001f54] text-white rounded-lg cursor-pointer truncate"
+                  >
+                    <option value="">General / Comprehensive</option>
+                    {editFormData.subtopic && !getSubtopics(editFormData.subject, editFormData.chapter).includes(editFormData.subtopic) && (
+                      <option value={editFormData.subtopic}>{editFormData.subtopic} (Custom)</option>
+                    )}
+                    {getSubtopics(editFormData.subject, editFormData.chapter).map(st => (
+                      <option key={st} value={st}>{st}</option>
                     ))}
                   </select>
                 </div>
@@ -1121,14 +1150,14 @@ export default function TestPaperPdfView() {
                   <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Correct Answer</label>
                   {editFormData.type === 'MCQ' ? (
                     <select
-                      value={editFormData.correct_answer}
+                      value={normalizeOptionLetter(editFormData.correct_answer) || 'A'}
                       onChange={e => setEditFormData({ ...editFormData, correct_answer: e.target.value })}
                       className="w-full p-2 text-xs border border-[#034078] bg-[#001f54] text-white rounded-lg cursor-pointer font-bold text-emerald-400"
                     >
-                      <option value="Option A">Option A</option>
-                      <option value="Option B">Option B</option>
-                      <option value="Option C">Option C</option>
-                      <option value="Option D">Option D</option>
+                      <option value="A">Option A</option>
+                      <option value="B">Option B</option>
+                      <option value="C">Option C</option>
+                      <option value="D">Option D</option>
                     </select>
                   ) : (
                     <input
@@ -1142,30 +1171,15 @@ export default function TestPaperPdfView() {
                 </div>
               </div>
 
-              {/* Question Text with Math Keypad */}
+              {/* Question Text */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase text-[#fefcfb]/80 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#1282a2]"></span>
-                    Question Content (Supports LaTeX Math Formulas)
-                  </label>
-                  <span className="text-[10px] text-slate-400 font-mono">Use $...$ for inline math</span>
-                </div>
-                <textarea
-                  ref={editTextRef}
-                  value={editFormData.text}
-                  onChange={e => setEditFormData({ ...editFormData, text: e.target.value })}
-                  onFocus={() => setActiveEditField('text')}
-                  rows={3}
-                  className="w-full p-3 text-sm border border-[#034078] bg-[#001f54]/60 text-white rounded-xl focus:border-[#1282a2] focus:outline-none"
+                <SmartMathInput
+                  mode="rich"
+                  label="Question Content (Smart Ribbon & Math Toolbar)"
                   placeholder="e.g. Calculate the electric field $\vec{E}$ at a distance $r$ from an infinite wire..."
-                />
-
-                {/* Math Keypad for Question Text */}
-                <MathKeypad
-                  targetRef={editTextRef}
                   value={editFormData.text}
-                  setValue={val => setEditFormData(prev => ({ ...prev, text: val }))}
+                  onChange={val => setEditFormData({ ...editFormData, text: val })}
+                  minHeight="85px"
                 />
 
                 {/* Live Math Preview */}
@@ -1241,22 +1255,13 @@ export default function TestPaperPdfView() {
 
               {/* Sub-text (Below Image) */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-[#fefcfb]/80 block">
-                  Text Below Image (Optional, Supports LaTeX)
-                </label>
-                <textarea
-                  ref={editSubTextRef}
-                  value={editFormData.sub_text}
-                  onChange={e => setEditFormData({ ...editFormData, sub_text: e.target.value })}
-                  onFocus={() => setActiveEditField('sub_text')}
-                  rows={2}
-                  className="w-full p-2.5 text-xs border border-[#034078] bg-[#001f54]/60 text-white rounded-xl focus:border-[#1282a2] focus:outline-none"
+                <SmartMathInput
+                  mode="rich"
+                  label="Text Below Image (Optional, Smart Math Ribbon)"
                   placeholder="Optional text to display below the diagram"
-                />
-                <MathKeypad
-                  targetRef={editSubTextRef}
                   value={editFormData.sub_text}
-                  setValue={val => setEditFormData(prev => ({ ...prev, sub_text: val }))}
+                  onChange={val => setEditFormData({ ...editFormData, sub_text: val })}
+                  minHeight="55px"
                 />
               </div>
 
@@ -1267,7 +1272,7 @@ export default function TestPaperPdfView() {
                     <label className="text-xs font-bold uppercase text-[#fefcfb]/80 block">
                       Multiple Choice Options (A, B, C, D)
                     </label>
-                    <span className="text-[10px] text-slate-400">Attach text formulas and/or option diagrams</span>
+                    <span className="text-[10px] text-slate-400">WYSIWYG Math Inputs</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1280,26 +1285,23 @@ export default function TestPaperPdfView() {
                             : 'border-[#034078]/60 bg-[#001f54]/30'
                         }`}
                       >
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2">
                           <span className="w-6 h-6 rounded-md bg-[#1282a2]/20 border border-[#1282a2]/40 text-cyan-300 font-bold text-xs flex items-center justify-center shrink-0">
                             {String.fromCharCode(65 + oIdx)}
                           </span>
-                          <input
-                            ref={el => { editOptionRefs.current[oIdx] = el; }}
-                            type="text"
-                            value={opt.text}
-                            onChange={e => {
-                              const nextOpts = [...editFormData.options];
-                              nextOpts[oIdx] = { ...nextOpts[oIdx], text: e.target.value };
-                              setEditFormData({ ...editFormData, options: nextOpts });
-                            }}
-                            onFocus={() => {
-                              setActiveEditOptionIndex(oIdx);
-                              setActiveEditField('option');
-                            }}
-                            placeholder={`Option ${String.fromCharCode(65 + oIdx)} (LaTeX)`}
-                            className="flex-1 p-2 text-xs border border-[#034078] bg-[#001f54] text-white rounded-lg focus:border-[#1282a2] focus:outline-none"
-                          />
+                          <div className="flex-1">
+                            <SmartMathInput
+                              mode="option"
+                              placeholder={`Option ${String.fromCharCode(65 + oIdx)} value...`}
+                              value={opt.text}
+                              onChange={val => {
+                                const nextOpts = [...editFormData.options];
+                                nextOpts[oIdx] = { ...nextOpts[oIdx], text: val };
+                                setEditFormData({ ...editFormData, options: nextOpts });
+                              }}
+                              minHeight="40px"
+                            />
+                          </div>
                           {/* Option Image Upload Button */}
                           <label
                             className={`w-8 h-8 flex items-center justify-center rounded-lg border border-dashed cursor-pointer transition-colors shrink-0 ${
@@ -1345,44 +1347,18 @@ export default function TestPaperPdfView() {
                       </div>
                     ))}
                   </div>
-
-                  {/* Math Keypad for the Active Option */}
-                  <div className="pt-2">
-                    <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">
-                      Math Keypad for Option {String.fromCharCode(65 + activeEditOptionIndex)}:
-                    </p>
-                    <MathKeypad
-                      targetRef={{ current: editOptionRefs.current[activeEditOptionIndex] }}
-                      value={editFormData.options[activeEditOptionIndex]?.text || ''}
-                      setValue={val => {
-                        const nextOpts = [...editFormData.options];
-                        nextOpts[activeEditOptionIndex] = { ...nextOpts[activeEditOptionIndex], text: val };
-                        setEditFormData(prev => ({ ...prev, options: nextOpts }));
-                      }}
-                    />
-                  </div>
                 </div>
               )}
 
               {/* Solution / Explanation */}
               <div className="space-y-2 pt-3 border-t border-[#034078]/50">
-                <label className="text-xs font-bold uppercase text-[#fefcfb]/80 flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[#1282a2] text-sm">psychology</span>
-                  Detailed Solution & Step-by-Step Explanation (LaTeX)
-                </label>
-                <textarea
-                  ref={editExplanationRef}
-                  value={editFormData.explanation}
-                  onChange={e => setEditFormData({ ...editFormData, explanation: e.target.value })}
-                  onFocus={() => setActiveEditField('explanation')}
-                  rows={3}
-                  className="w-full p-2.5 text-xs border border-[#034078] bg-[#001f54]/60 text-white rounded-xl focus:border-[#1282a2] focus:outline-none"
+                <SmartMathInput
+                  mode="rich"
+                  label="Detailed Solution & Step-by-Step Explanation (Smart Math Ribbon)"
                   placeholder="Provide step-by-step mathematical reasoning for students..."
-                />
-                <MathKeypad
-                  targetRef={editExplanationRef}
                   value={editFormData.explanation}
-                  setValue={val => setEditFormData(prev => ({ ...prev, explanation: val }))}
+                  onChange={val => setEditFormData({ ...editFormData, explanation: val })}
+                  minHeight="75px"
                 />
                 {editFormData.explanation && (
                   <div className="p-3 bg-[#001f54]/40 rounded-xl border border-[#034078]/50">

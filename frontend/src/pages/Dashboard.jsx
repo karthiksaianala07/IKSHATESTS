@@ -6,6 +6,7 @@ import { API_URL } from '../config/api';
 import { CutoffGauge } from '../components/CutoffGauge';
 import { ReattemptModal } from '../components/ReattemptModal';
 import LatexRenderer from '../components/LatexRenderer';
+import { checkAnswer, normalizeOptionLetter } from '../utils/answerEvaluation';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -46,42 +47,10 @@ export default function Dashboard() {
     fetchSubmissionDetail(selectedSubId);
   }, [selectedSubId]);
 
-  const checkAnswer = (studentAnswer, q) => {
-    if (studentAnswer === undefined || studentAnswer === null || String(studentAnswer).trim() === '') return false;
-    const sa = String(studentAnswer).trim().toLowerCase();
-    const ca = String(q.correct_answer).trim().toLowerCase();
-    
-    if (sa === ca) return true;
-    
-    if (q.type?.toUpperCase() === 'MCQ' || (q.options && q.options.length > 0)) {
-      const optionLetters = ['a', 'b', 'c', 'd', 'e'];
-      const caMatch = ca.match(/option\s*([a-e1-5])/);
-      if (caMatch) {
-        const char = caMatch[1];
-        if (/^[1-5]$/.test(char)) {
-          const idx = parseInt(char, 10) - 1;
-          if (sa === String(idx)) return true;
-        } else {
-          const idx = optionLetters.indexOf(char);
-          if (idx !== -1 && sa === String(idx)) return true;
-        }
-      }
-      
-      if (ca.length === 1 && /^[a-e]$/.test(ca)) {
-        const idx = optionLetters.indexOf(ca);
-        if (idx !== -1 && sa === String(idx)) return true;
-      }
-      
-      if (/^[1-5]$/.test(ca) && /^[0-4]$/.test(sa)) {
-        if (parseInt(ca, 10) - 1 === parseInt(sa, 10)) return true;
-      }
-    }
-    return false;
-  };
-
   const processBackendSubmission = (dbSub) => {
     const test = dbSub.tests || {};
-    const questions = test.questions || [];
+    const rawQuestions = test.questions || [];
+    const questions = [...rawQuestions].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
     const responses = dbSub.answers?.responses || {};
     
     const category = test.category?.toUpperCase().includes('NEET') ? 'NEET' : 'JEE';
@@ -121,7 +90,7 @@ export default function Dashboard() {
         subjectMap[subName].skipped += 1;
       }
       
-      const topicName = q.chapter || 'General Concepts';
+      const topicName = q.subtopic ? `${q.chapter ? `${q.chapter}: ` : ''}${q.subtopic}` : (q.chapter || 'General Concepts');
       if (!topicMap[topicName]) {
         topicMap[topicName] = { topic: topicName, subject: subName, correct: 0, total: 0 };
       }
@@ -195,6 +164,7 @@ export default function Dashboard() {
         id: q.id,
         subject: q.subject,
         chapter: q.chapter || 'General',
+        subtopic: q.subtopic || '',
         type: q.type || 'MCQ',
         text: q.text,
         options: q.options || [],
@@ -760,20 +730,33 @@ export default function Dashboard() {
                         if (idx === undefined || idx === null || String(idx).trim() === '') return 'Skipped';
                         if (!targetQ || !targetQ.options || targetQ.options.length === 0) return `Value: ${idx}`;
                         const labels = ['Option A', 'Option B', 'Option C', 'Option D', 'Option E'];
-                        const parsedIdx = parseInt(idx, 10);
+                        let parsedIdx = parseInt(idx, 10);
+                        if (isNaN(parsedIdx) && typeof idx === 'string') {
+                          const normalized = normalizeOptionLetter(idx);
+                          if (normalized) parsedIdx = normalized.charCodeAt(0) - 65;
+                        }
                         if (!isNaN(parsedIdx) && parsedIdx >= 0 && parsedIdx < targetQ.options.length) {
-                          return `${labels[parsedIdx]}: ${targetQ.options[parsedIdx]}`;
+                          const raw = targetQ.options[parsedIdx];
+                          const text = typeof raw === 'object' ? (raw?.text || '') : raw;
+                          return `${labels[parsedIdx]}${text ? ': ' + text : ''}`;
                         }
                         return `Selected: ${idx}`;
                       };
 
                       const getCorrectAnswerLabel = () => {
                         if (!targetQ) return '';
-                        const ca = String(targetQ.correct_answer).trim();
-                        const parsedIdx = parseInt(ca, 10);
-                        if (targetQ.options && targetQ.options.length > 0 && !isNaN(parsedIdx) && parsedIdx >= 0 && parsedIdx < targetQ.options.length) {
-                          const labels = ['Option A', 'Option B', 'Option C', 'Option D', 'Option E'];
-                          return `${labels[parsedIdx]}: ${targetQ.options[parsedIdx]}`;
+                        const ca = String(targetQ.correct_answer || '').trim();
+                        if (!targetQ.options || targetQ.options.length === 0) return ca;
+                        const labels = ['Option A', 'Option B', 'Option C', 'Option D', 'Option E'];
+                        let parsedIdx = parseInt(ca, 10);
+                        if (isNaN(parsedIdx) && typeof ca === 'string') {
+                          const normalized = normalizeOptionLetter(ca);
+                          if (normalized) parsedIdx = normalized.charCodeAt(0) - 65;
+                        }
+                        if (!isNaN(parsedIdx) && parsedIdx >= 0 && parsedIdx < targetQ.options.length) {
+                          const raw = targetQ.options[parsedIdx];
+                          const text = typeof raw === 'object' ? (raw?.text || '') : raw;
+                          return `${labels[parsedIdx]}${text ? ': ' + text : ''}`;
                         }
                         return ca;
                       };
@@ -814,8 +797,11 @@ export default function Dashboard() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-3">
                                   {targetQ.options.map((opt, oIdx) => {
                                     const labels = ['A', 'B', 'C', 'D', 'E'];
-                                    const isSelected = String(studentAns) === String(oIdx);
-                                    const isCorrect = checkAnswer(oIdx, targetQ);
+                                    const optLetter = labels[oIdx];
+                                    const isSelected = String(studentAns).toUpperCase() === optLetter || String(studentAns) === String(oIdx);
+                                    const isCorrect = checkAnswer(optLetter, targetQ) || checkAnswer(oIdx, targetQ);
+                                    const optText = typeof opt === 'object' ? (opt?.text || '') : opt;
+                                    const optImage = typeof opt === 'object' ? opt?.image_url : null;
                                     let optStyle = "border-slate-800 bg-slate-900/30 text-slate-400";
                                     if (isSelected) {
                                       optStyle = isCorrect 
@@ -828,7 +814,14 @@ export default function Dashboard() {
                                     return (
                                       <div key={oIdx} className={`p-3 rounded-lg border text-xs font-semibold ${optStyle} flex gap-2.5 items-start text-left`}>
                                         <span className="font-bold">{labels[oIdx]}.</span>
-                                        <div className="flex-1"><LatexRenderer text={opt} /></div>
+                                        <div className="flex-1 space-y-1">
+                                          <LatexRenderer text={optText} />
+                                          {optImage && (
+                                            <div className="mt-1 border border-slate-700 rounded overflow-hidden max-w-full">
+                                              <img src={optImage} alt={`Option ${labels[oIdx]}`} className="max-h-[100px] object-contain" />
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     );
                                   })}

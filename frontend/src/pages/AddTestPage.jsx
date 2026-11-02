@@ -7,8 +7,9 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import LatexRenderer from '../components/LatexRenderer';
 import { supabase } from '../config/supabase';
-import { NCERT_CHAPTERS } from '../config/ncertChapters';
-import MathKeypad from '../components/MathKeypad';
+import { NCERT_CHAPTERS, getSubtopics } from '../config/ncertChapters';
+import SmartMathInput from '../components/SmartMathInput';
+import { normalizeOptionLetter } from '../utils/answerEvaluation';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -45,6 +46,7 @@ export default function AddTestPage() {
   const [manualQuestion, setManualQuestion] = useState({
     subject: 'Physics',
     chapter: 'Physical World',
+    subtopic: '',
     type: 'MCQ',
     text: '',
     correct_answer: '',
@@ -69,6 +71,7 @@ export default function AddTestPage() {
   const [questionSearch, setQuestionSearch] = useState('');
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('All');
   const [selectedChapterFilter, setSelectedChapterFilter] = useState('All');
+  const [selectedSubtopicFilter, setSelectedSubtopicFilter] = useState('All');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalQuestionsCount, setTotalQuestionsCount] = useState(0);
@@ -85,13 +88,14 @@ export default function AddTestPage() {
 
   useEffect(() => {
     if (sourceMode === 'database') fetchQuestions();
-  }, [page, questionSearch, selectedSubjectFilter, selectedChapterFilter, sourceMode]);
+  }, [page, questionSearch, selectedSubjectFilter, selectedChapterFilter, selectedSubtopicFilter, sourceMode]);
 
   const fetchQuestions = async () => {
     setLoadingQuestions(true);
     try {
+      const subtopicQuery = selectedSubtopicFilter !== 'All' ? `&subtopic=${encodeURIComponent(selectedSubtopicFilter)}` : '';
       const res = await axios.get(
-        `${API_URL}/api/admin/questions?paginate=true&page=${page}&limit=10&search=${questionSearch}&subject=${selectedSubjectFilter}&chapter=${selectedChapterFilter}`
+        `${API_URL}/api/admin/questions?paginate=true&page=${page}&limit=10&search=${encodeURIComponent(questionSearch)}&subject=${encodeURIComponent(selectedSubjectFilter)}&chapter=${encodeURIComponent(selectedChapterFilter)}${subtopicQuery}`
       );
       if (res.data) {
         setAvailableQuestions(res.data.questions || []);
@@ -129,7 +133,7 @@ export default function AddTestPage() {
   };
 
   const handleSearchChange = (val) => { setQuestionSearch(val); setPage(1); };
-  const handleSubjectChange = (val) => { setSelectedSubjectFilter(val); setSelectedChapterFilter('All'); setPage(1); };
+  const handleSubjectChange = (val) => { setSelectedSubjectFilter(val); setSelectedChapterFilter('All'); setSelectedSubtopicFilter('All'); setPage(1); };
 
   const handlePdfUpload = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -278,8 +282,10 @@ export default function AddTestPage() {
               });
             }
             
+            const isMCQ = (q.type?.toUpperCase() !== 'INTEGER' && q.type?.toUpperCase() !== 'NUMERICAL');
             cleaned.push({
               ...q,
+              correct_answer: isMCQ ? normalizeOptionLetter(q.correct_answer) : q.correct_answer,
               options: cleanedOptions,
               image_url: finalImageUrl
             });
@@ -311,10 +317,12 @@ export default function AddTestPage() {
                 return opt;
               });
             }
+            const isMCQ = (q.type?.toUpperCase() !== 'INTEGER' && q.type?.toUpperCase() !== 'NUMERICAL');
             return {
               ...q,
+              correct_answer: isMCQ ? normalizeOptionLetter(q.correct_answer) : q.correct_answer,
               options: cleanedOptions,
-              type: (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL') ? 'NUMERICAL' : 'MCQ'
+              type: isMCQ ? 'MCQ' : 'NUMERICAL'
             };
           });
           setExtractedQuestions(cleaned);
@@ -336,7 +344,11 @@ export default function AddTestPage() {
 
   const updateExtractedQuestion = (index, field, value) => {
     const next = [...extractedQuestions];
-    next[index] = { ...next[index], [field]: value };
+    let val = value;
+    if (field === 'correct_answer' && next[index]?.type !== 'NUMERICAL' && next[index]?.type !== 'INTEGER') {
+      val = normalizeOptionLetter(value);
+    }
+    next[index] = { ...next[index], [field]: val };
     setExtractedQuestions(next);
   };
 
@@ -484,16 +496,18 @@ export default function AddTestPage() {
       }
     }
     
+    const isMCQ = manualQuestion.type === 'MCQ';
     const newQ = {
       subject: manualQuestion.subject,
       chapter: manualQuestion.chapter || null,
+      subtopic: manualQuestion.subtopic || null,
       type: manualQuestion.type,
       text: manualQuestion.text,
-      correct_answer: manualQuestion.correct_answer,
+      correct_answer: isMCQ ? normalizeOptionLetter(manualQuestion.correct_answer) : manualQuestion.correct_answer,
       image_url: manualQuestion.image_url || null,
       sub_text: manualQuestion.sub_text || null,
       explanation: manualQuestion.explanation || null,
-      options: manualQuestion.type === 'MCQ'
+      options: isMCQ
         ? manualQuestion.options.map(opt => {
             if (opt.image_url) {
               return { text: opt.text, image_url: opt.image_url };
@@ -509,6 +523,7 @@ export default function AddTestPage() {
     setManualQuestion({
       subject: manualQuestion.subject,
       chapter: manualQuestion.chapter,
+      subtopic: manualQuestion.subtopic || '',
       type: manualQuestion.type,
       text: '',
       correct_answer: '',
@@ -540,7 +555,13 @@ export default function AddTestPage() {
         scheduled_at: scheduledAtISO,
         created_by: user?.id,
         questionIds: selectedQuestions.map(q => q.id),
-        newQuestions: extractedQuestions
+        newQuestions: extractedQuestions.map(q => {
+          const isMCQ = (q.type?.toUpperCase() !== 'INTEGER' && q.type?.toUpperCase() !== 'NUMERICAL');
+          return {
+            ...q,
+            correct_answer: isMCQ ? normalizeOptionLetter(q.correct_answer) : q.correct_answer
+          };
+        })
       });
 
       const createdTest = res.data?.result;
@@ -573,8 +594,9 @@ export default function AddTestPage() {
     ? selectedQuestions.filter(q => {
         const matchSub = selectedSubjectFilter === 'All' || q.subject?.toLowerCase() === selectedSubjectFilter.toLowerCase();
         const matchCh = selectedChapterFilter === 'All' || q.chapter?.toLowerCase() === selectedChapterFilter.toLowerCase();
+        const matchSubtopic = selectedSubtopicFilter === 'All' || q.subtopic?.toLowerCase() === selectedSubtopicFilter.toLowerCase();
         const matchSearch = q.text?.toLowerCase().includes(questionSearch.toLowerCase()) || q.subject?.toLowerCase().includes(questionSearch.toLowerCase());
-        return matchSub && matchCh && matchSearch;
+        return matchSub && matchCh && matchSubtopic && matchSearch;
       })
     : availableQuestions;
 
@@ -856,14 +878,34 @@ export default function AddTestPage() {
                         value={selectedChapterFilter}
                         onChange={e => {
                           setSelectedChapterFilter(e.target.value);
+                          setSelectedSubtopicFilter('All');
                           setPage(1);
                         }}
                         disabled={selectedSubjectFilter === 'All'}
-                        className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-[#034078]/60 bg-[#001f54] text-white text-xs font-black focus:outline-none focus:border-[#1282a2] transition-colors disabled:opacity-40 disabled:bg-[#001f54]/30 cursor-pointer"
+                        className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-[#034078]/60 bg-[#001f54] text-white text-xs font-black focus:outline-none focus:border-[#1282a2] transition-colors disabled:opacity-40 disabled:bg-[#001f54]/30 cursor-pointer max-w-[200px] truncate"
                       >
                         <option value="All">All Chapters</option>
                         {selectedSubjectFilter !== 'All' && (NCERT_CHAPTERS[selectedSubjectFilter] || []).map(ch => (
                           <option key={ch} value={ch}>{ch}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Sub-topic Dropdown */}
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <span className="text-xs font-bold text-[#fefcfb]/70 whitespace-nowrap">Sub-topic:</span>
+                      <select
+                        value={selectedSubtopicFilter}
+                        onChange={e => {
+                          setSelectedSubtopicFilter(e.target.value);
+                          setPage(1);
+                        }}
+                        disabled={selectedSubjectFilter === 'All'}
+                        className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-[#034078]/60 bg-[#001f54] text-white text-xs font-black focus:outline-none focus:border-[#1282a2] transition-colors disabled:opacity-40 disabled:bg-[#001f54]/30 cursor-pointer max-w-[220px] truncate"
+                      >
+                        <option value="All">All Sub-topics</option>
+                        {selectedSubjectFilter !== 'All' && getSubtopics(selectedSubjectFilter, selectedChapterFilter !== 'All' ? selectedChapterFilter : null).map(st => (
+                          <option key={st} value={st}>{st}</option>
                         ))}
                       </select>
                     </div>
@@ -931,6 +973,11 @@ export default function AddTestPage() {
                                 {q.chapter && (
                                   <span className="px-2 py-0.5 rounded text-[9px] font-black border bg-[#001f54]/60 text-slate-300 border-[#034078]/60">
                                     {q.chapter}
+                                  </span>
+                                )}
+                                {q.subtopic && (
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-black border bg-[#1282a2]/20 text-[#1282a2] border-[#1282a2]/40">
+                                    {q.subtopic}
                                   </span>
                                 )}
                                 <span className="px-2 py-0.5 bg-[#001f54] rounded text-[9px] uppercase font-black border border-[#034078]/50 text-[#fefcfb]/70">
@@ -1012,7 +1059,7 @@ export default function AddTestPage() {
                     Define Question
                   </h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-1">
                       <label className="text-xs font-bold uppercase text-[#fefcfb]/70">Subject</label>
                       <select 
@@ -1020,10 +1067,12 @@ export default function AddTestPage() {
                         value={manualQuestion.subject}
                         onChange={e => {
                           const sub = e.target.value;
+                          const defChapter = NCERT_CHAPTERS[sub] ? NCERT_CHAPTERS[sub][0] : '';
                           setManualQuestion({
                             ...manualQuestion,
                             subject: sub,
-                            chapter: NCERT_CHAPTERS[sub] ? NCERT_CHAPTERS[sub][0] : ''
+                            chapter: defChapter,
+                            subtopic: ''
                           });
                         }}
                       >
@@ -1036,12 +1085,25 @@ export default function AddTestPage() {
                     <div className="space-y-1">
                       <label className="text-xs font-bold uppercase text-[#fefcfb]/70">Chapter</label>
                       <select 
-                        className="w-full p-2.5 rounded-lg border border-[#034078]/60 bg-[#001f54] text-white text-sm font-bold focus:border-[#1282a2] focus:outline-none cursor-pointer"
+                        className="w-full p-2.5 rounded-lg border border-[#034078]/60 bg-[#001f54] text-white text-sm font-bold focus:border-[#1282a2] focus:outline-none cursor-pointer truncate"
                         value={manualQuestion.chapter}
-                        onChange={e => setManualQuestion({...manualQuestion, chapter: e.target.value})}
+                        onChange={e => setManualQuestion({...manualQuestion, chapter: e.target.value, subtopic: ''})}
                       >
                         {(NCERT_CHAPTERS[manualQuestion.subject] || []).map(ch => (
                           <option key={ch} value={ch}>{ch}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold uppercase text-[#fefcfb]/70">Sub-topic</label>
+                      <select 
+                        className="w-full p-2.5 rounded-lg border border-[#034078]/60 bg-[#001f54] text-white text-sm font-bold focus:border-[#1282a2] focus:outline-none cursor-pointer truncate"
+                        value={manualQuestion.subtopic || ''}
+                        onChange={e => setManualQuestion({...manualQuestion, subtopic: e.target.value})}
+                      >
+                        <option value="">General / Comprehensive</option>
+                        {getSubtopics(manualQuestion.subject, manualQuestion.chapter).map(st => (
+                          <option key={st} value={st}>{st}</option>
                         ))}
                       </select>
                     </div>
@@ -1066,19 +1128,13 @@ export default function AddTestPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-[#fefcfb]/70">Question Text (Supports LaTeX)</label>
-                    <textarea 
-                      ref={manualTextRef}
-                      className="w-full p-2.5 rounded-lg border border-[#034078]/60 bg-[#001f54]/70 text-white placeholder-[#fefcfb]/30 text-sm min-h-[80px] focus:border-[#1282a2] focus:outline-none"
-                      placeholder="e.g. Find the value of $\int_0^{\pi} \sin x \, dx$"
+                    <SmartMathInput
+                      mode="rich"
+                      label="Question Text (Smart Ribbon & Math Toolbar)"
+                      placeholder="e.g. Find the value of the integral below..."
                       value={manualQuestion.text}
-                      onChange={e => setManualQuestion({...manualQuestion, text: e.target.value})}
-                      onFocus={() => setActiveManualField('text')}
-                    />
-                    <MathKeypad 
-                      targetRef={activeManualField === 'text' ? manualTextRef : manualSubTextRef} 
-                      value={activeManualField === 'text' ? manualQuestion.text : (manualQuestion.sub_text || '')} 
-                      setValue={(val) => setManualQuestion(prev => ({ ...prev, [activeManualField]: val }))} 
+                      onChange={(val) => setManualQuestion({ ...manualQuestion, text: val })}
+                      minHeight="90px"
                     />
                     {manualQuestion.text && (
                       <div className="mt-2 p-3 bg-[#001f54]/60 rounded-lg border border-[#034078]/40">
@@ -1120,14 +1176,13 @@ export default function AddTestPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-[#fefcfb]/70">Text Below Image (Optional, Supports LaTeX)</label>
-                    <textarea 
-                      ref={manualSubTextRef}
-                      className="w-full p-2.5 rounded-lg border border-[#034078]/60 bg-[#001f54]/70 text-white placeholder-[#fefcfb]/30 text-sm min-h-[60px] focus:border-[#1282a2] focus:outline-none"
+                    <SmartMathInput
+                      mode="rich"
+                      label="Text Below Image (Optional, Smart Math Ribbon)"
                       placeholder="e.g. Find the value of current in the circuit shown above."
                       value={manualQuestion.sub_text || ''}
-                      onChange={e => setManualQuestion({...manualQuestion, sub_text: e.target.value})}
-                      onFocus={() => setActiveManualField('sub_text')}
+                      onChange={(val) => setManualQuestion({ ...manualQuestion, sub_text: val })}
+                      minHeight="70px"
                     />
                     {manualQuestion.sub_text && (
                       <div className="mt-2 p-3 bg-[#001f54]/60 rounded-lg border border-[#034078]/40">
@@ -1141,24 +1196,31 @@ export default function AddTestPage() {
 
                   {manualQuestion.type === 'MCQ' && (
                     <div className="space-y-3">
-                      <label className="text-xs font-bold uppercase text-[#fefcfb]/70">MCQ Options (Rich Support)</label>
+                      <label className="text-xs font-bold uppercase text-[#fefcfb]/70 flex items-center justify-between">
+                        <span>MCQ Options (Docked Math Ribbon on Focus)</span>
+                        <span className="text-[10px] text-[#1282a2] font-normal">Click an option to type or insert math templates</span>
+                      </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {manualQuestion.options.map((opt, i) => (
-                          <div key={i} className="flex gap-2">
-                            <input 
-                              ref={el => manualOptionRefs.current[i] = el}
-                              placeholder={`Option ${String.fromCharCode(65 + i)}`}
-                              className="flex-1 p-2 border border-[#034078]/60 rounded-lg bg-[#001f54]/70 text-white placeholder-[#fefcfb]/30 text-xs focus:border-[#1282a2] focus:outline-none"
-                              value={opt.text}
-                              onChange={e => {
-                                const newOpts = [...manualQuestion.options];
-                                newOpts[i] = { ...newOpts[i], text: e.target.value };
-                                setManualQuestion({...manualQuestion, options: newOpts});
-                              }}
-                              onFocus={() => setActiveManualOptionIndex(i)}
-                            />
-                            <label className={`w-12 flex items-center justify-center border border-dashed rounded-lg cursor-pointer transition-colors ${opt.image_url ? 'bg-emerald-950/40 border-emerald-500/50 font-bold' : 'border-[#034078]/60 hover:border-[#1282a2] bg-[#001f54]/40'}`}>
-                               <span className={`material-symbols-outlined text-xl ${opt.image_url ? 'text-emerald-400' : 'text-[#fefcfb]/40'}`}>
+                          <div key={i} className="flex gap-2 items-center">
+                            <span className="w-5 text-xs font-bold text-[#1282a2] text-center">
+                              {String.fromCharCode(65 + i)}.
+                            </span>
+                            <div className="flex-1">
+                              <SmartMathInput
+                                mode="option"
+                                placeholder={`Option ${String.fromCharCode(65 + i)} value...`}
+                                value={opt.text}
+                                onChange={(val) => {
+                                  const newOpts = [...manualQuestion.options];
+                                  newOpts[i] = { ...newOpts[i], text: val };
+                                  setManualQuestion({ ...manualQuestion, options: newOpts });
+                                }}
+                                minHeight="42px"
+                              />
+                            </div>
+                            <label className={`w-10 h-10 shrink-0 flex items-center justify-center border border-dashed rounded-lg cursor-pointer transition-colors ${opt.image_url ? 'bg-emerald-950/40 border-emerald-500/50 font-bold' : 'border-[#034078]/60 hover:border-[#1282a2] bg-[#001f54]/40'}`}>
+                               <span className={`material-symbols-outlined text-lg ${opt.image_url ? 'text-emerald-400' : 'text-[#fefcfb]/40'}`}>
                                  {manualOptUploading === i ? 'sync' : opt.image_url ? 'check_circle' : 'add_photo_alternate'}
                                </span>
                                <input type="file" accept="image/*" onChange={(e) => handleManualImageUpload(e, 'option', i)} className="hidden" />
@@ -1180,16 +1242,6 @@ export default function AddTestPage() {
                           </div>
                         ))}
                       </div>
-
-                      <MathKeypad 
-                        targetRef={{ current: manualOptionRefs.current[activeManualOptionIndex] }} 
-                        value={manualQuestion.options[activeManualOptionIndex]?.text || ''} 
-                        setValue={(val) => {
-                          const updated = [...manualQuestion.options];
-                          updated[activeManualOptionIndex] = { ...updated[activeManualOptionIndex], text: val };
-                          setManualQuestion(prev => ({ ...prev, options: updated }));
-                        }} 
-                      />
 
                       {/* Live Preview for Options */}
                       {manualQuestion.options.some(o => o.text) && (
@@ -1215,10 +1267,10 @@ export default function AddTestPage() {
                         onChange={e => setManualQuestion({...manualQuestion, correct_answer: e.target.value})}
                       >
                         <option value="">Select Correct Option</option>
-                        <option value="0">Option A</option>
-                        <option value="1">Option B</option>
-                        <option value="2">Option C</option>
-                        <option value="3">Option D</option>
+                        <option value="A">Option A</option>
+                        <option value="B">Option B</option>
+                        <option value="C">Option C</option>
+                        <option value="D">Option D</option>
                       </select>
                     ) : (
                       <input 
@@ -1233,22 +1285,13 @@ export default function AddTestPage() {
 
                   {/* Solution / Explanation Field */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-[#1282a2] flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-sm">lightbulb</span>
-                      Solution / Explanation (Optional, Supports LaTeX)
-                    </label>
-                    <textarea 
-                      ref={manualSolutionRef}
-                      className="w-full p-2.5 rounded-lg border border-[#034078]/60 bg-[#001f54]/70 text-white placeholder-[#fefcfb]/30 text-sm min-h-[75px] focus:border-[#1282a2] focus:outline-none"
-                      placeholder="e.g. By conservation of energy: $\frac{1}{2}mv^2 = mgh \implies v = \sqrt{2gh}$."
+                    <SmartMathInput
+                      mode="rich"
+                      label="Solution / Explanation (Optional, Smart Math Ribbon)"
+                      placeholder="e.g. Detailed formula breakdown..."
                       value={manualQuestion.explanation || ''}
-                      onChange={e => setManualQuestion({...manualQuestion, explanation: e.target.value})}
-                      onFocus={() => setActiveManualField('explanation')}
-                    />
-                    <MathKeypad 
-                      targetRef={activeManualField === 'text' ? manualTextRef : activeManualField === 'sub_text' ? manualSubTextRef : manualSolutionRef} 
-                      value={activeManualField === 'text' ? manualQuestion.text : activeManualField === 'sub_text' ? (manualQuestion.sub_text || '') : (manualQuestion.explanation || '')} 
-                      setValue={(val) => setManualQuestion(prev => ({ ...prev, [activeManualField]: val }))} 
+                      onChange={(val) => setManualQuestion({ ...manualQuestion, explanation: val })}
+                      minHeight="80px"
                     />
                     {manualQuestion.explanation && (
                       <div className="mt-2 p-3 bg-emerald-950/20 rounded-lg border border-emerald-500/30">
@@ -1324,18 +1367,20 @@ export default function AddTestPage() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <div>
                           <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Subject</label>
                           <select 
                             value={eq.subject || 'Physics'}
                             onChange={(e) => {
                               const sub = e.target.value;
+                              const defChapter = NCERT_CHAPTERS[sub] ? NCERT_CHAPTERS[sub][0] : '';
                               const next = [...extractedQuestions];
                               next[i] = {
                                 ...next[i],
                                 subject: sub,
-                                chapter: NCERT_CHAPTERS[sub] ? NCERT_CHAPTERS[sub][0] : ''
+                                chapter: defChapter,
+                                subtopic: ''
                               };
                               setExtractedQuestions(next);
                             }}
@@ -1351,8 +1396,11 @@ export default function AddTestPage() {
                           <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Chapter</label>
                           <select 
                             value={eq.chapter || ''}
-                            onChange={(e) => updateExtractedQuestion(i, 'chapter', e.target.value)}
-                            className="w-full p-2 text-xs border border-[#034078]/60 bg-[#001f54] text-white rounded-md font-bold cursor-pointer"
+                            onChange={(e) => {
+                              updateExtractedQuestion(i, 'chapter', e.target.value);
+                              updateExtractedQuestion(i, 'subtopic', '');
+                            }}
+                            className="w-full p-2 text-xs border border-[#034078]/60 bg-[#001f54] text-white rounded-md font-bold cursor-pointer truncate"
                           >
                             <option value="">Select Chapter</option>
                             {eq.chapter && !(NCERT_CHAPTERS[eq.subject || 'Physics'] || []).includes(eq.chapter) && (
@@ -1364,33 +1412,56 @@ export default function AddTestPage() {
                           </select>
                         </div>
                         <div>
+                          <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Sub-topic</label>
+                          <select 
+                            value={eq.subtopic || ''}
+                            onChange={(e) => updateExtractedQuestion(i, 'subtopic', e.target.value)}
+                            className="w-full p-2 text-xs border border-[#034078]/60 bg-[#001f54] text-white rounded-md font-bold cursor-pointer truncate"
+                          >
+                            <option value="">Select Sub-topic</option>
+                            {eq.subtopic && !getSubtopics(eq.subject || 'Physics', eq.chapter).includes(eq.subtopic) && (
+                              <option value={eq.subtopic}>{eq.subtopic} (AI Extracted)</option>
+                            )}
+                            {getSubtopics(eq.subject || 'Physics', eq.chapter).map(st => (
+                              <option key={st} value={st}>{st}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
                           <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Correct Answer</label>
-                          <input 
-                            type="text"
-                            value={eq.correct_answer || ''}
-                            onChange={(e) => updateExtractedQuestion(i, 'correct_answer', e.target.value)}
-                            placeholder="e.g. Option A"
-                            className="w-full p-2 text-xs border border-[#034078]/60 bg-[#001f54]/70 text-white rounded-md"
-                          />
+                          {eq.type === 'NUMERICAL' || eq.type === 'INTEGER' ? (
+                            <input 
+                              type="text"
+                              value={eq.correct_answer || ''}
+                              onChange={(e) => updateExtractedQuestion(i, 'correct_answer', e.target.value)}
+                              placeholder="e.g. 18.5"
+                              className="w-full p-2 text-xs border border-[#034078]/60 bg-[#001f54]/70 text-white rounded-md"
+                            />
+                          ) : (
+                            <select
+                              value={normalizeOptionLetter(eq.correct_answer) || ''}
+                              onChange={(e) => updateExtractedQuestion(i, 'correct_answer', e.target.value)}
+                              className="w-full p-2 text-xs border border-[#034078]/60 bg-[#001f54] text-white font-bold rounded-md cursor-pointer"
+                            >
+                              <option value="">Select (A, B, C, D)</option>
+                              <option value="A">Option A</option>
+                              <option value="B">Option B</option>
+                              <option value="C">Option C</option>
+                              <option value="D">Option D</option>
+                            </select>
+                          )}
                         </div>
                       </div>
                       
                       <div className="mb-4 space-y-2">
-                        <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#1282a2]"></span>
-                          Question {i + 1} Content (Supports LaTeX)
-                        </label>
-                        <textarea 
-                          ref={el => {
-                            if (el) reviewTextRefs.current.set(i, el);
-                            else reviewTextRefs.current.delete(i);
-                          }}
+                        <SmartMathInput
+                          mode="rich"
+                          label={`Question ${i + 1} Content (Smart Math Ribbon)`}
+                          placeholder="Type or edit question..."
                           value={eq.text || ''}
-                          onChange={(e) => updateExtractedQuestion(i, 'text', e.target.value)}
-                          rows={3}
-                          className="w-full p-3 text-sm border border-[#034078]/60 bg-[#001f54]/70 text-white rounded-md font-medium focus:border-[#1282a2] focus:outline-none"
+                          onChange={(val) => updateExtractedQuestion(i, 'text', val)}
+                          minHeight="80px"
                         />
-                        <MathKeypad targetRef={{ current: reviewTextRefs.current.get(i) }} value={eq.text || ''} setValue={(val) => updateExtractedQuestion(i, 'text', val)} />
                         {eq.text && (
                           <div className="mt-2 p-3 bg-[#001f54]/60 rounded-lg border border-[#034078]/40">
                             <p className="text-[10px] uppercase font-bold text-[#1282a2] mb-1">Live Math Preview:</p>
@@ -1443,19 +1514,14 @@ export default function AddTestPage() {
                       </div>
 
                       <div className="mb-4 space-y-2">
-                        <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Text Below Image (Optional)</label>
-                        <textarea 
-                          ref={el => {
-                            if (el) reviewSubTextRefs.current.set(i, el);
-                            else reviewSubTextRefs.current.delete(i);
-                          }}
-                          value={eq.sub_text || ''}
-                          onChange={(e) => updateExtractedQuestion(i, 'sub_text', e.target.value)}
-                          rows={2}
+                        <SmartMathInput
+                          mode="rich"
+                          label="Text Below Image (Optional, Smart Math Ribbon)"
                           placeholder="Optional text to display below the image"
-                          className="w-full p-2 text-xs border border-[#034078]/60 bg-[#001f54]/70 text-white rounded-md font-medium focus:border-[#1282a2] focus:outline-none"
+                          value={eq.sub_text || ''}
+                          onChange={(val) => updateExtractedQuestion(i, 'sub_text', val)}
+                          minHeight="60px"
                         />
-                        <MathKeypad targetRef={{ current: reviewSubTextRefs.current.get(i) }} value={eq.sub_text || ''} setValue={(val) => updateExtractedQuestion(i, 'sub_text', val)} />
                         {eq.sub_text && (
                           <div className="mt-2 p-3 bg-[#001f54]/60 rounded-lg border border-[#034078]/40">
                             <p className="text-[10px] uppercase font-bold text-[#1282a2] mb-1">Live Math Preview:</p>
@@ -1482,26 +1548,23 @@ export default function AddTestPage() {
                               <div key={oIndex} className={`flex flex-col gap-2 border p-2.5 rounded-lg transition-all ${isActiveOpt ? 'border-[#1282a2] bg-[#001f54]/70 shadow-sm' : 'border-[#034078]/40 bg-[#001f54]/30'}`}>
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs font-bold text-[#1282a2] w-4">{String.fromCharCode(65 + oIndex)}.</span>
-                                  <input 
-                                    ref={el => {
-                                      if (el) extractedOptionRefs.current.set(`${i}-${oIndex}`, el);
-                                      else extractedOptionRefs.current.delete(`${i}-${oIndex}`);
-                                    }}
-                                    type="text"
-                                    value={optText}
-                                    onFocus={() => setActiveExtractedOption({ qIdx: i, oIdx: oIndex })}
-                                    onChange={(e) => {
-                                      const next = [...extractedQuestions];
-                                      if (isOptObj) {
-                                        next[i].options[oIndex] = { ...next[i].options[oIndex], text: e.target.value };
-                                      } else {
-                                        next[i].options[oIndex] = e.target.value;
-                                      }
-                                      setExtractedQuestions(next);
-                                    }}
-                                    placeholder={`Option ${String.fromCharCode(65 + oIndex)}`}
-                                    className="flex-1 p-2 text-xs border border-[#034078]/60 bg-[#001f54]/70 text-white rounded-md focus:border-[#1282a2] focus:outline-none"
-                                  />
+                                  <div className="flex-1">
+                                    <SmartMathInput
+                                      mode="option"
+                                      placeholder={`Option ${String.fromCharCode(65 + oIndex)} value...`}
+                                      value={optText}
+                                      onChange={(val) => {
+                                        const next = [...extractedQuestions];
+                                        if (isOptObj) {
+                                          next[i].options[oIndex] = { ...next[i].options[oIndex], text: val };
+                                        } else {
+                                          next[i].options[oIndex] = val;
+                                        }
+                                        setExtractedQuestions(next);
+                                      }}
+                                      minHeight="40px"
+                                    />
+                                  </div>
                                   {/* Option Image Upload Button */}
                                   <label
                                     className={`w-8 h-8 flex items-center justify-center rounded-lg border border-dashed cursor-pointer transition-colors shrink-0 ${
@@ -1543,31 +1606,6 @@ export default function AddTestPage() {
                           })}
                         </div>
 
-                        {/* Math Keypad for Active Option */}
-                        <div className="mt-3">
-                          <p className="text-[10px] uppercase font-bold text-[#1282a2] mb-1">
-                            Math Keyboard for Option {String.fromCharCode(65 + (activeExtractedOption.qIdx === i ? activeExtractedOption.oIdx : 0))}:
-                          </p>
-                          <MathKeypad
-                            targetRef={{ current: extractedOptionRefs.current.get(`${i}-${activeExtractedOption.qIdx === i ? activeExtractedOption.oIdx : 0}`) }}
-                            value={(() => {
-                              const curOpt = (eq.options || [])[activeExtractedOption.qIdx === i ? activeExtractedOption.oIdx : 0];
-                              return typeof curOpt === 'object' && curOpt !== null ? curOpt.text : String(curOpt || '');
-                            })()}
-                            setValue={(val) => {
-                              const activeIdx = activeExtractedOption.qIdx === i ? activeExtractedOption.oIdx : 0;
-                              const next = [...extractedQuestions];
-                              const curOpt = (next[i].options || [])[activeIdx];
-                              if (typeof curOpt === 'object' && curOpt !== null) {
-                                next[i].options[activeIdx] = { ...curOpt, text: val };
-                              } else {
-                                next[i].options[activeIdx] = val;
-                              }
-                              setExtractedQuestions(next);
-                            }}
-                          />
-                        </div>
-
                         {eq.options && eq.options.some(opt => opt) && (
                           <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-[#001f54]/60 rounded-lg border border-[#034078]/40">
                             {(eq.options || ['', '', '', '']).map((opt, oIndex) => {
@@ -1590,22 +1628,14 @@ export default function AddTestPage() {
 
                       {/* Solution / Explanation for Staged Question */}
                       <div className="mb-4 space-y-2">
-                        <label className="text-[10px] font-bold uppercase text-[#1282a2] mb-1 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-xs">lightbulb</span>
-                          Solution / Explanation (Supports LaTeX)
-                        </label>
-                        <textarea 
-                          ref={el => {
-                            if (el) reviewSolutionRefs.current.set(i, el);
-                            else reviewSolutionRefs.current.delete(i);
-                          }}
-                          value={eq.explanation || ''}
-                          onChange={(e) => updateExtractedQuestion(i, 'explanation', e.target.value)}
-                          rows={2}
+                        <SmartMathInput
+                          mode="rich"
+                          label="Solution / Explanation (Smart Math Ribbon)"
                           placeholder="e.g. Detailed step-by-step solution or formula breakdown"
-                          className="w-full p-2.5 text-xs border border-[#034078]/60 bg-[#001f54]/70 text-white rounded-md font-medium focus:border-[#1282a2] focus:outline-none"
+                          value={eq.explanation || ''}
+                          onChange={(val) => updateExtractedQuestion(i, 'explanation', val)}
+                          minHeight="70px"
                         />
-                        <MathKeypad targetRef={{ current: reviewSolutionRefs.current.get(i) }} value={eq.explanation || ''} setValue={(val) => updateExtractedQuestion(i, 'explanation', val)} />
                         {eq.explanation && (
                           <div className="mt-2 p-2.5 bg-emerald-950/20 rounded-lg border border-emerald-500/30">
                             <p className="text-[10px] uppercase font-bold text-emerald-400 mb-1 flex items-center gap-1">

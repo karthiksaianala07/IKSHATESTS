@@ -155,4 +155,10 @@ h1, h2, h3, .brand-font, .font-\[\'Work_Sans\'\] {
   border: 1.5px solid white;
   box-sizing: border-box;
 }
-
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

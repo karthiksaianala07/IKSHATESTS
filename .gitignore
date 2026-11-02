@@ -34,3 +34,6 @@ dist-ssr
 .env.production.local
  **/ .env
 **/.env
+
+# Temporary and corrupted folders
+components_corrupted/

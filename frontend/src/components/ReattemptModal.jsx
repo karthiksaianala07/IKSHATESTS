@@ -128,7 +128,7 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
               <div className="flex justify-between items-center text-xs text-[#fefcfb]/70 font-medium">
                 <span>Question <strong className="text-white text-sm">{currentIndex + 1}</strong> of {missedQuestions.length}</span>
                 <span className="px-2.5 py-1 rounded-md bg-[#001f54] text-[#fefcfb] font-bold border border-[#034078]/30">
-                  {currentQ.subject} {currentQ.chapter ? `• ${currentQ.chapter}` : ''}
+                  {currentQ.subject} {currentQ.chapter ? `• ${currentQ.chapter}` : ''} {currentQ.subtopic ? `• ${currentQ.subtopic}` : ''}
                 </span>
               </div>
 

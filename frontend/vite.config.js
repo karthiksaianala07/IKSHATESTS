@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    watch: {
+      ignored: ['**/components_corrupted/**']
+    },
     proxy: {
       '/api': {
         // Using 127.0.0.1 instead of localhost avoids DNS resolution issues on Windows

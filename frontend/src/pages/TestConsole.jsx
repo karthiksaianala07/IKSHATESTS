@@ -7,6 +7,7 @@ import { API_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import LatexRenderer from '../components/LatexRenderer';
 import { useIsMobile } from '../utils/device';
+import { checkAnswer, normalizeOptionLetter } from '../utils/answerEvaluation';
 
 // Helper to safely access sessionStorage in strict/lockdown environments
 const getSafeSessionStorage = () => {
@@ -370,8 +371,8 @@ export default function TestConsole() {
 
     let score = 0, correct = 0, wrong = 0, unattempted = 0;
     mockQuestions.forEach((q, i) => {
-       if (answers[i] !== undefined) {
-         if (String(answers[i]) === String(q.correct_answer)) { score += 4; correct++; }
+       if (answers[i] !== undefined && answers[i] !== null && String(answers[i]).trim() !== '') {
+         if (checkAnswer(answers[i], q)) { score += 4; correct++; }
          else { score -= 1; wrong++; }
        } else unattempted++;
     });
@@ -672,8 +673,8 @@ export default function TestConsole() {
       }
       subjectMap[subName].total += 1;
 
-      if (answers[i] !== undefined) {
-        if (String(answers[i]) === String(q.correct_answer)) {
+      if (answers[i] !== undefined && answers[i] !== null && String(answers[i]).trim() !== '') {
+        if (checkAnswer(answers[i], q)) {
           score += 4;
           correct++;
           subjectMap[subName].correct += 1;
@@ -713,163 +714,163 @@ export default function TestConsole() {
     });
 
     return (
-      <div className="min-h-screen bg-[#070d1d] text-slate-100 flex flex-col items-center justify-start p-4 md:p-8 selection:bg-indigo-500/30 font-sans overflow-y-auto">
-        <div className="max-w-4xl w-full my-auto py-8 space-y-6">
-          
-          {/* Top Success Badge & Title */}
-          <div className="flex flex-col items-center text-center space-y-2">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-500/10">
-              <span className="material-symbols-outlined text-base text-emerald-400">check_circle</span>
-              Exam Completed & Submitted Successfully
-            </div>
-            <h1 className="text-2xl md:text-4xl font-black text-white font-headline tracking-tight">
+      <div className="fixed inset-0 h-screen h-[100dvh] w-screen bg-[#070d1d] text-slate-100 flex flex-col justify-between p-3 sm:p-4 md:p-5 overflow-hidden select-none font-sans z-[100]">
+        
+        {/* 1. Header Bar */}
+        <header className="flex items-center justify-between pb-2 border-b border-slate-800/80 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-black uppercase tracking-wider">
+              <span className="material-symbols-outlined text-sm">check_circle</span>
+              Exam Completed
+            </span>
+            <h1 className="text-sm md:text-base font-black text-white truncate max-w-sm md:max-w-xl">
               {testTitle || 'Official Mock Examination'}
             </h1>
-            <p className="text-xs md:text-sm text-slate-400 font-medium">
-              Performance Scorecard • Submitted on {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} at {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
-            </p>
           </div>
+          <div className="text-[11px] text-slate-400 font-medium hidden sm:block">
+            Submitted at {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+          </div>
+        </header>
 
-          {/* Central Hero Scorecard */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#11192e] via-[#0d1527] to-[#141d34] border border-slate-700/60 p-6 md:p-10 shadow-2xl">
-            <div className="absolute -top-24 -right-24 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 border-b border-slate-700/40 pb-8">
-              
-              {/* Score Number & Verdict */}
-              <div className="text-center md:text-left space-y-2">
-                <span className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-400">
-                  Aggregate Score
-                </span>
-                <div className="flex items-baseline justify-center md:justify-start gap-3">
-                  <span className="text-6xl md:text-7xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-200 to-pink-300 drop-shadow-md">
+        {/* 2. Middle Body: Fits within viewport without scrolling */}
+        <main className="flex-1 min-h-0 flex flex-col justify-center gap-2.5 md:gap-3 py-2 max-w-5xl mx-auto w-full">
+          
+          {/* Card A: Score Hero & Quick Pill Breakdown */}
+          <div className="bg-gradient-to-br from-[#11192e] via-[#0d1527] to-[#141d34] border border-slate-700/60 p-4 md:p-5 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
+            {/* Left: Score & Verdict */}
+            <div className="flex items-center gap-4 sm:gap-6 text-center sm:text-left">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 block mb-0.5">Aggregate Score</span>
+                <div className="flex items-baseline justify-center sm:justify-start gap-2">
+                  <span className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-200 to-pink-300 leading-none">
                     {score}
                   </span>
-                  <span className="text-xl md:text-2xl font-bold text-slate-400">
-                    / {maxScore}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
-                  <span className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-white/10 text-slate-200 border border-white/10">
-                    {percentage}% Aggregate
-                  </span>
-                  <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border flex items-center gap-1.5 ${
-                    isCleared 
-                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
-                      : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                  }`}>
-                    <span className="material-symbols-outlined text-sm">
-                      {isCleared ? 'verified' : 'info'}
-                    </span>
-                    {isCleared 
-                      ? `Cutoff Cleared (+${benchmarkDiff} pts)` 
-                      : `Below Benchmark (-${benchmarkDiff} pts)`}
-                  </span>
+                  <span className="text-base md:text-lg font-bold text-slate-400">/ {maxScore}</span>
                 </div>
               </div>
-
-              {/* Quick Summary Pill Stats */}
-              <div className="grid grid-cols-3 gap-3 md:gap-5 w-full md:w-auto">
-                <div className="bg-[#18233c]/80 border border-slate-700/60 rounded-2xl p-4 text-center min-w-[90px]">
-                  <p className="text-2xl md:text-3xl font-black text-emerald-400">{correct}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Correct</p>
-                  <p className="text-[10px] text-emerald-400/80 font-bold">+{marksGained} pts</p>
-                </div>
-                <div className="bg-[#18233c]/80 border border-slate-700/60 rounded-2xl p-4 text-center min-w-[90px]">
-                  <p className="text-2xl md:text-3xl font-black text-rose-400">{wrong}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Wrong</p>
-                  <p className="text-[10px] text-rose-400/80 font-bold">-{penaltyLost} pts</p>
-                </div>
-                <div className="bg-[#18233c]/80 border border-slate-700/60 rounded-2xl p-4 text-center min-w-[90px]">
-                  <p className="text-2xl md:text-3xl font-black text-slate-300">{unattempted}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Skipped</p>
-                  <p className="text-[10px] text-slate-400 font-bold">0 pts</p>
-                </div>
+              <div className="flex flex-col gap-1.5 items-center sm:items-start">
+                <span className="px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wider bg-white/10 text-slate-200 border border-white/10 w-fit">
+                  {percentage}% Aggregate
+                </span>
+                <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wider border flex items-center gap-1 w-fit ${
+                  isCleared 
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
+                    : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                }`}>
+                  <span className="material-symbols-outlined text-xs">
+                    {isCleared ? 'verified' : 'info'}
+                  </span>
+                  {isCleared ? `Cutoff Cleared (+${benchmarkDiff} pts)` : `Below Benchmark (-${benchmarkDiff} pts)`}
+                </span>
               </div>
             </div>
 
-            {/* 4 High-Level Diagnostic Highlights */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
-              <div className="bg-[#0b1222]/60 border border-slate-800/80 p-3.5 rounded-2xl">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Accuracy Rate</p>
-                <p className={`text-xl font-black mt-1 ${accuracy >= 70 ? 'text-emerald-400' : accuracy >= 40 ? 'text-amber-400' : 'text-rose-400'}`}>
-                  {accuracy}%
-                </p>
-                <p className="text-[10px] text-slate-500 font-medium">Of attempted questions</p>
+            {/* Right: Quick Pill Breakdown (Correct, Wrong, Skipped) */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="bg-[#18233c]/80 border border-slate-700/60 rounded-xl px-3.5 py-2 text-center min-w-[75px]">
+                <p className="text-lg md:text-xl font-black text-emerald-400 leading-none">{correct}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Correct</p>
+                <p className="text-[9px] text-emerald-400/80 font-bold">+{marksGained} pts</p>
               </div>
-
-              <div className="bg-[#0b1222]/60 border border-slate-800/80 p-3.5 rounded-2xl">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Negative Penalty</p>
-                <p className="text-xl font-black mt-1 text-rose-400">
-                  -{penaltyLost} <span className="text-xs text-slate-400 font-normal">pts lost</span>
-                </p>
-                <p className="text-[10px] text-slate-500 font-medium">Careless negative marks</p>
+              <div className="bg-[#18233c]/80 border border-slate-700/60 rounded-xl px-3.5 py-2 text-center min-w-[75px]">
+                <p className="text-lg md:text-xl font-black text-rose-400 leading-none">{wrong}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Wrong</p>
+                <p className="text-[9px] text-rose-400/80 font-bold">-{penaltyLost} pts</p>
               </div>
-
-              <div className="bg-[#0b1222]/60 border border-slate-800/80 p-3.5 rounded-2xl">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Attempted</p>
-                <p className="text-xl font-black mt-1 text-indigo-300">
-                  {attemptedCount} <span className="text-xs text-slate-400 font-normal">/ {totalQuestions}</span>
-                </p>
-                <p className="text-[10px] text-slate-500 font-medium">{Math.round((attemptedCount / totalQuestions) * 100)}% coverage</p>
-              </div>
-
-              <div className="bg-[#0b1222]/60 border border-slate-800/80 p-3.5 rounded-2xl">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Time Taken</p>
-                <p className="text-xl font-black mt-1 text-purple-300">
-                  {formatTime(submissionTimeSpent)}
-                </p>
-                <p className="text-[10px] text-slate-500 font-medium">Pacing & Duration</p>
+              <div className="bg-[#18233c]/80 border border-slate-700/60 rounded-xl px-3.5 py-2 text-center min-w-[75px]">
+                <p className="text-lg md:text-xl font-black text-slate-300 leading-none">{unattempted}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Skipped</p>
+                <p className="text-[9px] text-slate-400 font-bold">0 pts</p>
               </div>
             </div>
           </div>
 
-          {/* Sectional / Subject-Wise Breakdown */}
+          {/* Card B: 4 Compact Diagnostic Highlights */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 shrink-0">
+            <div className="bg-[#10172b]/80 border border-slate-800 p-2.5 md:p-3 rounded-xl flex items-center justify-between">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Accuracy Rate</p>
+                <p className={`text-base md:text-lg font-black leading-tight ${accuracy >= 70 ? 'text-emerald-400' : accuracy >= 40 ? 'text-amber-400' : 'text-rose-400'}`}>
+                  {accuracy}%
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-indigo-400 text-xl opacity-80">target</span>
+            </div>
+
+            <div className="bg-[#10172b]/80 border border-slate-800 p-2.5 md:p-3 rounded-xl flex items-center justify-between">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Negative Penalty</p>
+                <p className="text-base md:text-lg font-black leading-tight text-rose-400">
+                  -{penaltyLost} <span className="text-[10px] text-slate-400 font-normal">pts lost</span>
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-rose-400 text-xl opacity-80">trending_down</span>
+            </div>
+
+            <div className="bg-[#10172b]/80 border border-slate-800 p-2.5 md:p-3 rounded-xl flex items-center justify-between">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Attempt Coverage</p>
+                <p className="text-base md:text-lg font-black leading-tight text-indigo-300">
+                  {attemptedCount} <span className="text-[10px] text-slate-400 font-normal">/ {totalQuestions}</span>
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-indigo-400 text-xl opacity-80">checklist</span>
+            </div>
+
+            <div className="bg-[#10172b]/80 border border-slate-800 p-2.5 md:p-3 rounded-xl flex items-center justify-between">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Time Taken</p>
+                <p className="text-base md:text-lg font-black leading-tight text-purple-300">
+                  {formatTime(submissionTimeSpent)}
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-purple-400 text-xl opacity-80">timer</span>
+            </div>
+          </div>
+
+          {/* Card C: Sectional / Subject-Wise Performance */}
           {subjects.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-1.5 shrink-0">
               <div className="flex items-center justify-between px-1">
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-indigo-400 text-lg">subject</span>
-                  Subject-Wise Sectional Breakdown
+                <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-indigo-400 text-sm">subject</span>
+                  Sectional Performance Breakdown
                 </h3>
-                <span className="text-xs text-slate-400 font-semibold">{subjects.length} Sections Evaluated</span>
+                <span className="text-[10px] text-slate-400 font-semibold">{subjects.length} Sections Evaluated</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                 {subjects.map((sub, idx) => (
                   <div 
                     key={idx} 
-                    className="bg-[#10172b] border border-slate-700/50 hover:border-indigo-500/40 p-5 rounded-2xl shadow-sm transition-all flex flex-col justify-between"
+                    className="bg-[#10172b]/90 border border-slate-700/50 hover:border-indigo-500/40 p-3 rounded-xl shadow-sm flex flex-col justify-between"
                   >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-black uppercase tracking-wider text-indigo-300">
-                          {sub.name}
-                        </span>
-                        <span className="text-xs font-black text-white bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700">
-                          {sub.score} / {sub.maxScore}
-                        </span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-black uppercase tracking-wider text-indigo-300">
+                        {sub.name}
+                      </span>
+                      <span className="text-xs font-black text-white bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700">
+                        {sub.score} / {sub.maxScore}
+                      </span>
+                    </div>
+                    
+                    {/* Accuracy bar */}
+                    <div className="space-y-0.5 mb-1.5">
+                      <div className="flex justify-between text-[9px] font-bold text-slate-400">
+                        <span>Accuracy</span>
+                        <span>{sub.accuracy}%</span>
                       </div>
-                      
-                      {/* Accuracy bar */}
-                      <div className="space-y-1 mb-3">
-                        <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                          <span>Accuracy</span>
-                          <span>{sub.accuracy}%</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              sub.accuracy >= 70 ? 'bg-emerald-400' : sub.accuracy >= 40 ? 'bg-amber-400' : 'bg-rose-400'
-                            }`}
-                            style={{ width: `${sub.accuracy}%` }}
-                          />
-                        </div>
+                      <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${
+                            sub.accuracy >= 70 ? 'bg-emerald-400' : sub.accuracy >= 40 ? 'bg-amber-400' : 'bg-rose-400'
+                          }`}
+                          style={{ width: `${sub.accuracy}%` }}
+                        />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-800 text-[10px] font-bold text-center">
+                    <div className="grid grid-cols-3 gap-1 pt-1.5 border-t border-slate-800 text-[9px] font-bold text-center">
                       <span className="text-emerald-400">{sub.correct} Correct</span>
                       <span className="text-rose-400">{sub.wrong} Wrong</span>
                       <span className="text-slate-400">{sub.skipped} Skipped</span>
@@ -880,32 +881,33 @@ export default function TestConsole() {
             </div>
           )}
 
-          {/* Action Row */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-            <button
-              onClick={() => navigate('/dashboard', { state: { selectedSubId: submittedSubId } })}
-              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:brightness-110 text-white font-black text-xs md:text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-indigo-600/25 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2.5"
-            >
-              <span className="material-symbols-outlined text-lg">insights</span>
-              Check In-Depth Diagnostic Analysis
-            </button>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="w-full sm:w-auto px-6 py-4 bg-[#131b2e] hover:bg-[#1a253f] text-slate-200 font-bold text-xs md:text-sm uppercase tracking-wider rounded-2xl border border-slate-700/60 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-lg">dashboard</span>
-              Dashboard
-            </button>
-            <button
-              onClick={() => navigate('/')}
-              className="w-full sm:w-auto px-6 py-4 bg-[#131b2e] hover:bg-[#1a253f] text-slate-200 font-bold text-xs md:text-sm uppercase tracking-wider rounded-2xl border border-slate-700/60 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-lg">home</span>
-              Home
-            </button>
-          </div>
+        </main>
 
-        </div>
+        {/* 3. Bottom Action Row */}
+        <footer className="flex items-center justify-center gap-3 pt-2 border-t border-slate-800/80 shrink-0">
+          <button
+            onClick={() => navigate('/dashboard', { state: { selectedSubId: submittedSubId } })}
+            className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:brightness-110 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-indigo-600/25 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-base">insights</span>
+            Check In-Depth Diagnostic Analysis
+          </button>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="px-5 py-2.5 bg-[#131b2e] hover:bg-[#1a253f] text-slate-200 font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-700/60 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-base">dashboard</span>
+            Dashboard
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="px-5 py-2.5 bg-[#131b2e] hover:bg-[#1a253f] text-slate-200 font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-700/60 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-base">home</span>
+            Home
+          </button>
+        </footer>
+
       </div>
     );
   }
@@ -1031,9 +1033,12 @@ export default function TestConsole() {
                         : rawText;
                       const imageUrl = isObject ? opt.image_url : null;
 
+                      const optLetter = String.fromCharCode(65 + i);
+                      const isSelected = answers[currentQ] === optLetter || answers[currentQ] === i || answers[currentQ] === String(i);
+
                       return (
                         <label key={i} className={`flex flex-col p-4 border rounded-xl cursor-pointer transition-all ${
-                          answers[currentQ] === i 
+                          isSelected 
                             ? 'bg-[#006397]/10 border-[#006397] ring-1 ring-[#006397]' 
                             : 'border-gray-200 hover:bg-gray-50'
                         }`}>
@@ -1042,10 +1047,10 @@ export default function TestConsole() {
                               type="radio" 
                               className="w-4 h-4 text-[#006397] focus:ring-[#006397] cursor-pointer" 
                               name={`q-${currentQ}`} 
-                              checked={answers[currentQ] === i} 
-                              onChange={() => setAnswers({...answers, [currentQ]: i})} 
+                              checked={isSelected} 
+                              onChange={() => setAnswers({...answers, [currentQ]: optLetter})} 
                             />
-                            <span className="text-sm font-semibold text-gray-800">({String.fromCharCode(65 + i)}) <LatexRenderer text={textValue} /></span>
+                            <span className="text-sm font-semibold text-gray-800">({optLetter}) <LatexRenderer text={textValue} /></span>
                           </div>
                           {imageUrl && (
                             <div className="ml-8 mt-2 border rounded-lg overflow-hidden bg-white w-fit max-w-full">

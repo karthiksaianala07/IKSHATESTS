@@ -3,14 +3,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../config/api';
 import { supabase } from '../config/supabase';
-import { NCERT_CHAPTERS } from '../config/ncertChapters';
-import MathKeypad from '../components/MathKeypad';
+import { NCERT_CHAPTERS, getSubtopics } from '../config/ncertChapters';
+import SmartMathInput from '../components/SmartMathInput';
 import AdminAnalytics from '../components/AdminAnalytics';
 import StudentAnalyticsWorkspace from '../components/StudentAnalyticsWorkspace';
 import AddTestPage from './AddTestPage';
 import QuestionBankDocumentUpload from '../components/QuestionBankDocumentUpload';
 import { Logo } from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
+import { normalizeOptionLetter } from '../utils/answerEvaluation';
 
 const DEFAULT_SERIES = [
   {
@@ -140,6 +141,7 @@ export default function AdminPortal() {
   const [newQuestion, setNewQuestion] = useState({
     subject: 'Physics',
     chapter: 'Physical World',
+    subtopic: '',
     type: 'MCQ',
     text: '',
     correct_answer: '',
@@ -627,11 +629,17 @@ export default function AdminPortal() {
 
   const handleAddQuestion = (e) => {
     e.preventDefault();
-    axios.post(`${API_URL}/api/admin/questions`, newQuestion)
+    const isMCQ = newQuestion.type === 'MCQ';
+    const payload = {
+      ...newQuestion,
+      correct_answer: isMCQ ? normalizeOptionLetter(newQuestion.correct_answer) : newQuestion.correct_answer
+    };
+    axios.post(`${API_URL}/api/admin/questions`, payload)
       .then(res => {
         setNewQuestion({
           subject: 'Physics',
           chapter: 'Physical World',
+          subtopic: '',
           type: 'MCQ',
           text: '',
           correct_answer: '',
@@ -1521,7 +1529,7 @@ export default function AdminPortal() {
                             <h3 className="font-headline font-bold text-lg text-slate-200">Manual Question Form</h3>
                           </div>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="space-y-1">
                               <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Subject</label>
                               <select
@@ -1529,10 +1537,12 @@ export default function AdminPortal() {
                                 value={newQuestion.subject}
                                 onChange={e => {
                                   const sub = e.target.value;
+                                  const defChapter = NCERT_CHAPTERS[sub] ? NCERT_CHAPTERS[sub][0] : '';
                                   setNewQuestion({
                                     ...newQuestion,
                                     subject: sub,
-                                    chapter: NCERT_CHAPTERS[sub] ? NCERT_CHAPTERS[sub][0] : ''
+                                    chapter: defChapter,
+                                    subtopic: ''
                                   });
                                 }}
                               >
@@ -1545,12 +1555,25 @@ export default function AdminPortal() {
                             <div className="space-y-1">
                               <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Chapter</label>
                               <select
-                                className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-xs font-bold focus:outline-none focus:border-primary"
+                                className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-xs font-bold focus:outline-none focus:border-primary truncate"
                                 value={newQuestion.chapter}
-                                onChange={e => setNewQuestion({...newQuestion, chapter: e.target.value})}
+                                onChange={e => setNewQuestion({...newQuestion, chapter: e.target.value, subtopic: ''})}
                               >
                                 {(NCERT_CHAPTERS[newQuestion.subject] || []).map(ch => (
                                   <option key={ch} value={ch}>{ch}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Sub-topic</label>
+                              <select
+                                className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-xs font-bold focus:outline-none focus:border-primary truncate"
+                                value={newQuestion.subtopic || ''}
+                                onChange={e => setNewQuestion({...newQuestion, subtopic: e.target.value})}
+                              >
+                                <option value="">General / Comprehensive</option>
+                                {getSubtopics(newQuestion.subject, newQuestion.chapter).map(st => (
+                                  <option key={st} value={st}>{st}</option>
                                 ))}
                               </select>
                             </div>
@@ -1568,20 +1591,13 @@ export default function AdminPortal() {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Question Text (Supports LaTeX $$...$$)</label>
-                            <textarea
-                              ref={textRef}
-                              className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-sm min-h-[100px] focus:outline-none focus:border-primary"
+                            <SmartMathInput
+                              mode="rich"
+                              label="Question Text (Smart Ribbon & Math Toolbar)"
                               placeholder="e.g. Find the value of $\int_0^{\pi} \sin x \, dx$"
                               value={newQuestion.text}
-                              onChange={e => setNewQuestion({...newQuestion, text: e.target.value})}
-                              onFocus={() => setActiveQuestionField('text')}
-                              required
-                            />
-                            <MathKeypad
-                              targetRef={activeQuestionField === 'text' ? textRef : subTextRef}
-                              value={activeQuestionField === 'text' ? newQuestion.text : (newQuestion.sub_text || '')}
-                              setValue={(val) => setNewQuestion(prev => ({ ...prev, [activeQuestionField]: val }))}
+                              onChange={(val) => setNewQuestion({ ...newQuestion, text: val })}
+                              minHeight="85px"
                             />
                           </div>
 
@@ -1603,36 +1619,39 @@ export default function AdminPortal() {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Text Below Image (Optional, Supports LaTeX)</label>
-                            <textarea
-                              ref={subTextRef}
-                              className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-sm min-h-[60px] focus:outline-none focus:border-primary"
+                            <SmartMathInput
+                              mode="rich"
+                              label="Text Below Image (Optional, Smart Math Ribbon)"
                               placeholder="e.g. Find the value of current in the circuit shown above."
                               value={newQuestion.sub_text || ''}
-                              onChange={e => setNewQuestion({...newQuestion, sub_text: e.target.value})}
-                              onFocus={() => setActiveQuestionField('sub_text')}
+                              onChange={(val) => setNewQuestion({ ...newQuestion, sub_text: val })}
+                              minHeight="55px"
                             />
                           </div>
 
                           {newQuestion.type === 'MCQ' && (
-                            <div className="space-y-4">
-                              <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block">MCQ Options (Rich Support)</label>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
+                              <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block">MCQ Options (Docked Math Ribbon on Focus)</label>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {newQuestion.options.map((opt, i) => (
-                                  <div key={i} className="flex gap-2">
-                                    <input
-                                      ref={el => optionRefs.current[i] = el}
-                                      placeholder={`Option ${String.fromCharCode(65 + i)}`}
-                                      className="flex-1 p-3 border border-slate-900 bg-slate-950 text-slate-100 text-xs rounded-lg focus:outline-none focus:border-primary"
-                                      value={opt.text}
-                                      onChange={e => {
-                                        const newOpts = [...newQuestion.options];
-                                        newOpts[i] = { ...newOpts[i], text: e.target.value };
-                                        setNewQuestion({...newQuestion, options: newOpts});
-                                      }}
-                                      onFocus={() => setActiveOptionIndex(i)}
-                                    />
-                                    <label className={`w-12 flex items-center justify-center border border-dashed rounded-lg cursor-pointer bg-slate-950 hover:border-primary transition-colors ${opt.image_url ? 'border-green-500/50 bg-green-950/20' : 'border-slate-900'}`}>
+                                  <div key={i} className="flex gap-2 items-center">
+                                    <span className="w-5 text-xs font-bold text-primary text-center">
+                                      {String.fromCharCode(65 + i)}.
+                                    </span>
+                                    <div className="flex-1">
+                                      <SmartMathInput
+                                        mode="option"
+                                        placeholder={`Option ${String.fromCharCode(65 + i)} value...`}
+                                        value={opt.text}
+                                        onChange={(val) => {
+                                          const newOpts = [...newQuestion.options];
+                                          newOpts[i] = { ...newOpts[i], text: val };
+                                          setNewQuestion({ ...newQuestion, options: newOpts });
+                                        }}
+                                        minHeight="40px"
+                                      />
+                                    </div>
+                                    <label className={`w-10 h-10 shrink-0 flex items-center justify-center border border-dashed rounded-lg cursor-pointer bg-slate-950 hover:border-primary transition-colors ${opt.image_url ? 'border-green-500/50 bg-green-950/20' : 'border-slate-900'}`}>
                                       <span className={`material-symbols-outlined text-lg ${opt.image_url ? 'text-green-400' : 'text-slate-500'}`}>
                                         {optUploading === i ? 'sync' : opt.image_url ? 'image_check' : 'add_photo_alternate'}
                                       </span>
@@ -1641,27 +1660,33 @@ export default function AdminPortal() {
                                   </div>
                                 ))}
                               </div>
-                              <MathKeypad
-                                targetRef={{ current: optionRefs.current[activeOptionIndex] }}
-                                value={newQuestion.options[activeOptionIndex]?.text || ''}
-                                setValue={(val) => {
-                                  const updated = [...newQuestion.options];
-                                  updated[activeOptionIndex] = { ...updated[activeOptionIndex], text: val };
-                                  setNewQuestion(prev => ({ ...prev, options: updated }));
-                                }}
-                              />
                             </div>
                           )}
 
                           <div className="space-y-1">
-                            <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Correct Answer (Index 0-3 for MCQ)</label>
-                            <input
-                              className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-xs focus:outline-none focus:border-primary font-mono"
-                              value={newQuestion.correct_answer}
-                              onChange={e => setNewQuestion({...newQuestion, correct_answer: e.target.value})}
-                              placeholder="e.g. 0"
-                              required
-                            />
+                            <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Correct Answer</label>
+                            {newQuestion.type === 'MCQ' ? (
+                              <select
+                                className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-xs focus:outline-none focus:border-primary font-bold cursor-pointer"
+                                value={normalizeOptionLetter(newQuestion.correct_answer) || ''}
+                                onChange={e => setNewQuestion({...newQuestion, correct_answer: e.target.value})}
+                                required
+                              >
+                                <option value="">Select Correct Option</option>
+                                <option value="A">Option A</option>
+                                <option value="B">Option B</option>
+                                <option value="C">Option C</option>
+                                <option value="D">Option D</option>
+                              </select>
+                            ) : (
+                              <input
+                                className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-xs focus:outline-none focus:border-primary font-mono"
+                                value={newQuestion.correct_answer}
+                                onChange={e => setNewQuestion({...newQuestion, correct_answer: e.target.value})}
+                                placeholder="e.g. 18.5"
+                                required
+                              />
+                            )}
                           </div>
 
                           <button type="submit" disabled={uploading} className="w-full py-4 bg-primary hover:brightness-110 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-[0_0_15px_rgba(136,45,45,0.25)] border-none cursor-pointer">

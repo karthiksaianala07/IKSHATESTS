@@ -12,6 +12,7 @@ import PlansComingSoon from './pages/PlansComingSoon';
 import SignUpComingSoon from './pages/SignUpComingSoon';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TenantProvider } from './context/TenantContext';
+import { MathKeyboardProvider } from './context/MathKeyboardContext';
 import { Logo } from './components/Logo';
 import SparkleOrbs from './components/SparkleOrbs';
 
@@ -58,7 +59,9 @@ export default function App() {
   return (
     <TenantProvider>
       <AuthProvider>
-        <AppContent />
+        <MathKeyboardProvider>
+          <AppContent />
+        </MathKeyboardProvider>
       </AuthProvider>
     </TenantProvider>
   );
