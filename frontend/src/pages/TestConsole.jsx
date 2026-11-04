@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import LatexRenderer from '../components/LatexRenderer';
 import { useIsMobile } from '../utils/device';
 import { checkAnswer, normalizeOptionLetter } from '../utils/answerEvaluation';
+import QuestionStatusIcon from '../components/QuestionStatusIcon';
 
 // Helper to safely access sessionStorage in strict/lockdown environments
 const getSafeSessionStorage = () => {
@@ -220,12 +221,12 @@ export default function TestConsole() {
     };
   }, [isStarted, isSubmitted]);
 
-  // 120-Second Resume Countdown Timer
+  // 60-Second Resume Countdown Timer
   useEffect(() => {
     if (!violationWarning || resumeCountdown === null || isSubmitted) return;
 
     if (resumeCountdown <= 0) {
-      const reason = "Failed to resume the exam within the 120-second limit.";
+      const reason = "Failed to resume the exam within the 60-second limit.";
       handleSubmit(reason);
       return;
     }
@@ -340,13 +341,8 @@ export default function TestConsole() {
     const updatedViolations = [...violationsList, { reason, timestamp, severity: "HIGH" }];
     setViolationsList(updatedViolations);
 
-    if (currentCount >= 5) {
-      setViolationWarning({ reason: `${reason} (Proctoring strike limit reached: 5/5. Auto-submitting...)`, count: currentCount });
-      handleSubmit(reason, updatedViolations, currentCount);
-    } else {
-      setViolationWarning({ reason, count: currentCount });
-      setResumeCountdown(120);
-    }
+    setViolationWarning({ reason, count: currentCount });
+    setResumeCountdown(60);
   };
 
   const enforceFullscreen = async () => {
@@ -596,7 +592,7 @@ export default function TestConsole() {
                 <span className="material-symbols-outlined text-indigo-400 text-sm mt-0.5 font-bold">fullscreen</span>
                 <div>
                   <p className="font-bold text-slate-200">Mandatory Fullscreen</p>
-                  <p className="text-slate-400 text-[10px]">The exam will automatically request fullscreen. Exiting fullscreen results in a strike.</p>
+                  <p className="text-slate-400 text-[10px]">The exam will automatically request fullscreen mode to simulate authentic CBT testing conditions.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -604,13 +600,6 @@ export default function TestConsole() {
                 <div>
                   <p className="font-bold text-slate-200">Focus Lock Enforcement</p>
                   <p className="text-slate-400 text-[10px]">Switching windows, tab swapping, or Alt+Tab logs focus loss warnings immediately.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="material-symbols-outlined text-indigo-400 text-sm mt-0.5 font-bold">gavel</span>
-                <div>
-                  <p className="font-bold text-slate-200">5 Strike Rule</p>
-                  <p className="text-red-400 text-[10px] font-bold">Triggering 5 security violations will auto-submit your exam.</p>
                 </div>
               </div>
             </div>
@@ -914,10 +903,16 @@ export default function TestConsole() {
 
   const q = mockQuestions[currentQ];
 
+  const countAnswered = status.filter(s => s === 'ANSWERED').length;
+  const countNotAnswered = status.filter(s => s === 'NOT_ANSWERED').length;
+  const countNotVisited = status.filter(s => s === 'NOT_VISITED').length;
+  const countMarked = status.filter(s => s === 'MARKED').length;
+  const countAnsweredMarked = status.filter(s => s === 'ANSWERED_MARKED').length;
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col text-[#334155] bg-white font-sans text-base select-none">
       
-      {/* 1. Strike Warning Lock Overlay */}
+      {/* 1. Security Violation Overlay */}
       {violationWarning && !isSubmitted && (
         <div className="fixed inset-0 bg-black/95 z-[99999] flex flex-col items-center justify-center text-center p-6 backdrop-blur-md">
           <div className="max-w-md w-full bg-[#131b2e] border border-red-500/30 p-8 rounded-3xl text-center shadow-2xl">
@@ -928,12 +923,10 @@ export default function TestConsole() {
             </p>
             
             <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl mb-6">
-              <p className="text-[10px] uppercase tracking-widest font-black text-red-400">Proctoring Strikes</p>
-              <p className="text-3xl font-black text-red-500 mt-1">{violationWarning.count} / 5</p>
+              <p className="text-[10px] uppercase tracking-widest font-black text-red-400">Proctoring Warning</p>
+              <p className="text-3xl font-black text-red-500 mt-1">Warning #{violationWarning.count}</p>
               <p className="text-[9px] text-slate-400 font-bold mt-2 uppercase">
-                {violationWarning.count < 4 
-                  ? "WARNING: Triggering 5 violations will auto-submit the exam." 
-                  : "WARNING: A 5th violation will auto-submit the exam."}
+                All infractions are recorded in the proctoring audit log with your submission.
               </p>
             </div>
 
@@ -942,25 +935,23 @@ export default function TestConsole() {
                 <p className="text-[10px] uppercase tracking-widest font-black text-amber-400">Action Required</p>
                 <p className="text-2xl font-black text-amber-500 mt-1">Resume in {resumeCountdown}s</p>
                 <p className="text-[9px] text-slate-400 font-bold mt-2 uppercase">
-                  Exam will auto-submit if not resumed within the 120-second limit.
+                  Exam will auto-submit if not resumed within the 60-second limit.
                 </p>
               </div>
             )}
 
-            {violationWarning.count < 5 && (
-              <button 
-                onClick={async () => {
-                  isViolationModalOpenRef.current = false;
-                  lastViolationTimeRef.current = Date.now();
-                  setViolationWarning(null);
-                  setResumeCountdown(null);
-                  await enforceFullscreen();
-                }} 
-                className="w-full py-4 bg-gradient-to-r from-red-600 to-amber-600 hover:brightness-110 text-white font-black rounded-xl uppercase tracking-widest shadow-lg shadow-red-600/20 cursor-pointer"
-              >
-                Resume Exam (Re-verify Fullscreen)
-              </button>
-            )}
+            <button 
+              onClick={async () => {
+                isViolationModalOpenRef.current = false;
+                lastViolationTimeRef.current = Date.now();
+                setViolationWarning(null);
+                setResumeCountdown(null);
+                await enforceFullscreen();
+              }} 
+              className="w-full py-4 bg-gradient-to-r from-red-600 to-amber-600 hover:brightness-110 text-white font-black rounded-xl uppercase tracking-widest shadow-lg shadow-red-600/20 cursor-pointer"
+            >
+              Resume Exam (Re-verify Fullscreen)
+            </button>
           </div>
         </div>
       )}
@@ -1024,7 +1015,7 @@ export default function TestConsole() {
                 )}
                 
                 <div className="grid grid-cols-1 gap-4 mt-8">
-                  {q.type === 'MCQ' ? (
+                  {(q.question_pattern || q.type) === 'MCQ' ? (
                     q.options.map((opt, i) => {
                       const isObject = typeof opt === 'object';
                       const rawText = isObject ? opt.text : opt;
@@ -1102,91 +1093,104 @@ export default function TestConsole() {
         </main>
 
         {/* Right Sidebar */}
-        <aside className="w-[300px] bg-[#f5f3f4] border-l border-gray-200 flex flex-col shrink-0 z-40">
+        <aside className="w-[310px] bg-[#f5f3f4] border-l border-gray-200 flex flex-col shrink-0 z-40">
           
           {/* Candidate Profile Snippet */}
-          <div className="p-4 border-b border-gray-200 bg-[#eeeeee] shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-20 bg-white border border-gray-300 rounded flex items-center justify-center overflow-hidden shrink-0">
+          <div className="p-3.5 border-b border-gray-200 bg-[#eeeeee] shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-16 bg-white border border-gray-300 rounded flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                 <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzg4cWNUoKER9Hjt168x5n31uE7HByk3jykb4mj81KsDk17b034T0VWuhKAePBWDJwGxaDzEcxK4bOUxhIsLshOEewTHlsQ9CPpT9q_Dh9O5RktmbxUd0EErB4qjyleqd0b5p-tcjnWVrG7y6uxP3icpt8VApyi4f3EjzyhLQB31yswNn5UR73HckWUmIuuTu0Hd6wgBxAR04GlUkHtso0J53CnayvFqtaRYZGRErCMfuw--rA_7X-7UTUqACK6NsgfaDOg-9A50Wx" alt="Candidate" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm text-[#162839] truncate">{user?.full_name || user?.email?.split('@')[0] || 'Candidate Name'}</p>
                 <p className="text-xs text-gray-500">Roll No: {user?.id?.substring(0, 8).toUpperCase() || 'JEE2024001'}</p>
                 <p className="text-[10px] text-gray-500 truncate mt-0.5">{user?.email || 'student@ikshatests.com'}</p>
-                <div className="flex justify-between items-center mt-1.5">
+                <div className="flex justify-between items-center mt-1">
                   <span className="text-[10px] uppercase font-bold text-[#006397]">Section: {q?.subject || 'Physics'}</span>
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${violationsCount > 0 ? "bg-red-100 text-red-600 animate-pulse" : "bg-gray-100 text-gray-600"}`}>
-                    {violationsCount} / 3 Strikes
-                  </span>
+                  {violationsCount > 0 && (
+                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 animate-pulse">
+                      {violationsCount} {violationsCount === 1 ? 'Warning' : 'Warnings'}
+                    </span>
+                  )}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Question Status Legend / Summary from template */}
+          <div className="p-3 bg-white border-b border-gray-200 shrink-0">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-2 text-xs text-gray-800">
+              {/* Answered */}
+              <div className="flex items-center gap-2">
+                <QuestionStatusIcon status="ANSWERED" number={countAnswered} className="w-8 h-8 shrink-0" />
+                <span className="text-[11px] font-bold text-gray-800 leading-tight">Answered</span>
+              </div>
+              {/* Not Answered */}
+              <div className="flex items-center gap-2">
+                <QuestionStatusIcon status="NOT_ANSWERED" number={countNotAnswered} className="w-8 h-8 shrink-0" />
+                <span className="text-[11px] font-bold text-gray-800 leading-tight">Not Answered</span>
+              </div>
+              {/* Not Visited */}
+              <div className="flex items-center gap-2">
+                <QuestionStatusIcon status="NOT_VISITED" number={countNotVisited} className="w-8 h-8 shrink-0" />
+                <span className="text-[11px] font-bold text-gray-800 leading-tight">Not Visited</span>
+              </div>
+              {/* Marked for Review */}
+              <div className="flex items-center gap-2">
+                <QuestionStatusIcon status="MARKED" number={countMarked} className="w-8 h-8 shrink-0" />
+                <span className="text-[11px] font-bold text-gray-800 leading-tight">Marked for Review</span>
+              </div>
+              {/* Answered & Marked for Review (will also be evaluated) */}
+              <div className="flex items-start gap-2 col-span-2 pt-1 border-t border-gray-100">
+                <QuestionStatusIcon status="ANSWERED_MARKED" number={countAnsweredMarked} className="w-8 h-8 shrink-0 mt-0.5" />
+                <span className="text-[10px] font-bold text-gray-800 leading-snug">
+                  Answered & Marked for Review (will also be evaluated)
+                </span>
               </div>
             </div>
           </div>
 
           {/* Palette title */}
           <div className="bg-[#162839] text-white px-4 py-2 font-bold text-xs flex items-center justify-between shrink-0">
-            Choose a Question
+            <span>Choose a Question</span>
             <span className="material-symbols-outlined text-[16px]">grid_view</span>
           </div>
 
           {/* Palette container */}
-          <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
-            <div className="grid grid-cols-5 gap-3">
+          <div className="flex-grow overflow-y-auto p-3 custom-scrollbar bg-[#f8f9fa]">
+            <div className="grid grid-cols-5 gap-2.5">
               {mockQuestions.map((_, idx) => (
                 <button 
                   key={idx} 
                   onClick={() => jumpToQ(idx)} 
-                  className={`w-10 h-10 flex items-center justify-center text-[12px] font-bold cursor-pointer palette-node transition-transform hover:scale-110 ${
-                    idx === currentQ ? 'border-[#162839] border-2 scale-110 shadow-md z-10' : ''
-                  } ${
-                    status[idx] === 'ANSWERED' ? 'status-answered' :
-                    status[idx] === 'NOT_ANSWERED' ? 'status-not-answered' :
-                    status[idx] === 'MARKED' ? 'status-review' :
-                    status[idx] === 'ANSWERED_MARKED' ? 'status-review-answered' :
-                    'status-not-visited'
+                  className={`relative flex items-center justify-center p-0 cursor-pointer transition-transform hover:scale-110 focus:outline-none ${
+                    idx === currentQ ? 'scale-110 drop-shadow-md z-10 ring-2 ring-[#006397] ring-offset-1 rounded-md' : ''
                   }`}
+                  title={`Question ${idx + 1} (${(status[idx] || 'NOT_VISITED').replace('_', ' ')})`}
+                  aria-label={`Question ${idx + 1}`}
                 >
-                  {idx + 1}
+                  <QuestionStatusIcon 
+                    status={status[idx]} 
+                    number={idx + 1} 
+                    className="w-10 h-10" 
+                  />
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Legend and auxiliary buttons */}
-          <div className="p-4 bg-[#e9e8e9] border-t border-gray-200 space-y-3 shrink-0">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-semibold text-gray-700">
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 status-answered palette-node flex items-center justify-center text-[8px] font-bold">1</div>
-                <span>Answered</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 status-not-answered palette-node flex items-center justify-center text-[8px] font-bold">2</div>
-                <span>Not Answered</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 status-not-visited palette-node flex items-center justify-center text-[8px] font-bold">3</div>
-                <span>Not Visited</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 status-review palette-node flex items-center justify-center text-[8px] font-bold">4</div>
-                <span>Review</span>
-              </div>
-              <div className="flex items-center gap-1.5 col-span-2">
-                <div className="w-5 h-5 status-review-answered palette-node flex items-center justify-center text-[8px] font-bold">5</div>
-                <span className="truncate">Answered & Marked</span>
-              </div>
-            </div>
+          {/* Auxiliary action buttons */}
+          <div className="p-3 bg-[#e9e8e9] border-t border-gray-200 space-y-2 shrink-0">
             <button 
               onClick={() => setShowQuestionPaper(true)}
-              className="w-full py-2 bg-[#006397] text-white font-bold rounded-lg text-xs mt-3 flex items-center justify-center gap-2 cursor-pointer hover:bg-[#004e78] transition-colors"
+              className="w-full py-2 bg-[#006397] text-white font-bold rounded-lg text-xs flex items-center justify-center gap-2 cursor-pointer hover:bg-[#004e78] transition-colors shadow-sm"
             >
               Question Paper
               <span className="material-symbols-outlined text-[16px]">description</span>
             </button>
             <button 
               onClick={() => setShowInstructions(true)}
-              className="w-full py-2 border border-gray-300 text-gray-700 font-bold rounded-lg text-xs bg-white cursor-pointer hover:bg-gray-50 transition-colors"
+              className="w-full py-2 border border-gray-300 text-gray-700 font-bold rounded-lg text-xs bg-white cursor-pointer hover:bg-gray-50 transition-colors shadow-sm"
             >
               Instructions
             </button>
@@ -1233,38 +1237,38 @@ export default function TestConsole() {
               <div>
                 <h4 className="font-extrabold text-slate-800 text-base mb-2 uppercase border-l-4 border-indigo-600 pl-2">Question Palette Legend</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mt-3">
-                  <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-8 h-8 flex items-center justify-center text-gray-600 bg-[#e2e8f0] border border-gray-300 rounded shadow-sm font-bold shrink-0">1</div>
-                    <div>
-                      <p className="font-bold text-slate-800">Not Visited</p>
-                      <p className="text-[10px] text-slate-500">You have not visited the question yet.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-8 h-8 flex items-center justify-center text-white bg-[#ef4444] rounded-t-lg rounded-b shadow-[inset_0_-2px_0_rgba(0,0,0,0.15)] font-bold shrink-0">2</div>
-                    <div>
-                      <p className="font-bold text-slate-800">Not Answered</p>
-                      <p className="text-[10px] text-slate-500">You have visited but not answered the question.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-8 h-8 flex items-center justify-center text-white bg-[#22c55e] rounded-t-lg rounded-b shadow-[inset_0_-2px_0_rgba(0,0,0,0.15)] font-bold shrink-0">3</div>
+                  <div className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <QuestionStatusIcon status="ANSWERED" number="6" className="w-8 h-8 shrink-0" />
                     <div>
                       <p className="font-bold text-slate-800">Answered</p>
                       <p className="text-[10px] text-slate-500">You have answered the question.</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-8 h-8 flex items-center justify-center text-white bg-[#9333ea] rounded-full shadow-sm font-bold shrink-0">4</div>
+                  <div className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <QuestionStatusIcon status="NOT_ANSWERED" number="3" className="w-8 h-8 shrink-0" />
+                    <div>
+                      <p className="font-bold text-slate-800">Not Answered</p>
+                      <p className="text-[10px] text-slate-500">You have visited but not answered the question.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <QuestionStatusIcon status="NOT_VISITED" number="35" className="w-8 h-8 shrink-0" />
+                    <div>
+                      <p className="font-bold text-slate-800">Not Visited</p>
+                      <p className="text-[10px] text-slate-500">You have not visited the question yet.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <QuestionStatusIcon status="MARKED" number="1" className="w-8 h-8 shrink-0" />
                     <div>
                       <p className="font-bold text-slate-800">Marked for Review</p>
                       <p className="text-[10px] text-slate-500">You have marked the question for review without answering.</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100 col-span-1 sm:col-span-2">
-                    <div className="w-8 h-8 flex shrink-0 items-center justify-center text-white bg-[#9333ea] rounded-full relative shadow-sm font-bold"><div className="absolute bottom-0 right-0 w-4 h-4 bg-[#22c55e] rounded-full border-2 border-white"></div>5</div>
+                  <div className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-100 col-span-1 sm:col-span-2">
+                    <QuestionStatusIcon status="ANSWERED_MARKED" number="5" className="w-8 h-8 shrink-0" />
                     <div>
-                      <p className="font-bold text-slate-800">Answered & Marked for Review</p>
+                      <p className="font-bold text-slate-800">Answered & Marked for Review (will also be evaluated)</p>
                       <p className="text-[10px] text-slate-500">The question is answered and marked for review. It will be evaluated.</p>
                     </div>
                   </div>
@@ -1284,9 +1288,8 @@ export default function TestConsole() {
               <div>
                 <h4 className="font-extrabold text-slate-800 text-base mb-2 uppercase border-l-4 border-indigo-600 pl-2">Proctoring Rules & Security</h4>
                 <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
-                  <li><strong>Mandatory Fullscreen</strong>: The exam locks if you leave fullscreen mode.</li>
-                  <li><strong>Focus Monitoring</strong>: Switching tabs, minimize actions, or Alt+Tab logs a violation.</li>
-                  <li><strong>3 Strikes Limit</strong>: Reaching 3 strikes immediately auto-submits your exam.</li>
+                  <li><strong>Mandatory Fullscreen</strong>: The exam locks if you leave fullscreen mode. You must resume within 60 seconds.</li>
+                  <li><strong>Focus Monitoring</strong>: Switching tabs, minimize actions, or Alt+Tab triggers a proctoring warning.</li>
                   <li>Keyboard shortcuts (copy, paste, reload, developer tools) and right-clicks are disabled.</li>
                 </ul>
               </div>

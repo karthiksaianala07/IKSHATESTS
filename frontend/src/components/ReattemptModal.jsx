@@ -128,7 +128,7 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
               <div className="flex justify-between items-center text-xs text-[#fefcfb]/70 font-medium">
                 <span>Question <strong className="text-white text-sm">{currentIndex + 1}</strong> of {missedQuestions.length}</span>
                 <span className="px-2.5 py-1 rounded-md bg-[#001f54] text-[#fefcfb] font-bold border border-[#034078]/30">
-                  {currentQ.subject} {currentQ.chapter ? `• ${currentQ.chapter}` : ''} {currentQ.subtopic ? `• ${currentQ.subtopic}` : ''}
+                  {currentQ.subject} {currentQ.chapter ? `• ${currentQ.chapter}` : ''} {currentQ.subtopic ? `• ${currentQ.subtopic}` : ''} {currentQ.level ? `• ${currentQ.level}` : ''} {currentQ.exam_pattern ? `• ${currentQ.exam_pattern}` : ''}
                 </span>
               </div>
 
@@ -150,7 +150,7 @@ export function ReattemptModal({ testTitle, questions = [], originalAnswers = {}
               </div>
 
               {/* Options or Input */}
-              {currentQ.type?.toUpperCase() === 'NUMERICAL' ? (
+              {(currentQ.question_pattern || currentQ.type)?.toUpperCase() === 'NUMERICAL' ? (
                 <div className="space-y-2">
                   <label className="text-xs text-[#fefcfb] font-bold uppercase tracking-wider">Your Numerical Answer:</label>
                   <input 

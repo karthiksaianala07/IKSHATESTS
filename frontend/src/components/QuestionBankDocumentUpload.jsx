@@ -31,6 +31,8 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
   const [batchSubject, setBatchSubject] = useState('Physics');
   const [batchChapter, setBatchChapter] = useState('');
   const [batchSubtopic, setBatchSubtopic] = useState('');
+  const [batchLevel, setBatchLevel] = useState('');
+  const [batchExamPattern, setBatchExamPattern] = useState('');
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -187,11 +189,14 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
               ];
             }
 
-            const isNum = (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
+            const isNum = (q.question_pattern?.toUpperCase() === 'NUMERICAL' || q.question_pattern?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
             cleaned.push({
               subject: q.subject || 'Physics',
               chapter: q.chapter || '',
               subtopic: q.subtopic || '',
+              level: ['Easy', 'Medium', 'Hard'].includes(q.level) ? q.level : 'Medium',
+              exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
+              question_pattern: isNum ? 'NUMERICAL' : 'MCQ',
               type: isNum ? 'NUMERICAL' : 'MCQ',
               text: q.text || '',
               options: cleanedOptions,
@@ -248,11 +253,14 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
               ];
             }
 
-            const isNum = (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
+            const isNum = (q.question_pattern?.toUpperCase() === 'NUMERICAL' || q.question_pattern?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
             return {
               subject: q.subject || 'Physics',
               chapter: q.chapter || '',
               subtopic: q.subtopic || '',
+              level: ['Easy', 'Medium', 'Hard'].includes(q.level) ? q.level : 'Medium',
+              exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
+              question_pattern: isNum ? 'NUMERICAL' : 'MCQ',
               type: isNum ? 'NUMERICAL' : 'MCQ',
               text: q.text || '',
               options: cleanedOptions,
@@ -301,13 +309,15 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
   };
 
   const applyBatchSubjectChapter = () => {
-    if (!batchSubject) return;
+    if (!batchSubject && !batchLevel && !batchExamPattern) return;
     setStagedQuestions((prev) =>
       prev.map((q) => ({
         ...q,
-        subject: batchSubject,
+        subject: batchSubject || q.subject,
         chapter: batchChapter || q.chapter,
-        subtopic: batchSubtopic || q.subtopic || ''
+        subtopic: batchSubtopic || q.subtopic || '',
+        level: batchLevel || q.level || 'Medium',
+        exam_pattern: batchExamPattern || q.exam_pattern || 'JEE Main'
       }))
     );
   };
@@ -372,12 +382,17 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
     setSaving(true);
     try {
       const payload = stagedQuestions.map((q) => {
-        const isNum = (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
+        const rawType = q.question_pattern || q.type || 'MCQ';
+        const isNum = (rawType.toUpperCase() === 'INTEGER' || rawType.toUpperCase() === 'NUMERICAL');
+        const pat = isNum ? 'NUMERICAL' : 'MCQ';
         return {
           subject: q.subject,
           chapter: q.chapter || null,
           subtopic: q.subtopic || null,
-          type: q.type || 'MCQ',
+          level: q.level || 'Medium',
+          exam_pattern: q.exam_pattern || 'JEE Main',
+          question_pattern: pat,
+          type: pat,
           text: q.text,
           options: q.options || [],
           correct_answer: isNum ? (q.correct_answer || '') : normalizeOptionLetter(q.correct_answer),
@@ -581,6 +596,28 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
               ))}
             </select>
 
+            <select
+              value={batchLevel}
+              onChange={(e) => setBatchLevel(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-200 text-xs font-bold cursor-pointer"
+            >
+              <option value="">Keep / Choose Level</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+
+            <select
+              value={batchExamPattern}
+              onChange={(e) => setBatchExamPattern(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-200 text-xs font-bold cursor-pointer"
+            >
+              <option value="">Keep / Choose Exam Pattern</option>
+              <option value="JEE Main">JEE Main</option>
+              <option value="JEE Advanced">JEE Advanced</option>
+              <option value="NEET">NEET</option>
+            </select>
+
             <button
               type="button"
               onClick={applyBatchSubjectChapter}
@@ -602,8 +639,11 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                     <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-black bg-primary/20 text-cyan-300 border border-primary/30">
                       #{idx + 1}
                     </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black border bg-indigo-950/60 text-indigo-300 border-indigo-800/50">
+                      {q.exam_pattern || 'JEE Main'}
+                    </span>
                     <span className="text-xs font-bold text-slate-300 font-mono uppercase tracking-wider">
-                      {q.type}
+                      {q.question_pattern || q.type}
                     </span>
                   </div>
 
@@ -617,7 +657,7 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
                   <div>
                     <label className="text-[10px] font-mono font-bold uppercase text-slate-400 mb-1 block">Subject</label>
                     <select
@@ -676,8 +716,49 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                   </div>
 
                   <div>
+                    <label className="text-[10px] font-mono font-bold uppercase text-slate-400 mb-1 block">Level</label>
+                    <select
+                      value={q.level || 'Medium'}
+                      onChange={(e) => updateStagedQuestion(idx, 'level', e.target.value)}
+                      className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-bold cursor-pointer"
+                    >
+                      <option value="Easy">Easy</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Hard">Hard</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-mono font-bold uppercase text-slate-400 mb-1 block">Exam Pattern</label>
+                    <select
+                      value={q.exam_pattern || 'JEE Main'}
+                      onChange={(e) => updateStagedQuestion(idx, 'exam_pattern', e.target.value)}
+                      className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-bold cursor-pointer"
+                    >
+                      <option value="JEE Main">JEE Main</option>
+                      <option value="JEE Advanced">JEE Advanced</option>
+                      <option value="NEET">NEET</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-mono font-bold uppercase text-slate-400 mb-1 block">Question Pattern</label>
+                    <select
+                      value={q.question_pattern || q.type || 'MCQ'}
+                      onChange={(e) => {
+                        updateStagedQuestion(idx, 'question_pattern', e.target.value);
+                        updateStagedQuestion(idx, 'type', e.target.value);
+                      }}
+                      className="w-full p-2 text-xs border border-slate-800 rounded-lg bg-slate-900 text-slate-200 font-bold cursor-pointer"
+                    >
+                      <option value="MCQ">MCQ</option>
+                      <option value="NUMERICAL">NUMERICAL</option>
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="text-[10px] font-mono font-bold uppercase text-slate-400 mb-1 block">Correct Answer</label>
-                    {q.type === 'NUMERICAL' || q.type === 'INTEGER' ? (
+                    {(q.question_pattern || q.type) === 'NUMERICAL' || (q.question_pattern || q.type) === 'INTEGER' ? (
                       <input
                         type="text"
                         value={q.correct_answer || ''}
@@ -759,7 +840,7 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
                 )}
 
                 {/* MCQ Options */}
-                {q.type === 'MCQ' && (
+                {(q.question_pattern || q.type) === 'MCQ' && (
                   <div className="space-y-3 pt-2 border-t border-slate-900/60">
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] font-mono font-bold uppercase text-slate-400 block">Options</label>

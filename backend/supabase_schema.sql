@@ -71,6 +71,20 @@ CREATE INDEX IF NOT EXISTS idx_admin_profiles_email ON public.admin_profiles(ema
 -- 5. Remove admin records from student profiles table to complete clean separation:
 -- DELETE FROM public.profiles WHERE role = 'admin' OR lower(email) = 'karthiksaianala@gmail.com';
 
+-- 6. Add subtopic column to questions table for granular syllabus tracking:
+-- ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS subtopic TEXT;
+
+-- 7. Add level column to questions table for difficulty tracking:
+-- ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS level TEXT DEFAULT 'Medium';
+
+-- 8. Add exam_pattern, migrate to question_pattern, and remove legacy type column:
+-- ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS exam_pattern TEXT DEFAULT 'JEE Main';
+-- ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS question_pattern TEXT DEFAULT 'MCQ';
+-- UPDATE public.questions SET question_pattern = COALESCE(question_pattern, type, 'MCQ');
+-- DROP TRIGGER IF EXISTS trg_sync_question_pattern_type ON public.questions;
+-- DROP FUNCTION IF EXISTS sync_question_pattern_type();
+-- ALTER TABLE public.questions DROP COLUMN IF EXISTS type;
+
 -- 3. Create QUESTIONS table
 CREATE TABLE IF NOT EXISTS questions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -78,7 +92,9 @@ CREATE TABLE IF NOT EXISTS questions (
   subject TEXT NOT NULL, -- e.g., 'Physics', 'Chemistry'
   chapter TEXT, -- NCERT Chapter sub-classification
   subtopic TEXT, -- Detailed syllabus sub-topic breakdown
-  type TEXT CHECK (type IN ('MCQ', 'NUMERICAL')),
+  level TEXT DEFAULT 'Medium' CHECK (level IN ('Easy', 'Medium', 'Hard')),
+  exam_pattern TEXT DEFAULT 'JEE Main' CHECK (exam_pattern IN ('JEE Main', 'JEE Advanced', 'NEET')),
+  question_pattern TEXT DEFAULT 'MCQ' CHECK (question_pattern IN ('MCQ', 'NUMERICAL')),
   text TEXT NOT NULL, -- Supports LaTeX
   image_url TEXT, -- Public URL for images stored in Supabase Storage
   sub_text TEXT, -- Optional question text below image (Supports LaTeX)
@@ -87,8 +103,11 @@ CREATE TABLE IF NOT EXISTS questions (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Ensure subtopic column exists if table was already created
+-- Ensure subtopic, level, exam_pattern and question_pattern columns exist if table was already created
 ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS subtopic TEXT;
+ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS level TEXT DEFAULT 'Medium';
+ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS exam_pattern TEXT DEFAULT 'JEE Main';
+ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS question_pattern TEXT DEFAULT 'MCQ';
 
 -- 4. Create SUBMISSIONS table
 CREATE TABLE IF NOT EXISTS submissions (

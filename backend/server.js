@@ -349,7 +349,8 @@ app.get('/api/admin/violations', (req, res) => {
 // 7.5 Get all questions (Admin only, bypasses RLS, supports pagination)
 app.get('/api/admin/questions', async (req, res) => {
   try {
-    const { paginate, page, limit, search, subject, chapter, subtopic } = req.query;
+    const { paginate, page, limit, search, subject, chapter, subtopic, level, exam_pattern, question_pattern, type } = req.query;
+    const patternFilter = question_pattern || type;
 
     if (paginate === 'true') {
       const pageNum = parseInt(page) || 1;
@@ -371,6 +372,18 @@ app.get('/api/admin/questions', async (req, res) => {
         query = query.eq('subtopic', subtopic);
       }
 
+      if (level && level !== 'All') {
+        query = query.eq('level', level);
+      }
+
+      if (exam_pattern && exam_pattern !== 'All') {
+        query = query.eq('exam_pattern', exam_pattern);
+      }
+
+      if (patternFilter && patternFilter !== 'All') {
+        query = query.eq('question_pattern', patternFilter);
+      }
+
       if (search) {
         query = query.ilike('text', `%${search}%`);
       }
@@ -384,8 +397,15 @@ app.get('/api/admin/questions', async (req, res) => {
 
       if (error) throw error;
 
+      const normalized = (data || []).map(q => ({
+        ...q,
+        exam_pattern: q.exam_pattern || 'JEE Main',
+        question_pattern: q.question_pattern || q.type || 'MCQ',
+        type: q.question_pattern || q.type || 'MCQ'
+      }));
+
       return res.json({
-        questions: data || [],
+        questions: normalized,
         total: count || 0,
         page: pageNum,
         totalPages: Math.ceil((count || 0) / limitNum)
@@ -405,9 +425,24 @@ app.get('/api/admin/questions', async (req, res) => {
     if (subtopic && subtopic !== 'All') {
       query = query.eq('subtopic', subtopic);
     }
+    if (level && level !== 'All') {
+      query = query.eq('level', level);
+    }
+    if (exam_pattern && exam_pattern !== 'All') {
+      query = query.eq('exam_pattern', exam_pattern);
+    }
+    if (patternFilter && patternFilter !== 'All') {
+      query = query.eq('type', patternFilter);
+    }
     const { data, error } = await query.order('created_at', { ascending: false });
     if (error) throw error;
-    res.json(data || []);
+    const normalized = (data || []).map(q => ({
+      ...q,
+      exam_pattern: q.exam_pattern || 'JEE Main',
+      question_pattern: q.question_pattern || q.type || 'MCQ',
+      type: q.question_pattern || q.type || 'MCQ'
+    }));
+    res.json(normalized);
   } catch (err) {
     console.error("[GET_QUESTIONS_ERROR]", err.message);
     res.status(500).json({ error: "Failed to fetch question repository" });
@@ -428,12 +463,16 @@ app.post('/api/admin/questions', async (req, res) => {
     let result;
     if (Array.isArray(payload)) {
       const formatted = payload.map(q => {
-        const isNum = (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
+        const rawType = q.question_pattern || q.type || 'MCQ';
+        const isNum = (rawType.toUpperCase() === 'INTEGER' || rawType.toUpperCase() === 'NUMERICAL');
+        const pat = isNum ? 'NUMERICAL' : 'MCQ';
         return {
           subject: q.subject,
           chapter: q.chapter || null,
           subtopic: q.subtopic || null,
-          type: isNum ? 'NUMERICAL' : 'MCQ',
+          level: ['Easy', 'Medium', 'Hard'].includes(q.level) ? q.level : 'Medium',
+          exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
+          question_pattern: pat,
           text: q.text,
           options: q.options || [],
           correct_answer: isNum ? String(q.correct_answer || '') : normalizeOptionLetter(q.correct_answer),
@@ -444,9 +483,9 @@ app.post('/api/admin/questions', async (req, res) => {
         };
       });
       let { data, error } = await supabaseAdmin.from('questions').insert(formatted).select();
-      if (error && (error.code === '42703' || error.message?.includes('explanation') || error.message?.includes('subtopic'))) {
-        console.warn("[ADD_QUESTION_WARNING] 'explanation' or 'subtopic' column not found, falling back without new columns.");
-        const fallback = formatted.map(({ explanation, subtopic, ...rest }) => rest);
+      if (error && (error.code === '42703' || error.message?.includes('question_pattern') || error.message?.includes('exam_pattern') || error.message?.includes('explanation') || error.message?.includes('subtopic') || error.message?.includes('level'))) {
+        console.warn("[ADD_QUESTION_WARNING] New columns not found in database, falling back without unmigrated columns:", error.message);
+        const fallback = formatted.map(({ explanation, subtopic, level, exam_pattern, question_pattern, ...rest }) => rest);
         const { data: fbData, error: fbError } = await supabaseAdmin.from('questions').insert(fallback).select();
         if (fbError) throw fbError;
         data = fbData;
@@ -455,12 +494,16 @@ app.post('/api/admin/questions', async (req, res) => {
       if (error) throw error;
       result = data;
     } else {
-      const isNum = (payload.type?.toUpperCase() === 'INTEGER' || payload.type?.toUpperCase() === 'NUMERICAL');
+      const rawType = payload.question_pattern || payload.type || 'MCQ';
+      const isNum = (rawType.toUpperCase() === 'INTEGER' || rawType.toUpperCase() === 'NUMERICAL');
+      const pat = isNum ? 'NUMERICAL' : 'MCQ';
       const singleQ = {
         subject: payload.subject,
         chapter: payload.chapter || null,
         subtopic: payload.subtopic || null,
-        type: isNum ? 'NUMERICAL' : 'MCQ',
+        level: ['Easy', 'Medium', 'Hard'].includes(payload.level) ? payload.level : 'Medium',
+        exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(payload.exam_pattern) ? payload.exam_pattern : 'JEE Main',
+        question_pattern: pat,
         text: payload.text,
         options: payload.options || [],
         correct_answer: isNum ? String(payload.correct_answer || '') : normalizeOptionLetter(payload.correct_answer),
@@ -470,9 +513,9 @@ app.post('/api/admin/questions', async (req, res) => {
         test_id: test.id
       };
       let { data, error } = await supabaseAdmin.from('questions').insert(singleQ).select().single();
-      if (error && (error.code === '42703' || error.message?.includes('explanation') || error.message?.includes('subtopic'))) {
-        console.warn("[ADD_QUESTION_WARNING] 'explanation' or 'subtopic' column not found, falling back without new columns.");
-        const { explanation, subtopic, ...fbSingle } = singleQ;
+      if (error && (error.code === '42703' || error.message?.includes('question_pattern') || error.message?.includes('exam_pattern') || error.message?.includes('explanation') || error.message?.includes('subtopic') || error.message?.includes('level'))) {
+        console.warn("[ADD_QUESTION_WARNING] New columns not found in database, falling back without unmigrated columns:", error.message);
+        const { explanation, subtopic, level, exam_pattern, question_pattern, ...fbSingle } = singleQ;
         const { data: fbData, error: fbError } = await supabaseAdmin.from('questions').insert(fbSingle).select().single();
         if (fbError) throw fbError;
         data = fbData;
@@ -493,18 +536,24 @@ app.post('/api/admin/questions', async (req, res) => {
 app.put('/api/admin/questions/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { subject, chapter, subtopic, type, text, sub_text, image_url, options, correct_answer, explanation } = req.body;
+    const { subject, chapter, subtopic, level, exam_pattern, question_pattern, type, text, sub_text, image_url, options, correct_answer, explanation } = req.body;
 
     const updates = {};
     if (subject !== undefined) updates.subject = subject;
     if (chapter !== undefined) updates.chapter = chapter || null;
     if (subtopic !== undefined) updates.subtopic = subtopic || null;
-    if (type !== undefined) updates.type = type;
+    if (level !== undefined) updates.level = ['Easy', 'Medium', 'Hard'].includes(level) ? level : 'Medium';
+    if (exam_pattern !== undefined) updates.exam_pattern = ['JEE Main', 'JEE Advanced', 'NEET'].includes(exam_pattern) ? exam_pattern : 'JEE Main';
+    const rawType = question_pattern || type;
+    if (rawType !== undefined) {
+      const isNum = (rawType.toUpperCase() === 'INTEGER' || rawType.toUpperCase() === 'NUMERICAL');
+      updates.question_pattern = isNum ? 'NUMERICAL' : 'MCQ';
+    }
     if (text !== undefined) updates.text = text;
     if (sub_text !== undefined) updates.sub_text = sub_text || null;
     if (image_url !== undefined) updates.image_url = image_url || null;
     if (options !== undefined) updates.options = options || [];
-    const isNum = (type?.toUpperCase() === 'INTEGER' || type?.toUpperCase() === 'NUMERICAL');
+    const isNum = ((rawType || '').toUpperCase() === 'INTEGER' || (rawType || '').toUpperCase() === 'NUMERICAL');
     if (correct_answer !== undefined) {
       updates.correct_answer = isNum ? String(correct_answer) : normalizeOptionLetter(correct_answer);
     }
@@ -517,8 +566,8 @@ app.put('/api/admin/questions/:id', async (req, res) => {
       .select()
       .single();
 
-    if (error && (error.code === '42703' || error.message?.includes('explanation') || error.message?.includes('subtopic'))) {
-      const { explanation: _, subtopic: _st, ...updatesWithoutNewCols } = updates;
+    if (error && (error.code === '42703' || error.message?.includes('question_pattern') || error.message?.includes('exam_pattern') || error.message?.includes('explanation') || error.message?.includes('subtopic') || error.message?.includes('level'))) {
+      const { explanation: _, subtopic: _st, level: _lvl, exam_pattern: _ep, question_pattern: _qp, ...updatesWithoutNewCols } = updates;
       const { data: fbData, error: fbErr } = await supabaseAdmin
         .from('questions')
         .update(updatesWithoutNewCols)
@@ -531,7 +580,14 @@ app.put('/api/admin/questions/:id', async (req, res) => {
     }
     if (error) throw error;
 
-    res.json({ success: true, question: data });
+    const normalized = {
+      ...data,
+      exam_pattern: data.exam_pattern || 'JEE Main',
+      question_pattern: data.question_pattern || data.type || 'MCQ',
+      type: data.question_pattern || data.type || 'MCQ'
+    };
+
+    res.json({ success: true, question: normalized });
   } catch (err) {
     console.error("[UPDATE_QUESTION_ERROR]", err.message);
     res.status(500).json({ error: err.message || "Failed to update question" });
@@ -1493,7 +1549,10 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
       "subject": "Physics", // Infer subject if possible (Physics, Chemistry, Mathematics, Biology), else "Physics"
       "chapter": "Inferred standard NCERT Class 11/12 Chapter name (e.g. 'Motion in a Plane', 'Electrochemistry', 'Integrals', 'Human Reproduction') matching the subject, or null if uncertain",
       "subtopic": "Inferred syllabus subtopic (e.g. 'Uniform Circular Motion & Centripetal Acceleration', 'Nernst Equation and Applications', 'Integration by Parts') if identifiable, or null",
-      "type": "mcq", // MUST BE EXACTLY "mcq", "integer", or "numerical"
+      "level": "Inferred question difficulty: exactly 'Easy', 'Medium', or 'Hard' (default 'Medium')",
+      "exam_pattern": "Inferred exam target: exactly 'JEE Main', 'JEE Advanced', or 'NEET' (default 'JEE Main')",
+      "question_pattern": "MUST BE EXACTLY 'MCQ' or 'NUMERICAL'",
+      "type": "mcq", // Alias for question_pattern (MUST BE EXACTLY 'mcq' or 'numerical')
       "text": "The main question text BEFORE the diagram or image, with LaTeX for math like $\\int x^2 dx$ or $\\frac{1}{2}$",
       "sub_text": "Any optional question text or follow-up question that appears AFTER the diagram or image, with LaTeX if applicable, or null if there is no text below the diagram",
       "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
@@ -1867,7 +1926,10 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
       "subject": "Physics", // Infer subject if possible (Physics, Chemistry, Mathematics, Biology), else "Physics"
       "chapter": "Inferred standard NCERT Class 11/12 Chapter name (e.g. 'Motion in a Plane', 'Electrochemistry', 'Integrals', 'Human Reproduction') matching the subject, or null if uncertain",
       "subtopic": "Inferred syllabus subtopic (e.g. 'Uniform Circular Motion & Centripetal Acceleration', 'Nernst Equation and Applications', 'Integration by Parts') if identifiable, or null",
-      "type": "mcq", // MUST BE EXACTLY "mcq" or "numerical"
+      "level": "Inferred question difficulty: exactly 'Easy', 'Medium', or 'Hard' (default 'Medium')",
+      "exam_pattern": "Inferred exam target: exactly 'JEE Main', 'JEE Advanced', or 'NEET' (default 'JEE Main')",
+      "question_pattern": "MUST BE EXACTLY 'MCQ' or 'NUMERICAL'",
+      "type": "mcq", // Alias for question_pattern (MUST BE EXACTLY 'mcq' or 'numerical')
       "text": "The main question text BEFORE the diagram or image, with LaTeX for math like $\\int x^2 dx$ or $\\frac{1}{2}$",
       "sub_text": "Any optional question text or follow-up question that appears AFTER the diagram or image, with LaTeX if applicable, or null if there is no text below the diagram",
       "options": ["Option A text", "Option B text", "Option C text", "Option D text"], // A list of 4 options if type is "mcq", else an empty array []
@@ -2103,11 +2165,16 @@ app.post('/api/admin/tests', async (req, res) => {
     if (newQuestions && Array.isArray(newQuestions) && newQuestions.length > 0) {
       const baseTime = Date.now();
       const questionsToInsert = newQuestions.map((q, idx) => {
-        const isNum = (q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
+        const rawType = q.question_pattern || q.type || 'MCQ';
+        const isNum = (rawType.toUpperCase() === 'INTEGER' || rawType.toUpperCase() === 'NUMERICAL');
+        const pat = isNum ? 'NUMERICAL' : 'MCQ';
         return {
           subject: q.subject || 'Physics',
           chapter: q.chapter || null,
-          type: isNum ? 'NUMERICAL' : 'MCQ',
+          subtopic: q.subtopic || null,
+          level: ['Easy', 'Medium', 'Hard'].includes(q.level) ? q.level : 'Medium',
+          exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
+          question_pattern: pat,
           text: q.text || '',
           options: Array.isArray(q.options) ? q.options : [],
           correct_answer: isNum ? (q.correct_answer || null) : normalizeOptionLetter(q.correct_answer),
@@ -2123,10 +2190,10 @@ app.post('/api/admin/tests', async (req, res) => {
         .from('questions')
         .insert(questionsToInsert);
 
-      // Graceful fallback if 'explanation' column is not yet migrated in Supabase
-      if (newQError && (newQError.code === '42703' || newQError.message?.includes('explanation'))) {
-        console.warn("[ADD_TEST_WARNING] 'explanation' column not found in 'questions' table. Retrying insert without explanation column...");
-        const fallbackQuestions = questionsToInsert.map(({ explanation, ...rest }) => rest);
+      // Graceful fallback if new columns are not yet migrated in Supabase
+      if (newQError && (newQError.code === '42703' || newQError.message?.includes('question_pattern') || newQError.message?.includes('exam_pattern') || newQError.message?.includes('explanation') || newQError.message?.includes('subtopic') || newQError.message?.includes('level'))) {
+        console.warn("[ADD_TEST_WARNING] New columns not found in 'questions' table. Retrying insert without unmigrated columns...");
+        const fallbackQuestions = questionsToInsert.map(({ explanation, subtopic, level, exam_pattern, question_pattern, ...rest }) => rest);
         const { error: fallbackErr } = await supabaseAdmin
           .from('questions')
           .insert(fallbackQuestions);

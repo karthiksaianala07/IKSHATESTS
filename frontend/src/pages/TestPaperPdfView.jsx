@@ -32,6 +32,9 @@ export default function TestPaperPdfView() {
     subject: 'Physics',
     chapter: '',
     subtopic: '',
+    level: 'Medium',
+    exam_pattern: 'JEE Main',
+    question_pattern: 'MCQ',
     type: 'MCQ',
     text: '',
     sub_text: '',
@@ -256,7 +259,9 @@ export default function TestPaperPdfView() {
         editFormData.subject !== (editingQuestion.subject || 'Physics') ||
         editFormData.chapter !== (editingQuestion.chapter || '') ||
         editFormData.subtopic !== (editingQuestion.subtopic || '') ||
-        editFormData.type !== (editingQuestion.type || 'MCQ')
+        editFormData.level !== (editingQuestion.level || 'Medium') ||
+        editFormData.exam_pattern !== (editingQuestion.exam_pattern || 'JEE Main') ||
+        (editFormData.question_pattern || editFormData.type) !== (editingQuestion.question_pattern || editingQuestion.type || 'MCQ')
       );
       if (isDirty) {
         if (!window.confirm("You have unsaved changes in this question. Discard changes and close?")) {
@@ -356,12 +361,15 @@ export default function TestPaperPdfView() {
       subject: q.subject || 'Physics',
       chapter: q.chapter || '',
       subtopic: q.subtopic || '',
-      type: q.type || 'MCQ',
+      level: q.level || 'Medium',
+      exam_pattern: q.exam_pattern || 'JEE Main',
+      question_pattern: q.question_pattern || q.type || 'MCQ',
+      type: q.question_pattern || q.type || 'MCQ',
       text: q.text || '',
       sub_text: q.sub_text || '',
       image_url: q.image_url || '',
       options: normalizedOptions,
-      correct_answer: q.type === 'MCQ' ? (normalizeOptionLetter(q.correct_answer) || 'A') : (q.correct_answer || ''),
+      correct_answer: (q.question_pattern || q.type) === 'MCQ' ? (normalizeOptionLetter(q.correct_answer) || 'A') : (q.correct_answer || ''),
       explanation: q.explanation || ''
     });
     setActiveEditField('text');
@@ -376,7 +384,8 @@ export default function TestPaperPdfView() {
     setSavingQuestion(true);
     setActionError(null);
     try {
-      const formattedOptions = editFormData.type === 'MCQ'
+      const qPat = editFormData.question_pattern || editFormData.type || 'MCQ';
+      const formattedOptions = qPat === 'MCQ'
         ? editFormData.options.map(opt => ({ text: opt.text, image_url: opt.image_url || null }))
         : [];
 
@@ -384,12 +393,14 @@ export default function TestPaperPdfView() {
         subject: editFormData.subject,
         chapter: editFormData.chapter || null,
         subtopic: editFormData.subtopic || null,
-        type: editFormData.type,
+        level: editFormData.level || 'Medium',
+        exam_pattern: editFormData.exam_pattern || 'JEE Main',
+        question_pattern: qPat,
         text: editFormData.text,
         sub_text: editFormData.sub_text || null,
         image_url: editFormData.image_url || null,
         options: formattedOptions,
-        correct_answer: editFormData.type === 'MCQ' ? normalizeOptionLetter(editFormData.correct_answer) : editFormData.correct_answer,
+        correct_answer: qPat === 'MCQ' ? normalizeOptionLetter(editFormData.correct_answer) : editFormData.correct_answer,
         explanation: editFormData.explanation || null
       };
 
@@ -713,7 +724,8 @@ export default function TestPaperPdfView() {
                 <div className="space-y-6">
                   {subjectQuestions.map((q, qIndex) => {
                     const globalIndex = questions.indexOf(q) + 1;
-                    const isNumerical = q.type?.toUpperCase() === 'NUMERICAL' || q.type?.toUpperCase() === 'INTEGER';
+                    const rawType = q.question_pattern || q.type;
+                    const isNumerical = rawType?.toUpperCase() === 'NUMERICAL' || rawType?.toUpperCase() === 'INTEGER';
                     const hasOptions = Array.isArray(q.options) && q.options.length > 0;
 
                     return (
@@ -743,6 +755,22 @@ export default function TestPaperPdfView() {
                               {q.subtopic && (
                                 <span className="px-2 py-0.5 bg-cyan-50 text-cyan-800 border border-cyan-200 rounded font-bold">
                                   {q.subtopic}
+                                </span>
+                              )}
+                              {q.level && (
+                                <span className={`px-2 py-0.5 rounded font-bold border ${
+                                  q.level === 'Easy'
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    : q.level === 'Hard'
+                                    ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                                }`}>
+                                  {q.level}
+                                </span>
+                              )}
+                              {q.exam_pattern && (
+                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded font-bold">
+                                  {q.exam_pattern}
                                 </span>
                               )}
                               <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded font-semibold uppercase">
@@ -880,7 +908,7 @@ export default function TestPaperPdfView() {
 
             <div className="space-y-4">
               {questions.map((q, idx) => {
-                const isNumerical = q.type?.toUpperCase() === 'NUMERICAL' || q.type?.toUpperCase() === 'INTEGER';
+                const isNumerical = (q.question_pattern || q.type)?.toUpperCase() === 'NUMERICAL' || (q.question_pattern || q.type)?.toUpperCase() === 'INTEGER';
                 return (
                   <article 
                     key={idx} 
@@ -1078,8 +1106,8 @@ export default function TestPaperPdfView() {
 
             {/* Modal Body (Scrollable) */}
             <form onSubmit={handleSaveQuestion} className="p-6 space-y-5 overflow-y-auto flex-1">
-              {/* Row 1: Subject, Chapter, Sub-topic, Type, Correct Answer */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-[#001f54]/30 p-3.5 rounded-xl border border-[#034078]/60">
+              {/* Row 1: Subject, Chapter, Sub-topic, Level, Exam Pattern, Question Pattern, Correct Answer */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 bg-[#001f54]/30 p-3.5 rounded-xl border border-[#034078]/60">
                 <div>
                   <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Subject</label>
                   <select
@@ -1135,11 +1163,40 @@ export default function TestPaperPdfView() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Type</label>
+                  <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Level</label>
                   <select
-                    value={editFormData.type}
-                    onChange={e => setEditFormData({ ...editFormData, type: e.target.value })}
-                    className="w-full p-2 text-xs border border-[#034078] bg-[#001f54] text-white rounded-lg cursor-pointer"
+                    value={editFormData.level || 'Medium'}
+                    onChange={e => setEditFormData({ ...editFormData, level: e.target.value })}
+                    className="w-full p-2 text-xs border border-[#034078] bg-[#001f54] text-white rounded-lg cursor-pointer font-bold"
+                  >
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Exam Pattern</label>
+                  <select
+                    value={editFormData.exam_pattern || 'JEE Main'}
+                    onChange={e => setEditFormData({ ...editFormData, exam_pattern: e.target.value })}
+                    className="w-full p-2 text-xs border border-[#034078] bg-[#001f54] text-white rounded-lg cursor-pointer font-bold"
+                  >
+                    <option value="JEE Main">JEE Main</option>
+                    <option value="JEE Advanced">JEE Advanced</option>
+                    <option value="NEET">NEET</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Question Pattern</label>
+                  <select
+                    value={editFormData.question_pattern || editFormData.type}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setEditFormData({ ...editFormData, question_pattern: val, type: val });
+                    }}
+                    className="w-full p-2 text-xs border border-[#034078] bg-[#001f54] text-white rounded-lg cursor-pointer font-bold"
                   >
                     <option value="MCQ">Single Correct (MCQ)</option>
                     <option value="NUMERICAL">Numerical Value</option>
@@ -1148,7 +1205,7 @@ export default function TestPaperPdfView() {
 
                 <div>
                   <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Correct Answer</label>
-                  {editFormData.type === 'MCQ' ? (
+                  {(editFormData.question_pattern || editFormData.type) === 'MCQ' ? (
                     <select
                       value={normalizeOptionLetter(editFormData.correct_answer) || 'A'}
                       onChange={e => setEditFormData({ ...editFormData, correct_answer: e.target.value })}

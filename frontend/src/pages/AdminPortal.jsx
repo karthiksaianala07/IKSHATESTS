@@ -12,6 +12,7 @@ import QuestionBankDocumentUpload from '../components/QuestionBankDocumentUpload
 import { Logo } from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
 import { normalizeOptionLetter } from '../utils/answerEvaluation';
+import LatexRenderer from '../components/LatexRenderer';
 
 const DEFAULT_SERIES = [
   {
@@ -142,6 +143,9 @@ export default function AdminPortal() {
     subject: 'Physics',
     chapter: 'Physical World',
     subtopic: '',
+    level: 'Medium',
+    exam_pattern: 'JEE Main',
+    question_pattern: 'MCQ',
     type: 'MCQ',
     text: '',
     correct_answer: '',
@@ -152,7 +156,8 @@ export default function AdminPortal() {
       { text: '', image_url: '' }
     ],
     image_url: '',
-    sub_text: ''
+    sub_text: '',
+    explanation: ''
   });
   const [uploading, setUploading] = useState(false);
   const [optUploading, setOptUploading] = useState(null);
@@ -629,9 +634,13 @@ export default function AdminPortal() {
 
   const handleAddQuestion = (e) => {
     e.preventDefault();
-    const isMCQ = newQuestion.type === 'MCQ';
+    const isMCQ = (newQuestion.question_pattern || newQuestion.type) === 'MCQ';
     const payload = {
       ...newQuestion,
+      type: newQuestion.question_pattern || newQuestion.type || 'MCQ',
+      question_pattern: newQuestion.question_pattern || newQuestion.type || 'MCQ',
+      exam_pattern: newQuestion.exam_pattern || 'JEE Main',
+      explanation: newQuestion.explanation || null,
       correct_answer: isMCQ ? normalizeOptionLetter(newQuestion.correct_answer) : newQuestion.correct_answer
     };
     axios.post(`${API_URL}/api/admin/questions`, payload)
@@ -640,6 +649,9 @@ export default function AdminPortal() {
           subject: 'Physics',
           chapter: 'Physical World',
           subtopic: '',
+          level: 'Medium',
+          exam_pattern: 'JEE Main',
+          question_pattern: 'MCQ',
           type: 'MCQ',
           text: '',
           correct_answer: '',
@@ -650,7 +662,8 @@ export default function AdminPortal() {
             { text: '', image_url: '' }
           ],
           image_url: '',
-          sub_text: ''
+          sub_text: '',
+          explanation: ''
         });
         fetchQuestions();
         alert('Question saved successfully!');
@@ -1529,7 +1542,7 @@ export default function AdminPortal() {
                             <h3 className="font-headline font-bold text-lg text-slate-200">Manual Question Form</h3>
                           </div>
                           
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                             <div className="space-y-1">
                               <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Subject</label>
                               <select
@@ -1578,14 +1591,38 @@ export default function AdminPortal() {
                               </select>
                             </div>
                             <div className="space-y-1">
-                              <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Type</label>
+                              <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Level</label>
                               <select
                                 className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-xs font-bold focus:outline-none focus:border-primary"
-                                value={newQuestion.type}
-                                onChange={e => setNewQuestion({...newQuestion, type: e.target.value})}
+                                value={newQuestion.level || 'Medium'}
+                                onChange={e => setNewQuestion({...newQuestion, level: e.target.value})}
                               >
-                                <option>MCQ</option>
-                                <option>NUMERICAL</option>
+                                <option value="Easy">Easy</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Hard">Hard</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Exam Pattern</label>
+                              <select
+                                className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-xs font-bold focus:outline-none focus:border-primary"
+                                value={newQuestion.exam_pattern || 'JEE Main'}
+                                onChange={e => setNewQuestion({...newQuestion, exam_pattern: e.target.value})}
+                              >
+                                <option value="JEE Main">JEE Main</option>
+                                <option value="JEE Advanced">JEE Advanced</option>
+                                <option value="NEET">NEET</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Question Pattern</label>
+                              <select
+                                className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-xs font-bold focus:outline-none focus:border-primary"
+                                value={newQuestion.question_pattern || newQuestion.type || 'MCQ'}
+                                onChange={e => setNewQuestion({...newQuestion, question_pattern: e.target.value, type: e.target.value})}
+                              >
+                                <option value="MCQ">MCQ</option>
+                                <option value="NUMERICAL">NUMERICAL</option>
                               </select>
                             </div>
                           </div>
@@ -1629,7 +1666,7 @@ export default function AdminPortal() {
                             />
                           </div>
 
-                          {newQuestion.type === 'MCQ' && (
+                          {(newQuestion.question_pattern || newQuestion.type) === 'MCQ' && (
                             <div className="space-y-3">
                               <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider block">MCQ Options (Docked Math Ribbon on Focus)</label>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1665,7 +1702,7 @@ export default function AdminPortal() {
 
                           <div className="space-y-1">
                             <label className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Correct Answer</label>
-                            {newQuestion.type === 'MCQ' ? (
+                            {(newQuestion.question_pattern || newQuestion.type) === 'MCQ' ? (
                               <select
                                 className="w-full p-3 rounded-lg border border-slate-900 bg-slate-950 text-slate-100 text-xs focus:outline-none focus:border-primary font-bold cursor-pointer"
                                 value={normalizeOptionLetter(newQuestion.correct_answer) || ''}
@@ -1686,6 +1723,28 @@ export default function AdminPortal() {
                                 placeholder="e.g. 18.5"
                                 required
                               />
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <SmartMathInput
+                              mode="rich"
+                              label="Step-by-Step Solution / Explanation (Optional, Smart Math Ribbon)"
+                              placeholder="e.g. Using the work-energy theorem: W = \Delta K = \frac{1}{2}mv^2..."
+                              value={newQuestion.explanation || ''}
+                              onChange={(val) => setNewQuestion({ ...newQuestion, explanation: val })}
+                              minHeight="75px"
+                            />
+                            {newQuestion.explanation && (
+                              <div className="mt-2 p-3 bg-emerald-950/20 rounded-lg border border-emerald-500/30">
+                                <p className="text-[10px] uppercase font-bold text-emerald-400 mb-1 flex items-center gap-1 font-mono">
+                                  <span className="material-symbols-outlined text-xs">check_circle</span>
+                                  Live Solution Preview:
+                                </p>
+                                <div className="text-xs text-slate-200 leading-relaxed">
+                                  <LatexRenderer text={newQuestion.explanation} />
+                                </div>
+                              </div>
                             )}
                           </div>
 

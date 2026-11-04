@@ -47,6 +47,9 @@ export default function AddTestPage() {
     subject: 'Physics',
     chapter: 'Physical World',
     subtopic: '',
+    level: 'Medium',
+    exam_pattern: 'JEE Main',
+    question_pattern: 'MCQ',
     type: 'MCQ',
     text: '',
     correct_answer: '',
@@ -72,6 +75,9 @@ export default function AddTestPage() {
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('All');
   const [selectedChapterFilter, setSelectedChapterFilter] = useState('All');
   const [selectedSubtopicFilter, setSelectedSubtopicFilter] = useState('All');
+  const [selectedLevelFilter, setSelectedLevelFilter] = useState('All');
+  const [selectedExamPatternFilter, setSelectedExamPatternFilter] = useState('All');
+  const [selectedQuestionPatternFilter, setSelectedQuestionPatternFilter] = useState('All');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalQuestionsCount, setTotalQuestionsCount] = useState(0);
@@ -88,14 +94,17 @@ export default function AddTestPage() {
 
   useEffect(() => {
     if (sourceMode === 'database') fetchQuestions();
-  }, [page, questionSearch, selectedSubjectFilter, selectedChapterFilter, selectedSubtopicFilter, sourceMode]);
+  }, [page, questionSearch, selectedSubjectFilter, selectedChapterFilter, selectedSubtopicFilter, selectedLevelFilter, selectedExamPatternFilter, selectedQuestionPatternFilter, sourceMode]);
 
   const fetchQuestions = async () => {
     setLoadingQuestions(true);
     try {
       const subtopicQuery = selectedSubtopicFilter !== 'All' ? `&subtopic=${encodeURIComponent(selectedSubtopicFilter)}` : '';
+      const levelQuery = selectedLevelFilter !== 'All' ? `&level=${encodeURIComponent(selectedLevelFilter)}` : '';
+      const examPatternQuery = selectedExamPatternFilter !== 'All' ? `&exam_pattern=${encodeURIComponent(selectedExamPatternFilter)}` : '';
+      const questionPatternQuery = selectedQuestionPatternFilter !== 'All' ? `&question_pattern=${encodeURIComponent(selectedQuestionPatternFilter)}` : '';
       const res = await axios.get(
-        `${API_URL}/api/admin/questions?paginate=true&page=${page}&limit=10&search=${encodeURIComponent(questionSearch)}&subject=${encodeURIComponent(selectedSubjectFilter)}&chapter=${encodeURIComponent(selectedChapterFilter)}${subtopicQuery}`
+        `${API_URL}/api/admin/questions?paginate=true&page=${page}&limit=10&search=${encodeURIComponent(questionSearch)}&subject=${encodeURIComponent(selectedSubjectFilter)}&chapter=${encodeURIComponent(selectedChapterFilter)}${subtopicQuery}${levelQuery}${examPatternQuery}${questionPatternQuery}`
       );
       if (res.data) {
         setAvailableQuestions(res.data.questions || []);
@@ -282,9 +291,14 @@ export default function AddTestPage() {
               });
             }
             
-            const isMCQ = (q.type?.toUpperCase() !== 'INTEGER' && q.type?.toUpperCase() !== 'NUMERICAL');
+            const rawType = q.question_pattern || q.type || 'MCQ';
+            const isMCQ = (rawType.toUpperCase() !== 'INTEGER' && rawType.toUpperCase() !== 'NUMERICAL');
             cleaned.push({
               ...q,
+              level: ['Easy', 'Medium', 'Hard'].includes(q.level) ? q.level : 'Medium',
+              exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
+              question_pattern: isMCQ ? 'MCQ' : 'NUMERICAL',
+              type: isMCQ ? 'MCQ' : 'NUMERICAL',
               correct_answer: isMCQ ? normalizeOptionLetter(q.correct_answer) : q.correct_answer,
               options: cleanedOptions,
               image_url: finalImageUrl
@@ -317,12 +331,16 @@ export default function AddTestPage() {
                 return opt;
               });
             }
-            const isMCQ = (q.type?.toUpperCase() !== 'INTEGER' && q.type?.toUpperCase() !== 'NUMERICAL');
+            const rawType = q.question_pattern || q.type || 'MCQ';
+            const isMCQ = (rawType.toUpperCase() !== 'INTEGER' && rawType.toUpperCase() !== 'NUMERICAL');
             return {
               ...q,
+              level: ['Easy', 'Medium', 'Hard'].includes(q.level) ? q.level : 'Medium',
+              exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
+              question_pattern: isMCQ ? 'MCQ' : 'NUMERICAL',
+              type: isMCQ ? 'MCQ' : 'NUMERICAL',
               correct_answer: isMCQ ? normalizeOptionLetter(q.correct_answer) : q.correct_answer,
-              options: cleanedOptions,
-              type: isMCQ ? 'MCQ' : 'NUMERICAL'
+              options: cleanedOptions
             };
           });
           setExtractedQuestions(cleaned);
@@ -496,12 +514,16 @@ export default function AddTestPage() {
       }
     }
     
-    const isMCQ = manualQuestion.type === 'MCQ';
+    const rawType = manualQuestion.question_pattern || manualQuestion.type || 'MCQ';
+    const isMCQ = rawType === 'MCQ';
     const newQ = {
       subject: manualQuestion.subject,
       chapter: manualQuestion.chapter || null,
       subtopic: manualQuestion.subtopic || null,
-      type: manualQuestion.type,
+      level: manualQuestion.level || 'Medium',
+      exam_pattern: manualQuestion.exam_pattern || 'JEE Main',
+      question_pattern: isMCQ ? 'MCQ' : 'NUMERICAL',
+      type: isMCQ ? 'MCQ' : 'NUMERICAL',
       text: manualQuestion.text,
       correct_answer: isMCQ ? normalizeOptionLetter(manualQuestion.correct_answer) : manualQuestion.correct_answer,
       image_url: manualQuestion.image_url || null,
@@ -524,7 +546,10 @@ export default function AddTestPage() {
       subject: manualQuestion.subject,
       chapter: manualQuestion.chapter,
       subtopic: manualQuestion.subtopic || '',
-      type: manualQuestion.type,
+      level: manualQuestion.level || 'Medium',
+      exam_pattern: manualQuestion.exam_pattern || 'JEE Main',
+      question_pattern: manualQuestion.question_pattern || manualQuestion.type || 'MCQ',
+      type: manualQuestion.question_pattern || manualQuestion.type || 'MCQ',
       text: '',
       correct_answer: '',
       options: [
@@ -556,9 +581,13 @@ export default function AddTestPage() {
         created_by: user?.id,
         questionIds: selectedQuestions.map(q => q.id),
         newQuestions: extractedQuestions.map(q => {
-          const isMCQ = (q.type?.toUpperCase() !== 'INTEGER' && q.type?.toUpperCase() !== 'NUMERICAL');
+          const rawQType = q.question_pattern || q.type || 'MCQ';
+          const isMCQ = (rawQType.toUpperCase() !== 'INTEGER' && rawQType.toUpperCase() !== 'NUMERICAL');
           return {
             ...q,
+            exam_pattern: q.exam_pattern || 'JEE Main',
+            question_pattern: isMCQ ? 'MCQ' : 'NUMERICAL',
+            type: isMCQ ? 'MCQ' : 'NUMERICAL',
             correct_answer: isMCQ ? normalizeOptionLetter(q.correct_answer) : q.correct_answer
           };
         })
@@ -595,8 +624,11 @@ export default function AddTestPage() {
         const matchSub = selectedSubjectFilter === 'All' || q.subject?.toLowerCase() === selectedSubjectFilter.toLowerCase();
         const matchCh = selectedChapterFilter === 'All' || q.chapter?.toLowerCase() === selectedChapterFilter.toLowerCase();
         const matchSubtopic = selectedSubtopicFilter === 'All' || q.subtopic?.toLowerCase() === selectedSubtopicFilter.toLowerCase();
+        const matchLevel = selectedLevelFilter === 'All' || (q.level || 'Medium').toLowerCase() === selectedLevelFilter.toLowerCase();
+        const matchExamPattern = selectedExamPatternFilter === 'All' || (q.exam_pattern || 'JEE Main').toLowerCase() === selectedExamPatternFilter.toLowerCase();
+        const matchQuestionPattern = selectedQuestionPatternFilter === 'All' || (q.question_pattern || q.type || 'MCQ').toLowerCase() === selectedQuestionPatternFilter.toLowerCase();
         const matchSearch = q.text?.toLowerCase().includes(questionSearch.toLowerCase()) || q.subject?.toLowerCase().includes(questionSearch.toLowerCase());
-        return matchSub && matchCh && matchSubtopic && matchSearch;
+        return matchSub && matchCh && matchSubtopic && matchLevel && matchExamPattern && matchQuestionPattern && matchSearch;
       })
     : availableQuestions;
 
@@ -909,6 +941,59 @@ export default function AddTestPage() {
                         ))}
                       </select>
                     </div>
+
+                    {/* Level Dropdown */}
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <span className="text-xs font-bold text-[#fefcfb]/70 whitespace-nowrap">Level:</span>
+                      <select
+                        value={selectedLevelFilter}
+                        onChange={e => {
+                          setSelectedLevelFilter(e.target.value);
+                          setPage(1);
+                        }}
+                        className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-[#034078]/60 bg-[#001f54] text-white text-xs font-black focus:outline-none focus:border-[#1282a2] transition-colors cursor-pointer"
+                      >
+                        <option value="All">All Levels</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                      </select>
+                    </div>
+
+                    {/* Exam Pattern Dropdown */}
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <span className="text-xs font-bold text-[#fefcfb]/70 whitespace-nowrap">Exam Pattern:</span>
+                      <select
+                        value={selectedExamPatternFilter}
+                        onChange={e => {
+                          setSelectedExamPatternFilter(e.target.value);
+                          setPage(1);
+                        }}
+                        className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-[#034078]/60 bg-[#001f54] text-white text-xs font-black focus:outline-none focus:border-[#1282a2] transition-colors cursor-pointer"
+                      >
+                        <option value="All">All Exam Patterns</option>
+                        <option value="JEE Main">JEE Main</option>
+                        <option value="JEE Advanced">JEE Advanced</option>
+                        <option value="NEET">NEET</option>
+                      </select>
+                    </div>
+
+                    {/* Question Pattern Dropdown */}
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <span className="text-xs font-bold text-[#fefcfb]/70 whitespace-nowrap">Pattern:</span>
+                      <select
+                        value={selectedQuestionPatternFilter}
+                        onChange={e => {
+                          setSelectedQuestionPatternFilter(e.target.value);
+                          setPage(1);
+                        }}
+                        className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-[#034078]/60 bg-[#001f54] text-white text-xs font-black focus:outline-none focus:border-[#1282a2] transition-colors cursor-pointer"
+                      >
+                        <option value="All">All Patterns</option>
+                        <option value="MCQ">MCQ</option>
+                        <option value="NUMERICAL">NUMERICAL</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -980,8 +1065,24 @@ export default function AddTestPage() {
                                     {q.subtopic}
                                   </span>
                                 )}
+                                {q.level && (
+                                  <span className={`px-2 py-0.5 rounded text-[9px] font-black border ${
+                                    q.level === 'Easy'
+                                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                                      : q.level === 'Hard'
+                                      ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                                      : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                  }`}>
+                                    {q.level}
+                                  </span>
+                                )}
+                                {q.exam_pattern && (
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-black border bg-indigo-950/60 text-indigo-300 border-indigo-800/50">
+                                    {q.exam_pattern}
+                                  </span>
+                                )}
                                 <span className="px-2 py-0.5 bg-[#001f54] rounded text-[9px] uppercase font-black border border-[#034078]/50 text-[#fefcfb]/70">
-                                  {q.type}
+                                  {q.question_pattern || q.type}
                                 </span>
                                 {q.explanation && (
                                   <span className="px-2 py-0.5 bg-emerald-950/60 rounded text-[9px] font-black border border-emerald-800/50 text-emerald-300 flex items-center gap-1">
@@ -1059,7 +1160,7 @@ export default function AddTestPage() {
                     Define Question
                   </h3>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                     <div className="space-y-1">
                       <label className="text-xs font-bold uppercase text-[#fefcfb]/70">Subject</label>
                       <select 
@@ -1108,14 +1209,39 @@ export default function AddTestPage() {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-bold uppercase text-[#fefcfb]/70">Type</label>
+                      <label className="text-xs font-bold uppercase text-[#fefcfb]/70">Level</label>
                       <select 
                         className="w-full p-2.5 rounded-lg border border-[#034078]/60 bg-[#001f54] text-white text-sm font-bold focus:border-[#1282a2] focus:outline-none cursor-pointer"
-                        value={manualQuestion.type}
+                        value={manualQuestion.level || 'Medium'}
+                        onChange={e => setManualQuestion({...manualQuestion, level: e.target.value})}
+                      >
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold uppercase text-[#fefcfb]/70">Exam Pattern</label>
+                      <select 
+                        className="w-full p-2.5 rounded-lg border border-[#034078]/60 bg-[#001f54] text-white text-sm font-bold focus:border-[#1282a2] focus:outline-none cursor-pointer"
+                        value={manualQuestion.exam_pattern || 'JEE Main'}
+                        onChange={e => setManualQuestion({...manualQuestion, exam_pattern: e.target.value})}
+                      >
+                        <option value="JEE Main">JEE Main</option>
+                        <option value="JEE Advanced">JEE Advanced</option>
+                        <option value="NEET">NEET</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold uppercase text-[#fefcfb]/70">Question Pattern</label>
+                      <select 
+                        className="w-full p-2.5 rounded-lg border border-[#034078]/60 bg-[#001f54] text-white text-sm font-bold focus:border-[#1282a2] focus:outline-none cursor-pointer"
+                        value={manualQuestion.question_pattern || manualQuestion.type}
                         onChange={e => {
                           const val = e.target.value;
                           setManualQuestion({
                             ...manualQuestion, 
+                            question_pattern: val,
                             type: val,
                             correct_answer: ''
                           });
@@ -1352,8 +1478,13 @@ export default function AddTestPage() {
                         </div>
 
                         <div className="flex items-center gap-2 sm:gap-3">
+                          {eq.exam_pattern && (
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-md bg-indigo-950/60 border border-indigo-800/50 text-indigo-300 font-mono">
+                              {eq.exam_pattern}
+                            </span>
+                          )}
                           <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-md bg-[#001f54] border border-[#034078]/60 text-cyan-300 font-mono">
-                            {eq.type || 'mcq'}
+                            {eq.question_pattern || eq.type || 'MCQ'}
                           </span>
                           <button
                             type="button"
@@ -1367,7 +1498,7 @@ export default function AddTestPage() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 mb-4">
                         <div>
                           <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Subject</label>
                           <select 
@@ -1428,8 +1559,47 @@ export default function AddTestPage() {
                           </select>
                         </div>
                         <div>
+                          <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Level</label>
+                          <select 
+                            value={eq.level || 'Medium'}
+                            onChange={(e) => updateExtractedQuestion(i, 'level', e.target.value)}
+                            className="w-full p-2 text-xs border border-[#034078]/60 bg-[#001f54] text-white rounded-md font-bold cursor-pointer"
+                          >
+                            <option value="Easy">Easy</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Hard">Hard</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Exam Pattern</label>
+                          <select 
+                            value={eq.exam_pattern || 'JEE Main'}
+                            onChange={(e) => updateExtractedQuestion(i, 'exam_pattern', e.target.value)}
+                            className="w-full p-2 text-xs border border-[#034078]/60 bg-[#001f54] text-white rounded-md font-bold cursor-pointer"
+                          >
+                            <option value="JEE Main">JEE Main</option>
+                            <option value="JEE Advanced">JEE Advanced</option>
+                            <option value="NEET">NEET</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Pattern</label>
+                          <select 
+                            value={eq.question_pattern || eq.type || 'MCQ'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateExtractedQuestion(i, 'question_pattern', val);
+                              updateExtractedQuestion(i, 'type', val);
+                            }}
+                            className="w-full p-2 text-xs border border-[#034078]/60 bg-[#001f54] text-white rounded-md font-bold cursor-pointer"
+                          >
+                            <option value="MCQ">MCQ</option>
+                            <option value="NUMERICAL">NUMERICAL</option>
+                          </select>
+                        </div>
+                        <div>
                           <label className="text-[10px] font-bold uppercase text-[#fefcfb]/70 mb-1 block">Correct Answer</label>
-                          {eq.type === 'NUMERICAL' || eq.type === 'INTEGER' ? (
+                          {(eq.question_pattern || eq.type) === 'NUMERICAL' || (eq.question_pattern || eq.type) === 'INTEGER' ? (
                             <input 
                               type="text"
                               value={eq.correct_answer || ''}
