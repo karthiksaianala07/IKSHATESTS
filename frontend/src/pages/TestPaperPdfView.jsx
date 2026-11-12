@@ -4,7 +4,7 @@ import axios from 'axios';
 import { API_URL } from '../config/api';
 import { supabase } from '../config/supabase';
 import LatexRenderer from '../components/LatexRenderer';
-import SmartMathInput from '../components/SmartMathInput';
+import SmartMathInput from '../components/MathTextEditor';
 import { NCERT_CHAPTERS, getSubtopics } from '../config/ncertChapters';
 import finalLogo from '../assets/Final_Logo.png';
 import { normalizeOptionLetter } from '../utils/answerEvaluation';

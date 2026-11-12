@@ -1,13 +1,20 @@
 import React from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { normalizeLatexDelimiters, convertUnicodeMathToLatex } from '../utils/mathPasteNormalizer';
 
 // Preprocessor to detect math formulas that are not wrapped in $ and wrap them.
 function autoWrapMath(text) {
   if (!text) return text;
   
+  // 1. Normalize LaTeX delimiters (\(..\) -> $..$, \[..\] -> $$..$$)
+  let normalized = normalizeLatexDelimiters(text);
+
+  // 2. Convert Unicode math characters (superscripts, subscripts, roots, Greek letters)
+  normalized = convertUnicodeMathToLatex(normalized);
+
   // Normalize newline literals safely without touching LaTeX commands starting with \n
-  let normalized = text.replace(/\\n(?![a-z])|\\n(?=(?:[ivx]+|[a-d])\))/g, '\n');
+  normalized = normalized.replace(/\\n(?![a-z])|\\n(?=(?:[ivx]+|[a-d])\))/g, '\n');
   
   // Split by existing math blocks ($ or $$) so we don't modify them
   const parts = normalized.split(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$)/g);
@@ -22,7 +29,7 @@ function autoWrapMath(text) {
     const tokens = part.match(tokenRegex) || [];
     
     const isMathKeyword = (word) => {
-      const keywords = new Set(['sin', 'cos', 'tan', 'log', 'ln', 'lim', 'min', 'max', 'deg', 'exp', 'det', 'div', 'grad', 'curl']);
+      const keywords = new Set(['sin', 'cos', 'tan', 'cot', 'sec', 'csc', 'log', 'ln', 'lim', 'min', 'max', 'deg', 'exp', 'det', 'div', 'grad', 'curl']);
       return keywords.has(word.toLowerCase());
     };
     
@@ -108,6 +115,16 @@ function autoWrapMath(text) {
   return processedParts.join('');
 }
 
+// Cleans LaTeX equation string for KaTeX compatibility
+function cleanLatexForKatex(latex) {
+  if (!latex) return '';
+  let cleaned = latex.trim();
+  // KaTeX supports 'aligned' instead of top-level 'align'
+  cleaned = cleaned.replace(/\\begin\{align\*?\}/g, '\\begin{aligned}');
+  cleaned = cleaned.replace(/\\end\{align\*?\}/g, '\\end{aligned}');
+  return cleaned;
+}
+
 export default function LatexRenderer({ text = '', className = '' }) {
   if (!text) return null;
 
@@ -121,7 +138,8 @@ export default function LatexRenderer({ text = '', className = '' }) {
     <span className={className}>
       {parts.map((part, index) => {
         if (part.startsWith('$$') && part.endsWith('$$')) {
-          const math = part.slice(2, -2);
+          const rawMath = part.slice(2, -2);
+          const math = cleanLatexForKatex(rawMath);
           try {
             const html = katex.renderToString(math, { displayMode: true, throwOnError: false });
             return <div key={index} dangerouslySetInnerHTML={{ __html: html }} className="my-3 overflow-x-auto animate-in fade-in" />;
@@ -130,10 +148,14 @@ export default function LatexRenderer({ text = '', className = '' }) {
             return <span key={index}>{part}</span>;
           }
         } else if (part.startsWith('$') && part.endsWith('$')) {
-          const math = part.slice(1, -1);
+          const rawMath = part.slice(1, -1);
+          let math = cleanLatexForKatex(rawMath);
+          if (/\\(?:frac|dfrac|lim|sum|prod|int|iint|iiint|oint)\b/.test(math) && !math.startsWith('\\displaystyle') && !math.startsWith('\\textstyle')) {
+            math = `\\displaystyle ${math}`;
+          }
           try {
             const html = katex.renderToString(math, { displayMode: false, throwOnError: false });
-            return <span key={index} dangerouslySetInnerHTML={{ __html: html }} className="animate-in fade-in" />;
+            return <span key={index} dangerouslySetInnerHTML={{ __html: html }} className="inline-block align-middle animate-in fade-in" />;
           } catch (e) {
             console.error("KaTeX inline math render error:", e);
             return <span key={index}>{part}</span>;

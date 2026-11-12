@@ -3,11 +3,12 @@ import axios from 'axios';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import LatexRenderer from './LatexRenderer';
-import SmartMathInput from './SmartMathInput';
+import SmartMathInput from './MathTextEditor';
 import { supabase } from '../config/supabase';
 import { NCERT_CHAPTERS, getSubtopics } from '../config/ncertChapters';
 import { API_URL } from '../config/api';
 import { normalizeOptionLetter } from '../utils/answerEvaluation';
+import { normalizePastedMath } from '../utils/mathPasteNormalizer';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -198,11 +199,14 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
               exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
               question_pattern: isNum ? 'NUMERICAL' : 'MCQ',
               type: isNum ? 'NUMERICAL' : 'MCQ',
-              text: q.text || '',
-              options: cleanedOptions,
+              text: normalizePastedMath(q.text || '', '', { mode: 'rich' }),
+              options: cleanedOptions.map((opt) => ({
+                text: normalizePastedMath(opt.text || '', '', { mode: 'rich' }),
+                image_url: opt.image_url || ''
+              })),
               correct_answer: isNum ? (q.correct_answer !== undefined && q.correct_answer !== null ? String(q.correct_answer) : '') : normalizeOptionLetter(q.correct_answer),
               image_url: finalImageUrl,
-              sub_text: q.sub_text || ''
+              sub_text: normalizePastedMath(q.sub_text || '', '', { mode: 'rich' })
             });
           }
 
@@ -262,11 +266,14 @@ export default function QuestionBankDocumentUpload({ onQuestionsSaved }) {
               exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
               question_pattern: isNum ? 'NUMERICAL' : 'MCQ',
               type: isNum ? 'NUMERICAL' : 'MCQ',
-              text: q.text || '',
-              options: cleanedOptions,
+              text: normalizePastedMath(q.text || '', '', { mode: 'rich' }),
+              options: cleanedOptions.map((opt) => ({
+                text: normalizePastedMath(opt.text || '', '', { mode: 'rich' }),
+                image_url: opt.image_url || ''
+              })),
               correct_answer: isNum ? (q.correct_answer !== undefined && q.correct_answer !== null ? String(q.correct_answer) : '') : normalizeOptionLetter(q.correct_answer),
               image_url: q.image_url || null,
-              sub_text: q.sub_text || ''
+              sub_text: normalizePastedMath(q.sub_text || '', '', { mode: 'rich' })
             };
           });
 

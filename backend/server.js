@@ -449,6 +449,17 @@ app.get('/api/admin/questions', async (req, res) => {
   }
 });
 
+function sanitizeMathText(text) {
+  if (!text || typeof text !== 'string') return text;
+  let s = text;
+  // Convert \[..\] to $$..$$ and \(..\) to $..$
+  s = s.replace(/\\\[([\s\S]*?)\\\]/g, (m, c) => `\n$$${c.trim()}$$\n`);
+  s = s.replace(/\\\(([\s\S]*?)\\\)/g, (m, c) => `$${c.trim()}$`);
+  // Fix double-escaped backslashes before LaTeX keywords (e.g. \\frac -> \frac)
+  s = s.replace(/\\\\([a-zA-Z]+)/g, '\\$1');
+  return s;
+}
+
 // 7.6 Add single or bulk questions (Admin only, bypasses RLS)
 app.post('/api/admin/questions', async (req, res) => {
   try {
@@ -473,12 +484,16 @@ app.post('/api/admin/questions', async (req, res) => {
           level: ['Easy', 'Medium', 'Hard'].includes(q.level) ? q.level : 'Medium',
           exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
           question_pattern: pat,
-          text: q.text,
-          options: q.options || [],
+          text: sanitizeMathText(q.text),
+          options: Array.isArray(q.options) ? q.options.map(opt => {
+            if (typeof opt === 'string') return sanitizeMathText(opt);
+            if (typeof opt === 'object' && opt !== null) return { ...opt, text: sanitizeMathText(opt.text) };
+            return opt;
+          }) : [],
           correct_answer: isNum ? String(q.correct_answer || '') : normalizeOptionLetter(q.correct_answer),
           image_url: q.image_url || null,
-          sub_text: q.sub_text || null,
-          explanation: q.explanation || q.solution || null,
+          sub_text: sanitizeMathText(q.sub_text) || null,
+          explanation: sanitizeMathText(q.explanation || q.solution) || null,
           test_id: test.id
         };
       });
@@ -504,12 +519,16 @@ app.post('/api/admin/questions', async (req, res) => {
         level: ['Easy', 'Medium', 'Hard'].includes(payload.level) ? payload.level : 'Medium',
         exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(payload.exam_pattern) ? payload.exam_pattern : 'JEE Main',
         question_pattern: pat,
-        text: payload.text,
-        options: payload.options || [],
+        text: sanitizeMathText(payload.text),
+        options: Array.isArray(payload.options) ? payload.options.map(opt => {
+          if (typeof opt === 'string') return sanitizeMathText(opt);
+          if (typeof opt === 'object' && opt !== null) return { ...opt, text: sanitizeMathText(opt.text) };
+          return opt;
+        }) : [],
         correct_answer: isNum ? String(payload.correct_answer || '') : normalizeOptionLetter(payload.correct_answer),
         image_url: payload.image_url || null,
-        sub_text: payload.sub_text || null,
-        explanation: payload.explanation || payload.solution || null,
+        sub_text: sanitizeMathText(payload.sub_text) || null,
+        explanation: sanitizeMathText(payload.explanation || payload.solution) || null,
         test_id: test.id
       };
       let { data, error } = await supabaseAdmin.from('questions').insert(singleQ).select().single();
@@ -1163,6 +1182,8 @@ app.post('/api/admin/students', async (req, res) => {
 // Admin resets a student password
 app.post('/api/admin/students/:id/reset-password', async (req, res) => {
   try {
+    const { id } = req.params;
+    const { userId, email } = req.body || {};
     const rawPassword = req.body?.password || req.body?.newPassword || '';
     const password = typeof rawPassword === 'string' ? rawPassword.trim() : String(rawPassword || '').trim();
 
@@ -1170,7 +1191,49 @@ app.post('/api/admin/students/:id/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'New password must be at least 6 characters.' });
     }
 
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(id, {
+    let targetAuthId = null;
+
+    // 1. Check if id is a valid UUID
+    const isUuid = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    if (isUuid) {
+      targetAuthId = id;
+    }
+
+    // 2. If not a direct UUID, look up profiles
+    if (!targetAuthId) {
+      const lookupIdentifier = id || userId || email;
+      if (lookupIdentifier) {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('id, email, user_id')
+          .or(`id.eq.${lookupIdentifier},user_id.ilike.${lookupIdentifier},email.ilike.${lookupIdentifier}`)
+          .maybeSingle();
+
+        if (profile && profile.id) {
+          targetAuthId = profile.id;
+        }
+      }
+    }
+
+    // 3. Fallback: Search in auth.users
+    if (!targetAuthId) {
+      const targetSearch = (email || id || userId || '').toLowerCase();
+      const { data: authList } = await supabaseAdmin.auth.admin.listUsers();
+      const foundUser = (authList?.users || []).find(u => 
+        u.id === id || 
+        u.email?.toLowerCase() === targetSearch || 
+        u.user_metadata?.user_id?.toLowerCase() === targetSearch
+      );
+      if (foundUser) {
+        targetAuthId = foundUser.id;
+      }
+    }
+
+    if (!targetAuthId) {
+      return res.status(404).json({ error: `Could not locate student account with ID/identifier "${id}".` });
+    }
+
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(targetAuthId, {
       password: password
     });
 
@@ -1178,6 +1241,8 @@ app.post('/api/admin/students/:id/reset-password', async (req, res) => {
       console.error('[RESET_STUDENT_PASSWORD_ERROR]', updateError.message);
       return res.status(400).json({ error: updateError.message || 'Failed to update student password.' });
     }
+
+    console.log(`[RESET_PASSWORD] Successfully updated password for student ${targetAuthId} (${id})`);
 
     res.json({
       success: true,
@@ -1194,13 +1259,24 @@ app.delete('/api/admin/students/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
+    let targetAuthId = id;
+    const isUuid = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    if (!isUuid) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${id},user_id.ilike.${id},email.ilike.${id}`)
+        .maybeSingle();
+      if (profile && profile.id) targetAuthId = profile.id;
+    }
+
     // Delete from auth (cascades to profiles and submissions via ON DELETE CASCADE)
-    const { error: authDelError } = await supabaseAdmin.auth.admin.deleteUser(id);
+    const { error: authDelError } = await supabaseAdmin.auth.admin.deleteUser(targetAuthId);
     if (authDelError) {
       console.warn('[AUTH_DELETE_WARN]', authDelError.message);
     }
 
-    await supabaseAdmin.from('profiles').delete().eq('id', id);
+    await supabaseAdmin.from('profiles').delete().or(`id.eq.${targetAuthId},user_id.ilike.${id}`);
 
     res.json({ success: true, message: 'Student account deleted successfully.' });
   } catch (err) {
@@ -1787,7 +1863,19 @@ INSTRUCTIONS FOR DIAGRAM AND IMAGE DETECTION:
       }
     }
 
-    res.json({ success: true, questions: allQuestions });
+    const sanitizedQuestions = allQuestions.map(q => ({
+      ...q,
+      text: sanitizeMathText(q.text),
+      sub_text: sanitizeMathText(q.sub_text),
+      explanation: sanitizeMathText(q.explanation),
+      options: Array.isArray(q.options) ? q.options.map(opt => {
+        if (typeof opt === 'string') return sanitizeMathText(opt);
+        if (typeof opt === 'object' && opt !== null) return { ...opt, text: sanitizeMathText(opt.text) };
+        return opt;
+      }) : []
+    }));
+
+    res.json({ success: true, questions: sanitizedQuestions });
   } catch (err) {
     console.error("[EXTRACT_PDF_ERROR]", err.message);
     res.status(500).json({ error: err.message || "Failed to extract PDF" });
@@ -1854,6 +1942,94 @@ app.post('/api/admin/upload-image', upload.single('file'), async (req, res) => {
       return res.json({ success: true, publicUrl: req.body.base64Data });
     }
     return res.status(500).json({ error: err.message || "Failed to upload image" });
+  }
+});
+
+// 7.7.4B OCR a formula image into LaTeX (e.g. pasted from MathType, PageMaker, or Word)
+app.post('/api/admin/ocr-formula', async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) {
+      return res.status(400).json({ error: "No image provided" });
+    }
+
+    if (!ai) {
+      return res.status(500).json({ error: "Gemini AI not configured" });
+    }
+
+    let mimeType = 'image/png';
+    let base64Data = '';
+
+    if (image.startsWith('data:')) {
+      const match = image.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        mimeType = match[1];
+        base64Data = match[2];
+      }
+    } else if (image.startsWith('http')) {
+      try {
+        const axiosLib = require('axios');
+        const imgRes = await axiosLib.get(image, { responseType: 'arraybuffer' });
+        base64Data = Buffer.from(imgRes.data).toString('base64');
+        mimeType = imgRes.headers['content-type'] || 'image/png';
+      } catch (dlErr) {
+        console.warn("[OCR_FORMULA] Failed to download image from URL:", dlErr.message);
+      }
+    }
+
+    if (!base64Data) {
+      return res.status(400).json({ error: "Invalid image format" });
+    }
+
+    const prompt = `You are an expert mathematical OCR system.
+Transcribe the exact mathematical equation or formula shown in this image into valid LaTeX.
+Rules:
+1. Return ONLY the LaTeX code wrapped in $...$ (or $$...$$ for display formulas).
+2. Do not include markdown code blocks like \`\`\`latex or \`\`\`.
+3. Do not include any conversational text or explanation.
+4. Ensure all fractions use \\frac{num}{den}, roots use \\sqrt{}, powers use ^{}, subscripts use _{}.`;
+
+    const contents = [
+      { inlineData: { data: base64Data, mimeType } },
+      prompt
+    ];
+
+    const modelsToTry = [
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-flash-latest'
+    ];
+
+    let latex = '';
+    for (const model of modelsToTry) {
+      try {
+        const result = await ai.models.generateContent({
+          model,
+          contents
+        });
+        if (result && result.text) {
+          latex = result.text.trim();
+          break;
+        }
+      } catch (mErr) {
+        console.warn(`[OCR_FORMULA] Model ${model} failed:`, mErr.message);
+      }
+    }
+
+    if (!latex) {
+      return res.status(500).json({ error: "Could not transcribe formula from image" });
+    }
+
+    latex = latex.replace(/```(?:latex|json|tex)?/g, '').replace(/```/g, '').trim();
+    if (!latex.startsWith('$')) {
+      latex = `$${latex}$`;
+    }
+
+    return res.json({ success: true, latex });
+  } catch (err) {
+    console.error("[OCR_FORMULA_ERROR]", err.message);
+    res.status(500).json({ error: err.message || "Failed to OCR formula image" });
   }
 });
 
@@ -2096,7 +2272,19 @@ Return ONLY a valid JSON object matching this schema (do not include markdown fo
       }
     }
 
-    res.json({ success: true, questions: allQuestions });
+    const sanitizedQuestions = allQuestions.map(q => ({
+      ...q,
+      text: sanitizeMathText(q.text),
+      sub_text: sanitizeMathText(q.sub_text),
+      explanation: sanitizeMathText(q.explanation),
+      options: Array.isArray(q.options) ? q.options.map(opt => {
+        if (typeof opt === 'string') return sanitizeMathText(opt);
+        if (typeof opt === 'object' && opt !== null) return { ...opt, text: sanitizeMathText(opt.text) };
+        return opt;
+      }) : []
+    }));
+
+    res.json({ success: true, questions: sanitizedQuestions });
   } catch (err) {
     console.error("[EXTRACT_DOCX_ERROR]", err.message);
     res.status(500).json({ error: err.message || "Failed to extract Word document" });

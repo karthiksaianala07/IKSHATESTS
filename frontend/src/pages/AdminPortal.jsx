@@ -4,7 +4,7 @@ import axios from 'axios';
 import { API_URL } from '../config/api';
 import { supabase } from '../config/supabase';
 import { NCERT_CHAPTERS, getSubtopics } from '../config/ncertChapters';
-import SmartMathInput from '../components/SmartMathInput';
+import SmartMathInput from '../components/MathTextEditor';
 import AdminAnalytics from '../components/AdminAnalytics';
 import StudentAnalyticsWorkspace from '../components/StudentAnalyticsWorkspace';
 import AddTestPage from './AddTestPage';
@@ -12,6 +12,7 @@ import QuestionBankDocumentUpload from '../components/QuestionBankDocumentUpload
 import { Logo } from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
 import { normalizeOptionLetter } from '../utils/answerEvaluation';
+import { normalizePastedMath } from '../utils/mathPasteNormalizer';
 import LatexRenderer from '../components/LatexRenderer';
 
 const DEFAULT_SERIES = [
@@ -525,9 +526,12 @@ export default function AdminPortal() {
 
     setIsResettingPassword(true);
     try {
-      const res = await axios.post(`${API_URL}/api/admin/students/${resetPasswordModal.id}/reset-password`, {
+      const studentId = resetPasswordModal.id || resetPasswordModal.user_id;
+      const res = await axios.post(`${API_URL}/api/admin/students/${studentId}/reset-password`, {
         password: newPasswordVal.trim(),
-        newPassword: newPasswordVal.trim()
+        newPassword: newPasswordVal.trim(),
+        userId: resetPasswordModal.user_id,
+        email: resetPasswordModal.email
       });
       if (res.data?.success) {
         setResetSuccessMessage(`Password successfully reset to: "${newPasswordVal.trim()}"`);
@@ -637,10 +641,16 @@ export default function AdminPortal() {
     const isMCQ = (newQuestion.question_pattern || newQuestion.type) === 'MCQ';
     const payload = {
       ...newQuestion,
+      text: normalizePastedMath(newQuestion.text || '', '', { mode: 'rich' }),
+      sub_text: newQuestion.sub_text ? normalizePastedMath(newQuestion.sub_text, '', { mode: 'rich' }) : null,
+      explanation: newQuestion.explanation ? normalizePastedMath(newQuestion.explanation, '', { mode: 'rich' }) : null,
+      options: isMCQ ? newQuestion.options.map(opt => ({
+        ...opt,
+        text: normalizePastedMath(opt.text || '', '', { mode: 'rich' })
+      })) : newQuestion.options,
       type: newQuestion.question_pattern || newQuestion.type || 'MCQ',
       question_pattern: newQuestion.question_pattern || newQuestion.type || 'MCQ',
       exam_pattern: newQuestion.exam_pattern || 'JEE Main',
-      explanation: newQuestion.explanation || null,
       correct_answer: isMCQ ? normalizeOptionLetter(newQuestion.correct_answer) : newQuestion.correct_answer
     };
     axios.post(`${API_URL}/api/admin/questions`, payload)
@@ -1634,6 +1644,7 @@ export default function AdminPortal() {
                               placeholder="e.g. Find the value of $\int_0^{\pi} \sin x \, dx$"
                               value={newQuestion.text}
                               onChange={(val) => setNewQuestion({ ...newQuestion, text: val })}
+                              onImagePasted={(url) => setNewQuestion(prev => ({ ...prev, image_url: url }))}
                               minHeight="85px"
                             />
                           </div>
@@ -1768,7 +1779,28 @@ export default function AdminPortal() {
                               try {
                                 const data = JSON.parse(e.target.value);
                                 if (Array.isArray(data)) {
-                                  axios.post(`${API_URL}/api/admin/questions`, data)
+                                  const normalizedData = data.map((q) => {
+                                    const isNum = (q.question_pattern?.toUpperCase() === 'NUMERICAL' || q.question_pattern?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'INTEGER' || q.type?.toUpperCase() === 'NUMERICAL');
+                                    return {
+                                      ...q,
+                                      text: normalizePastedMath(q.text || '', '', { mode: 'rich' }),
+                                      sub_text: q.sub_text ? normalizePastedMath(q.sub_text, '', { mode: 'rich' }) : null,
+                                      explanation: q.explanation ? normalizePastedMath(q.explanation, '', { mode: 'rich' }) : null,
+                                      options: Array.isArray(q.options)
+                                        ? q.options.map((opt) => {
+                                            if (typeof opt === 'string') {
+                                              return { text: normalizePastedMath(opt, '', { mode: 'rich' }), image_url: '' };
+                                            }
+                                            return {
+                                              ...opt,
+                                              text: normalizePastedMath(opt.text || '', '', { mode: 'rich' })
+                                            };
+                                          })
+                                        : q.options,
+                                      correct_answer: isNum ? String(q.correct_answer ?? '') : normalizeOptionLetter(q.correct_answer)
+                                    };
+                                  });
+                                  axios.post(`${API_URL}/api/admin/questions`, normalizedData)
                                     .then(() => {
                                       alert("Bulk upload success!");
                                       fetchQuestions();

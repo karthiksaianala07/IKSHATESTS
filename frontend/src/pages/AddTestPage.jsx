@@ -8,8 +8,9 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import LatexRenderer from '../components/LatexRenderer';
 import { supabase } from '../config/supabase';
 import { NCERT_CHAPTERS, getSubtopics } from '../config/ncertChapters';
-import SmartMathInput from '../components/SmartMathInput';
+import SmartMathInput from '../components/MathTextEditor';
 import { normalizeOptionLetter } from '../utils/answerEvaluation';
+import { normalizePastedMath } from '../utils/mathPasteNormalizer';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -299,8 +300,11 @@ export default function AddTestPage() {
               exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
               question_pattern: isMCQ ? 'MCQ' : 'NUMERICAL',
               type: isMCQ ? 'MCQ' : 'NUMERICAL',
+              text: normalizePastedMath(q.text || '', '', { mode: 'rich' }),
+              sub_text: q.sub_text ? normalizePastedMath(q.sub_text, '', { mode: 'rich' }) : null,
+              explanation: q.explanation ? normalizePastedMath(q.explanation, '', { mode: 'rich' }) : null,
               correct_answer: isMCQ ? normalizeOptionLetter(q.correct_answer) : q.correct_answer,
-              options: cleanedOptions,
+              options: cleanedOptions.map(opt => normalizePastedMath(opt || '', '', { mode: 'rich' })),
               image_url: finalImageUrl
             });
           }
@@ -339,8 +343,11 @@ export default function AddTestPage() {
               exam_pattern: ['JEE Main', 'JEE Advanced', 'NEET'].includes(q.exam_pattern) ? q.exam_pattern : 'JEE Main',
               question_pattern: isMCQ ? 'MCQ' : 'NUMERICAL',
               type: isMCQ ? 'MCQ' : 'NUMERICAL',
+              text: normalizePastedMath(q.text || '', '', { mode: 'rich' }),
+              sub_text: q.sub_text ? normalizePastedMath(q.sub_text, '', { mode: 'rich' }) : null,
+              explanation: q.explanation ? normalizePastedMath(q.explanation, '', { mode: 'rich' }) : null,
               correct_answer: isMCQ ? normalizeOptionLetter(q.correct_answer) : q.correct_answer,
-              options: cleanedOptions
+              options: cleanedOptions.map(opt => normalizePastedMath(opt || '', '', { mode: 'rich' }))
             };
           });
           setExtractedQuestions(cleaned);
@@ -524,17 +531,18 @@ export default function AddTestPage() {
       exam_pattern: manualQuestion.exam_pattern || 'JEE Main',
       question_pattern: isMCQ ? 'MCQ' : 'NUMERICAL',
       type: isMCQ ? 'MCQ' : 'NUMERICAL',
-      text: manualQuestion.text,
+      text: normalizePastedMath(manualQuestion.text || '', '', { mode: 'rich' }),
       correct_answer: isMCQ ? normalizeOptionLetter(manualQuestion.correct_answer) : manualQuestion.correct_answer,
       image_url: manualQuestion.image_url || null,
-      sub_text: manualQuestion.sub_text || null,
-      explanation: manualQuestion.explanation || null,
+      sub_text: manualQuestion.sub_text ? normalizePastedMath(manualQuestion.sub_text, '', { mode: 'rich' }) : null,
+      explanation: manualQuestion.explanation ? normalizePastedMath(manualQuestion.explanation, '', { mode: 'rich' }) : null,
       options: isMCQ
         ? manualQuestion.options.map(opt => {
+            const optText = normalizePastedMath(opt.text || '', '', { mode: 'rich' });
             if (opt.image_url) {
-              return { text: opt.text, image_url: opt.image_url };
+              return { text: optText, image_url: opt.image_url };
             }
-            return opt.text;
+            return optText;
           })
         : []
     };
